@@ -1,0 +1,772 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Mzzf">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="cgroup（Control Groups） 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux中的Cgroup">
+<meta property="og:url" content="https://mfzzf.github.io/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/index.html">
+<meta property="og:site_name" content="Mzzf&#39;s Blog">
+<meta property="og:description" content="cgroup（Control Groups） 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-03-13T09:03:15.000Z">
+<meta property="article:modified_time" content="2025-03-13T09:04:25.107Z">
+<meta property="article:author" content="Mzzf">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Linux中的Cgroup - Mzzf&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"mfzzf.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Mzzf&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Linux中的Cgroup"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-13 17:03" pubdate>
+          2025年3月13日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          896 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          8 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Linux中的Cgroup</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p><strong>cgroup（Control Groups）</strong> 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。</p>
+<span id="more"></span>
+
+<p>Linux 的 cgroup 有两个版本：<strong>cgroup v1</strong> 和 <strong>cgroup v2</strong>。随着 Linux 内核的发展，cgroup v2 在功能和设计上对 v1 做了很多改进。本文将详细探讨 cgroup v1 和 v2 的区别，并提供技术细节和实际应用示例。</p>
+<hr>
+<h2 id="什么是-cgroup？"><a href="#什么是-cgroup？" class="headerlink" title="什么是 cgroup？"></a>什么是 cgroup？</h2><p>cgroup 是 Linux 内核的一项功能，用于：</p>
+<ol>
+<li><strong>资源限制</strong>：限制某些进程可以使用的资源量（如 CPU、内存等）。</li>
+<li><strong>资源优先级</strong>：为不同的进程分配不同的资源优先级。</li>
+<li><strong>资源计费</strong>：跟踪进程使用的资源量。</li>
+<li><strong>进程管理</strong>：将一组进程组织为一个组，并对其统一管理。</li>
+</ol>
+<p>它的主要应用场景包括：</p>
+<ul>
+<li>容器技术（如 Docker、Kubernetes）。</li>
+<li>虚拟化技术。</li>
+<li>系统性能调优。</li>
+</ul>
+<hr>
+<h2 id="cgroup-v1-和-v2-的区别"><a href="#cgroup-v1-和-v2-的区别" class="headerlink" title="cgroup v1 和 v2 的区别"></a>cgroup v1 和 v2 的区别</h2><h3 id="1-文件结构对比"><a href="#1-文件结构对比" class="headerlink" title="1.文件结构对比"></a>1.<strong>文件结构对比</strong></h3><h4 id="cgroup-v1-的文件结构"><a href="#cgroup-v1-的文件结构" class="headerlink" title="cgroup v1 的文件结构"></a>cgroup v1 的文件结构</h4><p>在 cgroup v1 中，每种资源（如 CPU、内存、I&#x2F;O）都有独立的子系统，每个子系统都有自己的目录和控制文件。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs bash">/sys/fs/cgroup/<br>├── cpu/<br>│   ├── cpu.cfs_quota_us<br>│   ├── cpu.cfs_period_us<br>│   ├── tasks<br>│   └── ...<br>├── memory/<br>│   ├── memory.limit_in_bytes<br>│   ├── memory.usage_in_bytes<br>│   ├── tasks<br>│   └── ...<br>└── blkio/<br>    ├── blkio.throttle.read_bps_device<br>    ├── blkio.throttle.write_bps_device<br>    ├── tasks<br>    └── ...<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>每个子系统（如 <code>cpu</code>、<code>memory</code>）管理自己的资源。</li>
+<li>配置文件分散在不同的目录中，容易导致配置冲突。</li>
+</ul>
+<h4 id="cgroup-v2-的文件结构"><a href="#cgroup-v2-的文件结构" class="headerlink" title="cgroup v2 的文件结构"></a>cgroup v2 的文件结构</h4><p>在 cgroup v2 中，所有控制器共享一个统一的层次结构和文件系统：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">/sys/fs/cgroup/<br>├── cgroup.controllers<br>├── cgroup.procs<br>├── cgroup.subtree_control<br>├── cpu.max<br>├── memory.max<br>├── io.max<br>└── ...<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>统一的文件结构，所有资源控制参数（如 CPU、内存、I&#x2F;O）都在同一目录下。</li>
+<li>减少了配置冲突，更加简洁和高效。</li>
+</ul>
+<hr>
+<h3 id="2-资源控制参数对比"><a href="#2-资源控制参数对比" class="headerlink" title="2. 资源控制参数对比"></a>2. <strong>资源控制参数对比</strong></h3><p>以下是 cgroup v1 和 v2 在资源控制方面的主要参数对比：</p>
+<h4 id="CPU-控制参数"><a href="#CPU-控制参数" class="headerlink" title="CPU 控制参数"></a>CPU 控制参数</h4><table>
+<thead>
+<tr>
+<th><strong>功能</strong></th>
+<th><strong>cgroup v1 参数</strong></th>
+<th><strong>cgroup v2 参数</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>设置 CPU 时间配额</td>
+<td><code>cpu.cfs_quota_us</code></td>
+<td><code>cpu.max</code></td>
+</tr>
+<tr>
+<td>设置 CPU 时间周期</td>
+<td><code>cpu.cfs_period_us</code></td>
+<td><code>cpu.max</code></td>
+</tr>
+<tr>
+<td>设置 CPU 权重（优先级）</td>
+<td><code>cpu.shares</code></td>
+<td><code>cpu.weight</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>在 cgroup v2 中，<code>cpu.max</code> 替代了 <code>cpu.cfs_quota_us</code> 和 <code>cpu.cfs_period_us</code>，格式为 <code>&lt;quota&gt; &lt;period&gt;</code>。</li>
+<li><code>cpu.weight</code> 替代了 <code>cpu.shares</code>，用于设置 CPU 权重。</li>
+</ul>
+<h4 id="内存控制参数"><a href="#内存控制参数" class="headerlink" title="内存控制参数"></a>内存控制参数</h4><table>
+<thead>
+<tr>
+<th><strong>功能</strong></th>
+<th><strong>cgroup v1 参数</strong></th>
+<th><strong>cgroup v2 参数</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>设置内存上限</td>
+<td><code>memory.limit_in_bytes</code></td>
+<td><code>memory.max</code></td>
+</tr>
+<tr>
+<td>设置内存软限制</td>
+<td><code>memory.soft_limit_in_bytes</code></td>
+<td>不支持</td>
+</tr>
+<tr>
+<td>内存使用量</td>
+<td><code>memory.usage_in_bytes</code></td>
+<td><code>memory.current</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>cgroup v2 简化了内存控制，废弃了一些复杂的参数（如软限制）。</li>
+</ul>
+<h4 id="I-O-控制参数"><a href="#I-O-控制参数" class="headerlink" title="I&#x2F;O 控制参数"></a>I&#x2F;O 控制参数</h4><table>
+<thead>
+<tr>
+<th><strong>功能</strong></th>
+<th><strong>cgroup v1 参数</strong></th>
+<th><strong>cgroup v2 参数</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>限制读写带宽</td>
+<td><code>blkio.throttle.read_bps_device</code></td>
+<td><code>io.max</code></td>
+</tr>
+<tr>
+<td>限制 IOPS</td>
+<td><code>blkio.throttle.write_iops_device</code></td>
+<td><code>io.max</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>cgroup v2 使用 <code>io.max</code> 统一配置 I&#x2F;O 带宽和 IOPS 限制。</li>
+</ul>
+<hr>
+<h2 id="控制-CPU-使用率示例："><a href="#控制-CPU-使用率示例：" class="headerlink" title="控制 CPU 使用率示例："></a>控制 CPU 使用率示例：</h2><p>运行以下 Go 程序，会吃掉两个 CPU：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;<br>        <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>                <span class="hljs-keyword">for</span> &#123;<br>                &#125;<br>        &#125;()<br>        <span class="hljs-keyword">for</span> &#123;<br><br>        &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight ebnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs ebnf"><span class="hljs-attribute">go build -o busyloop</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">./busyloop<br></code></pre></td></tr></table></figure>
+
+<p>此时运行<code>top</code>命令，会显示 200%CPU 占用。</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache">   <span class="hljs-attribute">PID</span> USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                <br><span class="hljs-attribute">426388</span> cadmin    <span class="hljs-number">20</span>   <span class="hljs-number">0</span>  <span class="hljs-number">702356</span>   <span class="hljs-number">1024</span>    <span class="hljs-number">640</span> R <span class="hljs-number">210</span>.<span class="hljs-number">0</span>   <span class="hljs-number">0</span>.<span class="hljs-number">0</span>   <span class="hljs-number">0</span>:<span class="hljs-number">18</span>.<span class="hljs-number">75</span> busyloop  <br></code></pre></td></tr></table></figure>
+
+<p>他的 PID 号是<code>426388</code>，我们可以<code>mkdir /sys/fs/cgroup/cpudemo</code>，然后将它添加到<code>cpu.procs</code>中。</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs vim"><span class="hljs-keyword">echo</span> <span class="hljs-keyword">ps</span> -ef|<span class="hljs-keyword">grep</span> busyloop|<span class="hljs-keyword">grep</span> -v <span class="hljs-keyword">grep</span>|awk <span class="hljs-string">&#x27;&#123;print $2&#125;&#x27;</span> &gt; cgroup.procs<br><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;100000 1000000&quot;</span> &gt; cpu.<span class="hljs-built_in">max</span><br></code></pre></td></tr></table></figure>
+
+<p>此时限制 100000&#x2F;1000000 就是使用 10% 的 CPU 了。</p>
+<hr>
+<h2 id="如何检查系统使用的是-cgroup-v1-还是-v2？"><a href="#如何检查系统使用的是-cgroup-v1-还是-v2？" class="headerlink" title="如何检查系统使用的是 cgroup v1 还是 v2？"></a>如何检查系统使用的是 cgroup v1 还是 v2？</h2><p>运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">mount | grep cgroup<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>如果输出中包含 <code>cgroup2</code>，说明系统使用的是 cgroup v2。</li>
+<li>如果输出中包含多个子系统（如 <code>cpu</code>、<code>memory</code> 等），说明使用的是 cgroup v1。</li>
+</ul>
+<hr>
+<h2 id="可视化对比"><a href="#可视化对比" class="headerlink" title="可视化对比"></a>可视化对比</h2><p>以下是 cgroup v1 和 v2 的结构对比：</p>
+<pre><code class=" mermaid">graph TD
+    A[cgroup v1] --&gt; B[cpu]
+    A --&gt; C[memory]
+    A --&gt; D[blkio]
+    B --&gt; E[cpu.cfs_quota_us]
+    B --&gt; F[cpu.cfs_period_us]
+    C --&gt; G[memory.limit_in_bytes]
+    D --&gt; H[blkio.throttle.read_bps_device]
+
+    I[cgroup v2] --&gt; J[cpu.max]
+    I --&gt; K[memory.max]
+    I --&gt; L[io.max]
+</code></pre>
+
+<hr>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Linux/" class="print-no-link">#Linux</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Linux中的Cgroup</div>
+      <div>https://mfzzf.github.io/2025/03/13/Linux中的Cgroup/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Mzzf</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年3月13日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/13/Raft%E5%8D%8F%E8%AE%AE/" title="Raft协议">
+                        <span class="hidden-mobile">Raft协议</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
