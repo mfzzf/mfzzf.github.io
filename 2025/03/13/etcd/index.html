@@ -27,7 +27,7 @@
 <meta property="og:description" content="深入理解 etcd：一个分布式键值存储系统什么是 etcd？etcd 是一个分布式键值存储系统，由 CoreOS 基于 Raft 共识算法开发。它是 Kubernetes 控制平面组件的核心，用于存储整个集群的关键数据。etcd 的主要特点包括：  键值对存储：以分层目录形式组织数据，类似文件系统。 强一致性：基于 Raft 算法，确保数据一致性。 监听机制：支持对键或目录的变更进行监听。 高性能">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-03-13T15:50:52.000Z">
-<meta property="article:modified_time" content="2025-03-14T06:03:17.350Z">
+<meta property="article:modified_time" content="2025-03-14T08:56:02.901Z">
 <meta property="article:author" content="Mzzf">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -313,7 +313,8 @@
 <li><strong>Raft 协议</strong>：etcd 的一致性保证基于 Raft 协议，支持选主、日志复制和故障恢复。</li>
 </ol>
 <p>以下是 Raft 工作流程的简化图：</p>
-<pre class="mermaid">sequenceDiagram
+<pre class="mermaid">
+sequenceDiagram
     participant Client
     participant Leader
     participant Follower1
