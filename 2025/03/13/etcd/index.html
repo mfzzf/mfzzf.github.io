@@ -26,10 +26,17 @@
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
 <meta property="og:description" content="深入理解 etcd：一个分布式键值存储系统什么是 etcd？etcd 是一个分布式键值存储系统，由 CoreOS 基于 Raft 共识算法开发。它是 Kubernetes 控制平面组件的核心，用于存储整个集群的关键数据。etcd 的主要特点包括：  键值对存储：以分层目录形式组织数据，类似文件系统。 强一致性：基于 Raft 算法，确保数据一致性。 监听机制：支持对键或目录的变更进行监听。 高性能">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315134955515.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315134912712.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315135015123.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315135026793.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315135036366.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315135111911.png">
 <meta property="article:published_time" content="2025-03-13T15:50:52.000Z">
-<meta property="article:modified_time" content="2025-03-14T08:56:02.901Z">
+<meta property="article:modified_time" content="2025-03-15T06:09:49.290Z">
 <meta property="article:author" content="Mzzf">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315134955515.png">
   
   
   
@@ -222,7 +229,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.5k 字
+          2.4k 字
         
       </span>
     
@@ -233,7 +240,7 @@
         
         
         
-          22 分钟
+          20 分钟
         
       </span>
     
@@ -313,22 +320,14 @@
 <li><strong>Raft 协议</strong>：etcd 的一致性保证基于 Raft 协议，支持选主、日志复制和故障恢复。</li>
 </ol>
 <p>以下是 Raft 工作流程的简化图：</p>
-<pre class="mermaid">
-sequenceDiagram
-    participant Client
-    participant Leader
-    participant Follower1
-    participant Follower2
+<img src="/2025/03/13/etcd/image-20250315134955515.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315134955515">
 
-    Client->>Leader: 写入数据
-    Leader->>Follower1: 复制日志
-    Leader->>Follower2: 复制日志
-    Follower1->>Leader: 确认
-    Follower2->>Leader: 确认
-    Leader->>Client: 操作成功</pre>
+
 
 <hr>
-<h1 id="etcd-的存储机制详解"><a href="#etcd-的存储机制详解" class="headerlink" title="etcd 的存储机制详解"></a>etcd 的存储机制详解</h1><p>etcd 是一个分布式键值存储系统，其存储机制设计精巧，能够高效地支持多版本并发控制（MVCC）、事务处理以及数据压缩等功能。以下是 etcd 存储机制的详细介绍。</p>
+<h1 id="etcd-的存储机制详解"><a href="#etcd-的存储机制详解" class="headerlink" title="etcd 的存储机制详解"></a>etcd 的存储机制详解</h1><img src="/2025/03/13/etcd/image-20250315134912712.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315134912712">
+
+<p>etcd 是一个分布式键值存储系统，其存储机制设计精巧，能够高效地支持多版本并发控制（MVCC）、事务处理以及数据压缩等功能。以下是 etcd 存储机制的详细介绍。</p>
 <hr>
 <h2 id="存储架构"><a href="#存储架构" class="headerlink" title="存储架构"></a>存储架构</h2><p>etcd 的存储架构可以分为两部分：</p>
 <ol>
@@ -391,14 +390,7 @@ sequenceDiagram
 <h2 id="存储配额"><a href="#存储配额" class="headerlink" title="存储配额"></a>存储配额</h2><p>为了防止存储空间耗尽，etcd 提供了存储配额功能。用户可以设置合理的存储配额（如 2GB），一旦超出配额，etcd 会进入只读模式[^3]。</p>
 <hr>
 <h2 id="存储流程概览"><a href="#存储流程概览" class="headerlink" title="存储流程概览"></a>存储流程概览</h2><p>以下是 etcd 数据写入的流程图：</p>
-<pre class="mermaid">flowchart TD
-    A[客户端请求] --> B[Leader 节点]
-    B --> C[一致性模块（Raft）]
-    C --> D[日志模块（WAL）]
-    D --> E[内存索引（kvindex）]
-    E --> F[后端存储（BoltDB）]
-    F --> G[事务提交]
-    G --> H[响应客户端]</pre>
+<img src="/2025/03/13/etcd/image-20250315135015123.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315135015123">
 
 <hr>
 <h2 id="数据备份与恢复"><a href="#数据备份与恢复" class="headerlink" title="数据备份与恢复"></a>数据备份与恢复</h2><p>etcd 支持通过快照（Snapshot）功能备份数据。以下是备份命令：</p>
@@ -408,22 +400,7 @@ sequenceDiagram
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">etcdctl snapshot restore backup.db<br></code></pre></td></tr></table></figure>
 
 <p>快照备份会锁住当前数据，避免并发写入导致的不一致[^3]。</p>
-<h1 id="整体工作流程"><a href="#整体工作流程" class="headerlink" title="整体工作流程"></a>整体工作流程</h1><pre class="mermaid">graph LR
-    subgraph Client
-        A[客户端] --> B(发起请求)
-    end
-    subgraph etcd集群
-    B --> C{Leader 节点}
-    C --> D[预检查]
-    D --> E[KV Server]
-    E --> F[一致性模块 Raft]
-    F --> G[WAL 日志]
-    F --> H[Apply 提交]
-    H --> I[MVCC 存储]
-    end
-  
-    I --> C
-    C --> A</pre>
+<h1 id="整体工作流程"><a href="#整体工作流程" class="headerlink" title="整体工作流程"></a>整体工作流程</h1><img src="/2025/03/13/etcd/image-20250315135026793.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315135026793">
 
 <p><strong>1. 客户端 (Client)</strong></p>
 <ul>
@@ -437,21 +414,16 @@ sequenceDiagram
 </ul>
 <p><strong>2. Leader 节点</strong></p>
 <ul>
-<li><strong>选举：</strong> etcd 集群使用 Raft 算法选举出一个 Leader 节点。Leader 负责处理所有客户端请求，以及协调集群中的数据复制。</li>
-<li><strong>角色：</strong><ul>
+<li><p><strong>选举：</strong> etcd 集群使用 Raft 算法选举出一个 Leader 节点。Leader 负责处理所有客户端请求，以及协调集群中的数据复制。</p>
+</li>
+<li><p><strong>角色：</strong></p>
+<ul>
 <li><strong>Leader：</strong> 处理客户端请求，协调数据复制。</li>
 <li><strong>Follower：</strong> 复制 Leader 的日志，参与选举。</li>
 <li><strong>Candidate：</strong> 选举过程中的临时角色，用于发起选举。</li>
 </ul>
-</li>
+<img src="/2025/03/13/etcd/image-20250315135036366.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315135036366"></li>
 </ul>
-<pre class="mermaid">graph LR
-    subgraph etcd集群
-        A[节点A] -- Follower --> C[Leader]
-        B[节点B] -- Follower --> C
-        C
-    end</pre>
-
 <p><strong>3. 预检查 (Pre-checks)</strong></p>
 <p>Leader 节点在处理请求之前，会进行一系列预检查，以确保请求的合法性和安全性。</p>
 <ul>
@@ -493,24 +465,18 @@ sequenceDiagram
 </ul>
 <p><strong>5. 一致性模块 (Raft)</strong></p>
 <ul>
-<li><strong>作用：</strong> Raft 是一种分布式一致性算法，用于保证 etcd 集群中数据的一致性。</li>
-<li><strong>核心概念：</strong><ul>
+<li><p><strong>作用：</strong> Raft 是一种分布式一致性算法，用于保证 etcd 集群中数据的一致性。</p>
+</li>
+<li><p><strong>核心概念：</strong></p>
+<ul>
 <li><strong>日志复制：</strong> Leader 将写请求作为日志条目复制到 Follower 节点。</li>
 <li><strong>多数派：</strong> 只有当日志条目被大多数节点复制成功后，才认为该条目已提交。</li>
 <li><strong>Leader 选举：</strong> 当 Leader 节点故障时，Follower 节点会发起选举，选出新的 Leader。</li>
+<li><img src="/2025/03/13/etcd/image-20250315135111911.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315135111911"></li>
 </ul>
 </li>
-</ul>
-<pre class="mermaid">graph LR
-    subgraph Raft模块
-        A[Leader] --> B(复制日志)
-        B --> C[Follower1]
-        B --> D[Follower2]
-        B --> E[FollowerN]
-    end</pre>
-
-<ul>
-<li><strong>日志复制过程：</strong><ol>
+<li><p><strong>日志复制过程：</strong></p>
+<ol>
 <li>Leader 接收到写请求。</li>
 <li>Leader 将写请求追加到自己的日志中。</li>
 <li>Leader 将日志条目并行地复制到 Follower 节点。</li>

@@ -26,11 +26,13 @@
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
 <meta property="og:description" content="cgroup（Control Groups） 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/image-20250315141042299.png">
 <meta property="article:published_time" content="2025-03-13T09:03:15.000Z">
-<meta property="article:modified_time" content="2025-03-13T09:04:25.107Z">
+<meta property="article:modified_time" content="2025-03-15T06:10:44.445Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/image-20250315141042299.png">
   
   
   
@@ -223,7 +225,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          896 字
+          846 字
         
       </span>
     
@@ -413,19 +415,7 @@
 </ul>
 <hr>
 <h2 id="可视化对比"><a href="#可视化对比" class="headerlink" title="可视化对比"></a>可视化对比</h2><p>以下是 cgroup v1 和 v2 的结构对比：</p>
-<pre><code class=" mermaid">graph TD
-    A[cgroup v1] --&gt; B[cpu]
-    A --&gt; C[memory]
-    A --&gt; D[blkio]
-    B --&gt; E[cpu.cfs_quota_us]
-    B --&gt; F[cpu.cfs_period_us]
-    C --&gt; G[memory.limit_in_bytes]
-    D --&gt; H[blkio.throttle.read_bps_device]
-
-    I[cgroup v2] --&gt; J[cpu.max]
-    I --&gt; K[memory.max]
-    I --&gt; L[io.max]
-</code></pre>
+<img src="/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/image-20250315141042299.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315141042299">
 
 <hr>
 
