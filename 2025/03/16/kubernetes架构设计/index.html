@@ -19,15 +19,15 @@
   <meta name="author" content="Mzzf">
   <meta name="keywords" content="">
   
-    <meta name="description" content="从谷歌Borg到Kubernetes：云原生时代的基石1. 云计算的演变：从虚拟机到容器云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。 云计算平台大致经历了两个阶段：  第一阶段：虚拟化平台 (以 OpenStack 为代表)  想象一下，你有一台大电脑，通过虚拟化技术，把它“切”成很多小电脑（虚拟机），每个小电脑可以独立运行">
+    <meta name="description" content="这篇文章解析了 Kubernetes 的对象设计。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="kubernetes架构原则与对象设计">
 <meta property="og:url" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/index.html">
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
-<meta property="og:description" content="从谷歌Borg到Kubernetes：云原生时代的基石1. 云计算的演变：从虚拟机到容器云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。 云计算平台大致经历了两个阶段：  第一阶段：虚拟化平台 (以 OpenStack 为代表)  想象一下，你有一台大电脑，通过虚拟化技术，把它“切”成很多小电脑（虚拟机），每个小电脑可以独立运行">
+<meta property="og:description" content="这篇文章解析了 Kubernetes 的对象设计。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-03-16T15:39:49.000Z">
-<meta property="article:modified_time" content="2025-03-16T15:40:52.437Z">
+<meta property="article:modified_time" content="2025-03-16T15:50:20.069Z">
 <meta property="article:author" content="Mzzf">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -275,7 +275,10 @@
             
               <div class="markdown-body">
                 
-                <h2 id="从谷歌Borg到Kubernetes：云原生时代的基石"><a href="#从谷歌Borg到Kubernetes：云原生时代的基石" class="headerlink" title="从谷歌Borg到Kubernetes：云原生时代的基石"></a>从谷歌Borg到Kubernetes：云原生时代的基石</h2><h3 id="1-云计算的演变：从虚拟机到容器"><a href="#1-云计算的演变：从虚拟机到容器" class="headerlink" title="1. 云计算的演变：从虚拟机到容器"></a>1. 云计算的演变：从虚拟机到容器</h3><p>云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。</p>
+                <p>这篇文章解析了 Kubernetes 的对象设计。</p>
+<span id="more"></span>
+
+<h3 id="1-云计算的演变：从虚拟机到容器"><a href="#1-云计算的演变：从虚拟机到容器" class="headerlink" title="1. 云计算的演变：从虚拟机到容器"></a>1. 云计算的演变：从虚拟机到容器</h3><p>云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。</p>
 <p>云计算平台大致经历了两个阶段：</p>
 <ul>
 <li><p><strong>第一阶段：虚拟化平台 (以 OpenStack 为代表)</strong></p>
@@ -830,8 +833,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2025/03/16/golang%E8%BF%9B%E9%98%B6/" title="golang进阶">
-                        <span class="hidden-mobile">golang进阶</span>
+                      <a href="/2025/03/16/golang%E8%BF%9B%E9%98%B6/" title="Go 语言进阶">
+                        <span class="hidden-mobile">Go 语言进阶</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
