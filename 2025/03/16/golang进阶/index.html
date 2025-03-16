@@ -26,10 +26,24 @@
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
 <meta property="og:description" content="这篇博客将深入探讨 Go 语言的一些核心概念，包括并发编程中的线程加锁和调度、内存管理机制，以及依赖管理。这些概念是构建高性能、可扩展的 Go 应用程序的基础。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235836393.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235840260.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235844279.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235849700.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235855215.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235905932.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235913087.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235919958.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235925383.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235937032.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235942132.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235948370.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235953003.png">
 <meta property="article:published_time" content="2025-03-16T15:10:59.000Z">
 <meta property="article:modified_time" content="2025-03-16T15:59:53.453Z">
 <meta property="article:author" content="Mzzf">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235836393.png">
   
   
   
@@ -351,7 +365,7 @@
 </ul>
 <p>在 Linux 中，无论是进程还是线程，都由 <code>task_struct</code> 结构体表示。从内核的角度来看，进程和线程没有本质区别。Glibc 提供的 <code>pthread</code> 库实现了 NPTL（Native POSIX Threading Library），为用户空间提供了线程支持。</p>
 <p><strong>Linux 进程的内存模型</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235836393.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235836393">
 
 <pre class="mermaid">graph LR
     subgraph 虚拟地址空间
@@ -393,7 +407,7 @@
 <li><strong>代码段 (Text)</strong>: 存储程序的机器指令。</li>
 </ul>
 <p><strong>CPU 对内存的访问</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235840260.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235840260">
 
 <pre class="mermaid">graph LR
     A[CPU] --> B(MMU)
@@ -433,7 +447,7 @@
 <li><strong>用户线程</strong>: 在用户空间创建和管理，无需内核支持。创建和销毁速度快，但不能利用多核 CPU。</li>
 <li><strong>内核线程</strong>: 由内核创建和管理，可以利用多核 CPU，但创建和销毁开销较大。</li>
 </ul>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235844279.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235844279">
 
 <pre class="mermaid">graph LR
     subgraph 用户态
@@ -465,7 +479,7 @@
 <li><strong>M (Machine)</strong>: 代表内核线程，负责执行 goroutine。M 会保存 goroutine 的栈信息，以便在调度时恢复执行。</li>
 <li><strong>P (Processor)</strong>: 代表逻辑处理器，负责调度 goroutine。P 维护一个本地 goroutine 队列，M 从 P 获取 goroutine 并执行。P 还负责部分内存管理。</li>
 </ul>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235849700.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235849700">
 
 <pre class="mermaid">graph LR
     subgraph 全局资源
@@ -531,7 +545,7 @@
 </ol>
 <h3 id="3-内存管理"><a href="#3-内存管理" class="headerlink" title="3. 内存管理"></a>3. 内存管理</h3><p>内存管理是程序设计中的关键问题。手动管理内存容易出错，而自动管理内存（垃圾回收）可能会影响性能。Go 语言采用了自动垃圾回收机制，并对内存管理进行了优化。</p>
 <p><strong>堆内存管理</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235855215.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235855215">
 
 <pre class="mermaid">graph LR
     A{Mutator} --> B{Allocator}
@@ -551,7 +565,7 @@
 </ul>
 <p><strong>TCMalloc</strong></p>
 <p>Go 语言的内存分配器借鉴了 TCMalloc（Thread-Caching Malloc）的思想。</p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235905932.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235905932">
 
 <pre class="mermaid">graph LR
     subgraph        A["Virtual Memory"]
@@ -619,7 +633,7 @@
 <li><strong>大对象</strong>: 从 large span set 中选择合适数量的 page 组成 span。</li>
 </ul>
 <p><strong>Go 语言内存分配</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235913087.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235913087">
 
 <pre class="mermaid">graph LR
     subgraph 虚拟内存
@@ -706,7 +720,7 @@
 <p>标记结束后，<code>allocBits</code> 指向 <code>gcmarkBits</code>，被标记的内存块保留，未标记的被回收。</p>
 <p><strong>GC 工作流程</strong></p>
 <p>Go 语言的 GC 大部分过程与用户代码并发执行。</p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235919958.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235919958">
 
 <pre class="mermaid">graph LR
     A[关闭 GC] --> B{栈扫描}
@@ -727,7 +741,7 @@
 <li><strong>Sweep Termination</strong>: 清扫未被清扫的 span。只有上一轮 GC 的清扫工作完成后，才能开始新一轮 GC。</li>
 </ol>
 <p><strong>三色标记</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235925383.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235925383">
 
 <pre class="mermaid">graph LR
     A["a"] --> B["b"]
@@ -875,7 +889,7 @@
 <li><code>healthz</code>: 处理函数，接收 <code>http.ResponseWriter</code> 和 <code>http.Request</code> 作为参数。</li>
 </ul>
 <p><strong>阻塞 IO 模型</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235937032.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235937032">
 
 <pre class="mermaid">sequenceDiagram
     participant 应用进程
@@ -890,7 +904,7 @@
     系统内核-->>应用进程: 返回 OK (拷贝完成)</pre>
 
 <p><strong>非阻塞 IO 模型</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235942132.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235942132">
 
 <pre class="mermaid">sequenceDiagram
     participant 应用进程
@@ -911,7 +925,7 @@
     系统内核-->>应用进程: 返回 OK (拷贝完成)</pre>
 
 <p><strong>IO 多路复用</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235948370.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235948370">
 
 <pre class="mermaid">sequenceDiagram
     participant 应用进程
@@ -928,7 +942,7 @@
     系统内核-->>应用进程: 返回 OK (拷贝完成)</pre>
 
 <p><strong>异步 IO</strong></p>
-
+<img src="/2025/03/16/golang%E8%BF%9B%E9%98%B6/image-20250316235953003.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235953003">
 
 <pre><code class="language-mermaid">sequenceDiagram
     participant 应用进程

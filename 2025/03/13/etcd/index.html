@@ -27,6 +27,12 @@
 <meta property="og:description" content="深入理解 etcd：一个分布式键值存储系统">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315134912712.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250317000021831.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250317000027311.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250317000031277.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250317000035671.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250317000042563.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250317000046145.png">
 <meta property="article:published_time" content="2025-03-13T15:50:52.000Z">
 <meta property="article:modified_time" content="2025-03-16T16:00:48.042Z">
 <meta property="article:author" content="Mzzf">
@@ -311,7 +317,7 @@
 <li><strong>键值对存储:</strong> 作为数据库存储集群数据。</li>
 </ol>
 <p><strong>服务注册与发现示例（Mermaid 流程图）：</strong></p>
-
+<img src="/2025/03/13/etcd/image-20250317000021831.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317000021831">
 
 <pre class="mermaid">graph LR
     subgraph 服务注册
@@ -330,7 +336,7 @@
     end</pre>
 
 <p><strong>消息发布与订阅示例（Mermaid 流程图）：</strong></p>
-
+<img src="/2025/03/13/etcd/image-20250317000027311.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317000027311">
 
 <pre class="mermaid">graph LR
     subgraph 消息发布
@@ -372,7 +378,7 @@
 <li><strong>Learner:</strong> 新加入的节点，只接收数据而不参与投票，因此增加<br>learner节点时，集群的quorum不变。</li>
 </ul>
 <p><strong>Raft 协议流程（Mermaid 流程图）：</strong></p>
-
+<img src="/2025/03/13/etcd/image-20250317000031277.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317000031277">
 
 <pre class="mermaid">graph LR
     subgraph 客户端请求
@@ -421,7 +427,7 @@
 <li><strong>sub rev:</strong> 同一个事务中的每次操作加一。</li>
 </ol>
 <p><strong>存储机制示意图（Mermaid 流程图）：</strong></p>
-
+<img src="/2025/03/13/etcd/image-20250317000035671.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317000035671">
 
 <pre class="mermaid">graph LR
     subgraph etcd v3 存储
@@ -480,7 +486,7 @@
 </li>
 </ol>
 <p><strong>堆叠式 etcd 集群拓扑（Mermaid 流程图）：</strong></p>
-
+<img src="/2025/03/13/etcd/image-20250317000042563.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317000042563">
 
 <pre class="mermaid">graph LR
     subgraph Node 1
@@ -500,7 +506,7 @@
     F -- Raft --> B</pre>
 
 <p><strong>外部 etcd 集群拓扑（Mermaid 流程图）：</strong></p>
-
+<img src="/2025/03/13/etcd/image-20250317000046145.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317000046145">
 
 <pre class="mermaid">graph LR
     subgraph Control Plane
