@@ -1,0 +1,1101 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Mzzf">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="从谷歌Borg到Kubernetes：云原生时代的基石1. 云计算的演变：从虚拟机到容器云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。 云计算平台大致经历了两个阶段：  第一阶段：虚拟化平台 (以 OpenStack 为代表)  想象一下，你有一台大电脑，通过虚拟化技术，把它“切”成很多小电脑（虚拟机），每个小电脑可以独立运行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes架构原则与对象设计">
+<meta property="og:url" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/index.html">
+<meta property="og:site_name" content="Mzzf&#39;s Blog">
+<meta property="og:description" content="从谷歌Borg到Kubernetes：云原生时代的基石1. 云计算的演变：从虚拟机到容器云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。 云计算平台大致经历了两个阶段：  第一阶段：虚拟化平台 (以 OpenStack 为代表)  想象一下，你有一台大电脑，通过虚拟化技术，把它“切”成很多小电脑（虚拟机），每个小电脑可以独立运行">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-03-16T15:39:49.000Z">
+<meta property="article:modified_time" content="2025-03-16T15:40:52.437Z">
+<meta property="article:author" content="Mzzf">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>kubernetes架构原则与对象设计 - Mzzf&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"mfzzf.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Mzzf&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="kubernetes架构原则与对象设计"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-16 23:39" pubdate>
+          2025年3月16日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          30 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">kubernetes架构原则与对象设计</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="从谷歌Borg到Kubernetes：云原生时代的基石"><a href="#从谷歌Borg到Kubernetes：云原生时代的基石" class="headerlink" title="从谷歌Borg到Kubernetes：云原生时代的基石"></a>从谷歌Borg到Kubernetes：云原生时代的基石</h2><h3 id="1-云计算的演变：从虚拟机到容器"><a href="#1-云计算的演变：从虚拟机到容器" class="headerlink" title="1. 云计算的演变：从虚拟机到容器"></a>1. 云计算的演变：从虚拟机到容器</h3><p>云计算，简单来说，就是把计算资源（比如CPU、内存、存储、网络）放到“云”上，大家按需使用，不用自己买服务器、搭机房。</p>
+<p>云计算平台大致经历了两个阶段：</p>
+<ul>
+<li><p><strong>第一阶段：虚拟化平台 (以 OpenStack 为代表)</strong></p>
+<ul>
+<li>想象一下，你有一台大电脑，通过虚拟化技术，把它“切”成很多小电脑（虚拟机），每个小电脑可以独立运行不同的应用。</li>
+<li><strong>优点：</strong> 资源利用率提高了，不用每部署一个应用就买一台服务器。</li>
+<li><strong>缺点：</strong> 虚拟机的创建和业务代码的部署是分开的，每次部署应用都要先创建虚拟机，再安装各种依赖，比较麻烦。而且，虚拟机的底层环境（操作系统、各种库）可能不一样，维护起来比较头疼。</li>
+</ul>
+</li>
+<li><p><strong>第二阶段：基于进程的作业调度平台 (以谷歌 Borg 为代表)</strong></p>
+<ul>
+<li>Borg 是谷歌内部使用的容器集群管理系统，它直接管理进程，而不是虚拟机。</li>
+<li><strong>优点：</strong> 资源利用率更高，应用部署更快，故障恢复也更快。</li>
+<li><strong>缺点：</strong> Borg 的设计比较复杂，有一些不太合理的地方，比如：<ul>
+<li>对象之间的依赖关系太强，不够灵活。</li>
+<li>所有容器共享 IP，容易导致端口冲突。</li>
+<li>给超级用户添加了太多复杂逻辑，系统变得臃肿。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-谷歌-Borg：Kubernetes-的灵感之源"><a href="#2-谷歌-Borg：Kubernetes-的灵感之源" class="headerlink" title="2. 谷歌 Borg：Kubernetes 的灵感之源"></a>2. 谷歌 Borg：Kubernetes 的灵感之源</h3><p>Borg 在谷歌内部发挥了巨大作用，支撑了 Gmail、Google Docs、Web Search 等众多核心业务。</p>
+<h4 id="2-1-Borg-的核心特性"><a href="#2-1-Borg-的核心特性" class="headerlink" title="2.1 Borg 的核心特性"></a>2.1 Borg 的核心特性</h4><ul>
+<li><strong>高资源利用率：</strong> 通过共享服务器，在进程级别进行隔离，充分利用硬件资源。</li>
+<li><strong>高可用性：</strong> 应用故障时，可以快速恢复，保证服务不中断。</li>
+<li><strong>灵活的调度：</strong> 可以根据不同的应用需求，灵活地分配资源。</li>
+<li><strong>方便易用：</strong> 提供了完善的工具，方便用户部署、管理应用。</li>
+</ul>
+<h4 id="2-2-Borg-的基本概念"><a href="#2-2-Borg-的基本概念" class="headerlink" title="2.2 Borg 的基本概念"></a>2.2 Borg 的基本概念</h4><ul>
+<li><strong>Workload（工作负载）：</strong> 分为两种：<ul>
+<li><strong>prod：</strong> 在线任务，比如网站、邮件服务等，对延迟敏感，需要长期运行。</li>
+<li><strong>non-prod：</strong> 离线任务，比如数据分析、批量计算等，可以容忍一定的延迟。</li>
+</ul>
+</li>
+<li><strong>Cell（单元）：</strong> 一个 Cell 包含一个 Borg 集群管理系统，用户不需要关心应用具体跑在哪台机器上，Borg 会自动分配资源、处理故障。</li>
+<li><strong>Job 和 Task：</strong><ul>
+<li><strong>Job：</strong> 用户提交的应用部署请求，包含一个或多个相同的 Task。</li>
+<li><strong>Task：</strong> 运行相同应用程序的副本，Task 的数量就是应用的副本数。</li>
+</ul>
+</li>
+<li><strong>Naming（命名）：</strong> Borg 通过 BNS（Borg Name Service）实现服务发现。例如：<code>50.jfoo.ubar.cc.borg.google.com</code> 表示在名为 <code>cc</code> 的 Cell 中，由用户 <code>uBar</code> 部署的名为 <code>jFoo</code> 的 Job 下的第 50 个 Task。</li>
+</ul>
+<h4 id="2-3-Borg-的架构"><a href="#2-3-Borg-的架构" class="headerlink" title="2.3 Borg 的架构"></a>2.3 Borg 的架构</h4><pre class="mermaid">graph LR
+    subgraph Borg
+        A[客户端] --> B(Borgmaster)
+        B --> C{Scheduler}
+        B --> D[Borglet]
+        D --> E[应用程序进程]
+    end</pre>
+
+<ul>
+<li><strong>Borgmaster：</strong><ul>
+<li>处理客户端请求（创建 Job、查询 Job 等）。</li>
+<li>维护系统组件和服务状态。</li>
+<li>与 Borglet 通信。</li>
+</ul>
+</li>
+<li><strong>Scheduler：</strong><ul>
+<li>负责调度 Task 到合适的机器上。</li>
+<li>采用多种优化策略，提高调度效率。</li>
+</ul>
+</li>
+<li><strong>Borglet：</strong><ul>
+<li>部署在每台服务器上的 Agent。</li>
+<li>接收 Borgmaster 的指令，管理 Task。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-4-Borg-的高可用性"><a href="#2-4-Borg-的高可用性" class="headerlink" title="2.4 Borg 的高可用性"></a>2.4 Borg 的高可用性</h4><ul>
+<li><strong>应用高可用：</strong><ul>
+<li>多副本部署，跨故障域（不同机器、机架、电源等）。</li>
+<li>控制节点故障时的任务调度速率，避免网络分区误判。</li>
+<li>记录详细信息，方便故障排查。</li>
+<li><strong>关键原则：</strong> 即使 Borgmaster 或 Borglet 挂掉，也不能杀掉正在运行的服务。</li>
+</ul>
+</li>
+<li><strong>Borg 系统自身高可用：</strong><ul>
+<li>Borgmaster 多副本设计。</li>
+<li>使用简单工具部署 Borg，避免过多外部依赖。</li>
+<li>每个 Cell 的 Borg 独立部署，避免相互影响。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-5-Borg-的资源利用率"><a href="#2-5-Borg-的资源利用率" class="headerlink" title="2.5 Borg 的资源利用率"></a>2.5 Borg 的资源利用率</h4><ul>
+<li><strong>混部：</strong> 在线任务（prod）和离线任务（non-prod）混合部署，充分利用资源。<ul>
+<li>空闲时，离线任务可以使用更多资源。</li>
+<li>繁忙时，在线任务优先执行。</li>
+</ul>
+</li>
+<li><strong>效果：</strong><ul>
+<li>98% 的服务器实现了混部。</li>
+<li>90% 的服务器运行了超过 25 个 Task 和 4500 个线程。</li>
+<li>相比独立部署，混合部署可以节省 20%-30% 的服务器。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-6-Borg-的调度原理"><a href="#2-6-Borg-的调度原理" class="headerlink" title="2.6 Borg 的调度原理"></a>2.6 Borg 的调度原理</h4><pre class="mermaid">graph LR
+    A[machine] --> B(task)
+    B --> C[实际使用资源]
+    B --> D[保留资源]
+    B --> E[回收资源]
+    B --> F[限制资源]</pre>
+
+<ul>
+<li><strong>资源回收：</strong> 在 task 启动一段时间后，进行资源回收，将保留资源设置为实际使用资源加上一定的安全余量，并定期重新计算。</li>
+</ul>
+<h4 id="2-7-Borg-的隔离性"><a href="#2-7-Borg-的隔离性" class="headerlink" title="2.7 Borg 的隔离性"></a>2.7 Borg 的隔离性</h4><ul>
+<li><strong>安全性隔离：</strong> 早期采用 Chroot jail，后期基于 Namespace。</li>
+<li><strong>性能隔离：</strong> 采用基于 Cgroup 的容器技术。<ul>
+<li>在线任务优先级高，离线任务优先级低。</li>
+<li>通过抢占式调度，优先保障在线任务性能。</li>
+<li>资源分为可压榨（如 CPU）和不可压榨（如内存）两种。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-Kubernetes：Borg-的开源版本"><a href="#3-Kubernetes：Borg-的开源版本" class="headerlink" title="3. Kubernetes：Borg 的开源版本"></a>3. Kubernetes：Borg 的开源版本</h3><p>Kubernetes（K8s）是谷歌开源的容器集群管理系统，是 Borg 的开源版本。</p>
+<h4 id="3-1-K8s-的主要功能"><a href="#3-1-K8s-的主要功能" class="headerlink" title="3.1 K8s 的主要功能"></a>3.1 K8s 的主要功能</h4><ul>
+<li>基于容器的应用部署、维护和滚动升级。</li>
+<li>负载均衡和服务发现。</li>
+<li>跨机器和跨地区的集群调度。</li>
+<li>自动伸缩。</li>
+<li>无状态服务和有状态服务。</li>
+<li>插件机制保证扩展性。</li>
+</ul>
+<h4 id="3-2-命令式-vs-声明式"><a href="#3-2-命令式-vs-声明式" class="headerlink" title="3.2 命令式 vs 声明式"></a>3.2 命令式 vs 声明式</h4><ul>
+<li><strong>命令式系统：</strong> 关注“如何做”，需要明确告诉系统每一步做什么。</li>
+<li><strong>声明式系统：</strong> 关注“做什么”，只需要告诉系统你想要什么，系统会自动完成。</li>
+</ul>
+<p>Kubernetes 是一个声明式系统，具有以下特点：</p>
+<ul>
+<li><strong>声明式规范：</strong><ul>
+<li>直接声明：直接告诉系统你的需求。</li>
+<li>间接声明：把需求放在特定地方，系统会自动处理。</li>
+</ul>
+</li>
+<li><strong>幂等性：</strong> 状态固定，每次操作返回相同结果。</li>
+<li><strong>面向对象：</strong> 把一切抽象成对象。</li>
+</ul>
+<h4 id="3-3-Kubernetes-的核心对象"><a href="#3-3-Kubernetes-的核心对象" class="headerlink" title="3.3 Kubernetes 的核心对象"></a>3.3 Kubernetes 的核心对象</h4><ul>
+<li><strong>Node：</strong> 计算节点的抽象。</li>
+<li><strong>Namespace：</strong> 资源隔离的基本单位。</li>
+<li><strong>Pod：</strong> 应用实例的抽象，包含镜像地址、资源需求等，是 K8s 最核心的对象。</li>
+<li><strong>Service：</strong> 将应用发布成服务，本质上是负载均衡和域名服务的声明。</li>
+</ul>
+<h4 id="3-4-Kubernetes-的架构"><a href="#3-4-Kubernetes-的架构" class="headerlink" title="3.4 Kubernetes 的架构"></a>3.4 Kubernetes 的架构</h4><pre class="mermaid">graph LR
+    subgraph Master Node
+        A[API Server] --> B(etcd)
+        A --> C[Controller Manager]
+        A --> D[Scheduler]
+    end
+    subgraph Worker Node
+        E[Kubelet] --> F[Container Runtime]
+        E --> G[Kube-proxy]
+        F --> H[Pod]
+    end</pre>
+
+<ul>
+<li><strong>Master Node（主节点）：</strong><ul>
+<li><strong>API Server：</strong> 暴露 Kubernetes API，是集群的入口。</li>
+<li><strong>Cluster Data Store (etcd)：</strong> 存储集群所有数据。</li>
+<li><strong>Controller Manager：</strong> 运行各种控制器，确保集群状态与期望状态一致。</li>
+<li><strong>Scheduler：</strong> 负责将 Pod 调度到合适的节点。</li>
+</ul>
+</li>
+<li><strong>Worker Node（工作节点）：</strong><ul>
+<li><strong>Kubelet：</strong> 管理 Pod 的生命周期，向 Master 节点汇报状态。</li>
+<li><strong>Kube-proxy：</strong> 负责网络，维护网络规则，执行连接转发。</li>
+<li><strong>Container Runtime：</strong> 负责运行容器（如 Docker）。</li>
+</ul>
+</li>
+</ul>
+<h4 id="3-5-Kubernetes-的其他组件"><a href="#3-5-Kubernetes-的其他组件" class="headerlink" title="3.5 Kubernetes 的其他组件"></a>3.5 Kubernetes 的其他组件</h4><ul>
+<li><strong>etcd：</strong> 分布式 key-value 存储，用于服务发现、共享配置和一致性保障。</li>
+<li><strong>APIServer：</strong> 提供集群管理的 REST API 接口，包括认证、授权、准入控制等。</li>
+<li><strong>Controller Manager：</strong> 确保集群的真实状态与用户定义的期望状态一致。</li>
+<li><strong>Scheduler：</strong> 监控未调度的 Pod，选择最佳节点进行调度。</li>
+<li><strong>Kubelet：</strong> 从不同源获取 Pod 清单，并按需求启停 Pod。</li>
+<li><strong>Kube-Proxy：</strong> 监控集群中用户发布的服务，并完成负载均衡配置。</li>
+</ul>
+<h4 id="3-6-Kubernetes-的常用-Add-ons"><a href="#3-6-Kubernetes-的常用-Add-ons" class="headerlink" title="3.6 Kubernetes 的常用 Add-ons"></a>3.6 Kubernetes 的常用 Add-ons</h4><ul>
+<li><strong>kube-dns：</strong> 提供 DNS 服务。</li>
+<li><strong>Ingress Controller：</strong> 提供外网入口。</li>
+<li><strong>Metrics Server：</strong> 提供资源监控。</li>
+<li><strong>Dashboard：</strong> 提供 GUI。</li>
+<li><strong>Fluentd-Elasticsearch：</strong> 提供日志采集、存储与查询。</li>
+</ul>
+<h4 id="3-7-kubectl：Kubernetes-的命令行工具"><a href="#3-7-kubectl：Kubernetes-的命令行工具" class="headerlink" title="3.7 kubectl：Kubernetes 的命令行工具"></a>3.7 kubectl：Kubernetes 的命令行工具</h4><ul>
+<li><strong>kubectl：</strong> 允许用户以命令行的方式与 Kubernetes 交互。</li>
+<li><strong>kubeconfig：</strong> 配置文件，包含 apiserver 地址、用户信息等。</li>
+<li><strong>常用命令：</strong><ul>
+<li><code>kubectl get po -oyaml -w</code>：查看对象，输出 yaml 格式，并 watch 变化。</li>
+<li><code>kubectl describe po &lt;pod_name&gt;</code>：展示资源的详细信息和相关 Event。</li>
+<li><code>kubectl exec -it &lt;pod_name&gt; bash</code>：进入运行的容器。</li>
+<li><code>kubectl logs &lt;pod_name&gt;</code>：查看 pod 的标准输出。</li>
+</ul>
+</li>
+</ul>
+<h3 id="4-深入理解-Kubernetes"><a href="#4-深入理解-Kubernetes" class="headerlink" title="4. 深入理解 Kubernetes"></a>4. 深入理解 Kubernetes</h3><h4 id="4-1-云计算的传统分类"><a href="#4-1-云计算的传统分类" class="headerlink" title="4.1 云计算的传统分类"></a>4.1 云计算的传统分类</h4><pre class="mermaid">graph LR
+    subgraph IaaS
+        A[Applications]
+        B[Data]
+        C[Runtime]
+        D[Middleware]
+        E[O/S]
+        F[Virtualization]
+        G[Servers]
+        H[Storage]
+        I[Networking]
+        style A fill:#f9f,stroke:#333,stroke-width:2px
+        style B fill:#f9f,stroke:#333,stroke-width:2px
+        style C fill:#f9f,stroke:#333,stroke-width:2px
+        style D fill:#f9f,stroke:#333,stroke-width:2px
+        style E fill:#ccf,stroke:#333,stroke-width:2px
+        style F fill:#ccf,stroke:#333,stroke-width:2px
+        style G fill:#ccf,stroke:#333,stroke-width:2px
+        style H fill:#ccf,stroke:#333,stroke-width:2px
+        style I fill:#ccf,stroke:#333,stroke-width:2px
+    end
+    subgraph PaaS
+        J[Applications]
+        K[Data]
+        L[Runtime]
+        M[Middleware]
+        N[O/S]
+        O[Virtualization]
+        P[Servers]
+        Q[Storage]
+        R[Networking]
+        style J fill:#f9f,stroke:#333,stroke-width:2px
+        style K fill:#f9f,stroke:#333,stroke-width:2px
+        style L fill:#ccf,stroke:#333,stroke-width:2px
+        style M fill:#ccf,stroke:#333,stroke-width:2px
+        style N fill:#ccf,stroke:#333,stroke-width:2px
+        style O fill:#ccf,stroke:#333,stroke-width:2px
+        style P fill:#ccf,stroke:#333,stroke-width:2px
+        style Q fill:#ccf,stroke:#333,stroke-width:2px
+        style R fill:#ccf,stroke:#333,stroke-width:2px
+    end
+    subgraph SaaS
+        S[Applications]
+        T[Data]
+        U[Runtime]
+        V[Middleware]
+        W[O/S]
+        X[Virtualization]
+        Y[Servers]
+        Z[Storage]
+        AA[Networking]
+        style S fill:#ccf,stroke:#333,stroke-width:2px
+        style T fill:#ccf,stroke:#333,stroke-width:2px
+        style U fill:#ccf,stroke:#333,stroke-width:2px
+        style V fill:#ccf,stroke:#333,stroke-width:2px
+        style W fill:#ccf,stroke:#333,stroke-width:2px
+        style X fill:#ccf,stroke:#333,stroke-width:2px
+        style Y fill:#ccf,stroke:#333,stroke-width:2px
+        style Z fill:#ccf,stroke:#333,stroke-width:2px
+        style AA fill:#ccf,stroke:#333,stroke-width:2px
+    end</pre>
+
+<ul>
+<li><strong>IaaS (Infrastructure as a Service)：</strong> 提供基础设施，如虚拟机、存储、网络。</li>
+<li><strong>PaaS (Platform as a Service)：</strong> 提供平台，如操作系统、运行时环境、数据库。</li>
+<li><strong>SaaS (Software as a Service)：</strong> 提供软件，如邮件服务、CRM 系统。</li>
+</ul>
+<h4 id="4-2-Kubernetes-生态系统"><a href="#4-2-Kubernetes-生态系统" class="headerlink" title="4.2 Kubernetes 生态系统"></a>4.2 Kubernetes 生态系统</h4><pre class="mermaid">graph LR
+    subgraph 应用开发者
+        A[应用开发] --> B(Kubernetes 公共服务)
+        C[应用管理] --> B
+        D[服务开发] --> B
+        E[持续集成] --> B
+        F[本地镜像仓库] --> B
+        G[分级部署] --> B
+    end
+    subgraph 集群管理员
+        H[集群管理] --> I(控制平面)
+        J[集群安装] --> I
+        K[节点管理] --> I
+        L[认证授权] --> I
+        M[网络] --> I
+        N[存储] --> I
+        O[配额管理] --> I
+        P[备份恢复] --> I
+    end
+    subgraph 基础架构管理
+        Q[主机上架] --> R(数据平面)
+        S[OS 管理] --> R
+        T[安全策略] --> R
+        U[主机网络] --> R
+        V[Docker Runtime] --> R
+    end
+    subgraph 企业公共服务
+        W[DNS] --> X(控制平面)
+        Y[镜像仓库] --> X
+        Z[ELB] --> X
+        AA[用户管理] --> X
+    end
+    B --> X
+    I --> X
+    R --> X
+    X --> BB[Pod]
+    X --> CC[PVC]
+    X --> DD[Service]
+    X --> EE[Ingress]
+    X --> FF[核心组件]
+    X --> GG[插件]
+    X --> HH[用户空间控制器]
+    X --> II[Assertion]</pre>
+
+<h4 id="4-3-Kubernetes-设计理念"><a href="#4-3-Kubernetes-设计理念" class="headerlink" title="4.3 Kubernetes 设计理念"></a>4.3 Kubernetes 设计理念</h4><ul>
+<li><strong>可扩展性：</strong> 基于 CRD 的扩展，插件化的生态系统。</li>
+<li><strong>高可用：</strong> 基于 replicaset、statefulset 的应用高可用，Kubernetes 组件本身高可用。</li>
+<li><strong>可移植性：</strong> 多种 host OS 选择，多种基础架构的选择，多云和混合云。</li>
+<li><strong>安全：</strong> 基于 TLS 提供服务，Serviceaccount 和 user，基于 Namespace 的隔离，secret，Taints，psp，networkpolicy。</li>
+</ul>
+<h4 id="4-4-Kubernetes-分层架构"><a href="#4-4-Kubernetes-分层架构" class="headerlink" title="4.4 Kubernetes 分层架构"></a>4.4 Kubernetes 分层架构</h4><pre class="mermaid">graph LR
+    subgraph Ecosystem
+        A[日志]
+        B[监控]
+        C[配置管理]
+        D[CI/CD]
+        E[Workflow]
+        F[FaaS]
+        G[OTS 应用]
+        H[ChatOps]
+    end
+    subgraph Interface Layer
+        I[Client Libraries]
+        J[Tools]
+    end
+    subgraph Governance Layer
+        K[Automation]
+        L[Policy Enforcement]
+    end
+    subgraph Application Layer
+        M[Deployment]
+        N[Routing]
+    end
+    subgraph Nucleus
+        O[API]
+        P[Execution]
+    end
+    subgraph Contianer Runtime
+        Q[Network Plugin]
+        R[Volume Plugin]
+    end
+    subgraph Other
+        S[Image Regietry]
+        T[Cloud Provider]
+        U[Identity Provider]
+    end
+    A --> I
+    B --> I
+    C --> I
+    D --> I
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+    I --> K
+    I --> L
+    K --> M
+    K --> N
+    L --> M
+    L --> N
+    M --> O
+    N --> O
+    O --> Q
+    O --> R
+    O --> S
+    O --> T
+    O --> U</pre>
+
+<ul>
+<li><strong>核心层：</strong> 提供 API 构建高层应用，提供插件式应用执行环境。</li>
+<li><strong>应用层：</strong> 部署和路由。</li>
+<li><strong>管理层：</strong> 系统度量、自动化、策略管理。</li>
+<li><strong>接口层：</strong> kubectl 命令行工具、客户端 SDK 以及集群联邦。</li>
+<li><strong>生态系统：</strong><ul>
+<li>Kubernetes 外部：日志、监控、配置管理、CI&#x2F;CD 等。</li>
+<li>Kubernetes 内部：CRI、CNI、CVI、镜像仓库、Cloud Provider 等。</li>
+</ul>
+</li>
+</ul>
+<h4 id="4-5-API-设计原则"><a href="#4-5-API-设计原则" class="headerlink" title="4.5 API 设计原则"></a>4.5 API 设计原则</h4><ul>
+<li>所有 API 都应是声明式的。</li>
+<li>API 对象是彼此互补而且可组合的。</li>
+<li>高层 API 以操作意图为基础设计。</li>
+<li>低层 API 根据高层 API 的控制需要设计。</li>
+<li>尽量避免简单封装。</li>
+<li>API 操作复杂度与对象数量成正比。</li>
+<li>API 对象状态不能依赖于网络连接状态。</li>
+<li>尽量避免让操作机制依赖于全局状态。</li>
+</ul>
+<h4 id="4-6-Kubernetes-对象的组合"><a href="#4-6-Kubernetes-对象的组合" class="headerlink" title="4.6 Kubernetes 对象的组合"></a>4.6 Kubernetes 对象的组合</h4><pre class="mermaid">graph LR
+    A[Deployment] --> B(滚动升级策略)
+    A --> C(副本数)
+    A --> D[PodTemplate]
+    D --> E[Replicaset]
+    E --> F(版本信息)
+    E --> G(副本数)
+    E --> H[PodTemplate]
+    H --> I[Node]
+    H --> J[Pod]
+    H --> K[Service]
+    H --> L[Ingress]
+    I --> M(计算资源)
+    I --> N(健康状况)
+    J --> O(镜像地址)
+    J --> P(资源需求)
+    K --> Q(服务协议)
+    K --> R(服务端口)
+    L --> S(域名)
+    L --> T(访问 URL)
+    L --> U(目标服务)</pre>
+
+<h4 id="4-7-架构设计原则"><a href="#4-7-架构设计原则" class="headerlink" title="4.7 架构设计原则"></a>4.7 架构设计原则</h4><ul>
+<li>只有 APIServer 可以直接访问 etcd 存储。</li>
+<li>单节点故障不应该影响集群的状态。</li>
+<li>所有组件应该在内存中保持所需要的状态。</li>
+<li>优先使用事件监听而不是轮询。</li>
+</ul>
+<h4 id="4-8-引导（Bootstrapping）原则"><a href="#4-8-引导（Bootstrapping）原则" class="headerlink" title="4.8 引导（Bootstrapping）原则"></a>4.8 引导（Bootstrapping）原则</h4><ul>
+<li>Self-hosting 是目标。</li>
+<li>减少依赖。</li>
+<li>通过分层的原则管理依赖。</li>
+<li>循环依赖问题的原则：<ul>
+<li>接受其他方式的数据输入。</li>
+<li>状态应该是可恢复或可重新发现的。</li>
+<li>支持简单的启动临时实例来创建稳态运行所需要的状态。</li>
+<li>自动重启异常退出的服务。</li>
+</ul>
+</li>
+</ul>
+<h4 id="4-9-核心技术概念和-API-对象"><a href="#4-9-核心技术概念和-API-对象" class="headerlink" title="4.9 核心技术概念和 API 对象"></a>4.9 核心技术概念和 API 对象</h4><ul>
+<li><strong>API 对象：</strong> Kubernetes 集群中的管理操作单元。</li>
+<li><strong>四大类属性：</strong><ul>
+<li><strong>TypeMeta：</strong> 对象的类型定义（GKV 模型）。<ul>
+<li>Group：对象的分组。</li>
+<li>Kind：对象的基本类型。</li>
+<li>Version：对象的版本。</li>
+</ul>
+</li>
+<li><strong>MetaData：</strong> 对象的元数据。<ul>
+<li>Namespace：对象的命名空间。</li>
+<li>Name：对象的名称。</li>
+<li>Label：对象的标签，用于识别和选择对象。</li>
+<li>Annotation：对象的注解，用于记录附加信息。</li>
+<li>Finalizer：资源锁，用于控制对象的删除。</li>
+<li>ResourceVersion：乐观锁，用于并发访问对象。</li>
+</ul>
+</li>
+<li><strong>Spec：</strong> 用户的期望状态。</li>
+<li><strong>Status：</strong> 对象的实际状态。</li>
+</ul>
+</li>
+</ul>
+<h4 id="4-10-常用-Kubernetes-对象及其分组"><a href="#4-10-常用-Kubernetes-对象及其分组" class="headerlink" title="4.10 常用 Kubernetes 对象及其分组"></a>4.10 常用 Kubernetes 对象及其分组</h4><ul>
+<li><strong>Node：</strong> Pod 运行的主机。</li>
+<li><strong>Namespace：</strong> 资源和对象的抽象集合。</li>
+<li><strong>Pod：</strong> 一组紧密关联的容器集合，共享 PID、IPC、Network 和 UTS namespace。<ul>
+<li><strong>环境变量：</strong> 设置容器的环境变量。</li>
+<li><strong>存储卷：</strong> 将外挂存储挂载到 Pod 内部。</li>
+<li><strong>Pod 网络：</strong> 多个容器共享网络 Namespace。</li>
+<li><strong>资源限制：</strong> 限制每个容器的 CPU 和内存使用。</li>
+<li><strong>健康检查：</strong> 探测应用是否健康和就绪。</li>
+</ul>
+</li>
+<li><strong>ConfigMap：</strong> 保存非机密性的数据到键值对中。</li>
+<li><strong>Secret：</strong> 保存和传递密码、密钥、认证凭证等敏感信息。</li>
+<li><strong>User Account &amp; Service Account：</strong><ul>
+<li>User Account：为人提供账户标识。</li>
+<li>Service Account：为计算机进程和 Pod 提供账户标识。</li>
+</ul>
+</li>
+<li><strong>Service：</strong> 应用服务的抽象，通过 labels 提供负载均衡和服务发现。</li>
+<li><strong>Replica Set：</strong> 定义 Pod 的副本数，保证指定数量的 Pod 正常运行。</li>
+<li><strong>Deployment：</strong> 表示用户对 Kubernetes 集群的一次更新操作。</li>
+<li><strong>StatefulSet：</strong> 用于管理有状态应用，每个 Pod 挂载自己独立的存储。</li>
+<li><strong>Job：</strong> 控制批处理型任务。</li>
+<li><strong>DaemonSet：</strong> 保证每个节点上都有一个 Pod 运行。</li>
+<li><strong>PersistentVolume (PV) &amp; PersistentVolumeClaim (PVC)：</strong><ul>
+<li>PV：集群中的一块存储卷。</li>
+<li>PVC：用户对存储的请求。</li>
+</ul>
+</li>
+<li><strong>CustomResourceDefinition (CRD)：</strong> 允许用户自定义对象。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>kubernetes架构原则与对象设计</div>
+      <div>https://mfzzf.github.io/2025/03/16/kubernetes架构设计/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Mzzf</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年3月16日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/16/golang%E8%BF%9B%E9%98%B6/" title="golang进阶">
+                        <span class="hidden-mobile">golang进阶</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
