@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/13/etcd/image-20250315134912712.png">
 <meta property="article:published_time" content="2025-03-13T15:50:52.000Z">
-<meta property="article:modified_time" content="2025-03-16T15:52:19.033Z">
+<meta property="article:modified_time" content="2025-03-16T16:00:48.042Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="kubernetes">
 <meta name="twitter:card" content="summary_large_image">
@@ -311,6 +311,8 @@
 <li><strong>键值对存储:</strong> 作为数据库存储集群数据。</li>
 </ol>
 <p><strong>服务注册与发现示例（Mermaid 流程图）：</strong></p>
+
+
 <pre class="mermaid">graph LR
     subgraph 服务注册
         A[服务提供者] --> B(向 etcd 注册服务)
@@ -328,6 +330,8 @@
     end</pre>
 
 <p><strong>消息发布与订阅示例（Mermaid 流程图）：</strong></p>
+
+
 <pre class="mermaid">graph LR
     subgraph 消息发布
         A[生产者] --> B(向 etcd 发布消息)
@@ -368,6 +372,8 @@
 <li><strong>Learner:</strong> 新加入的节点，只接收数据而不参与投票，因此增加<br>learner节点时，集群的quorum不变。</li>
 </ul>
 <p><strong>Raft 协议流程（Mermaid 流程图）：</strong></p>
+
+
 <pre class="mermaid">graph LR
     subgraph 客户端请求
         A[客户端] --> B[Leader]
@@ -415,6 +421,8 @@
 <li><strong>sub rev:</strong> 同一个事务中的每次操作加一。</li>
 </ol>
 <p><strong>存储机制示意图（Mermaid 流程图）：</strong></p>
+
+
 <pre class="mermaid">graph LR
     subgraph etcd v3 存储
         A[客户端请求] --> B[Leader]
@@ -472,6 +480,8 @@
 </li>
 </ol>
 <p><strong>堆叠式 etcd 集群拓扑（Mermaid 流程图）：</strong></p>
+
+
 <pre class="mermaid">graph LR
     subgraph Node 1
         A[kube-apiserver] --> B[etcd]
@@ -490,6 +500,8 @@
     F -- Raft --> B</pre>
 
 <p><strong>外部 etcd 集群拓扑（Mermaid 流程图）：</strong></p>
+
+
 <pre class="mermaid">graph LR
     subgraph Control Plane
         A[kube-apiserver 1] --> D[etcd 1]
