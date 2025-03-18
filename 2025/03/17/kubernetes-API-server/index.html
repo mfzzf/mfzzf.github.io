@@ -32,11 +32,10 @@
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317141918159.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317145348516.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001000991.png">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001009246.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001019487.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001025889.png">
 <meta property="article:published_time" content="2025-03-16T16:09:25.000Z">
-<meta property="article:modified_time" content="2025-03-18T03:14:44.299Z">
+<meta property="article:modified_time" content="2025-03-18T05:36:11.525Z">
 <meta property="article:author" content="Mzzf">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001413236.png">
@@ -232,7 +231,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          5k 字
+          4.9k 字
         
       </span>
     
@@ -243,7 +242,7 @@
         
         
         
-          43 分钟
+          41 分钟
         
       </span>
     
@@ -555,38 +554,6 @@
 <li><strong>漏斗算法</strong>：请求进入漏斗，以恒定速率流出，漏斗满时溢出。</li>
 <li><strong>令牌桶算法</strong>：以恒定速率向令牌桶中放入令牌，请求消耗令牌，桶空时拒绝。</li>
 </ul>
-<img src="/2025/03/17/kubernetes-API-server/image-20250317001009246.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001009246">
-
-<pre class="mermaid">graph LR
-    subgraph "计数器固定窗口"
-        A[请求] --> B{计数器 < 阈值?}
-        B -- 是 --> C[处理请求]
-        B -- 否 --> D[拒绝请求]
-    end
-
-    subgraph "计数器滑动窗口"
-        E[请求] --> F[小窗口1]
-        F --> G[小窗口2]
-        G --> H[...]
-        H --> I[小窗口N]
-        I --> J{总数 < 阈值?}
-        J -- 是 --> K[处理请求]
-        J -- 否 --> L[拒绝请求]
-    end
-
-    subgraph "漏斗算法"
-        M[请求] --> N(漏斗)
-        N -- 恒定速率 --> O[处理请求]
-        N -- 溢出 --> P[拒绝请求]
-    end
-
-    subgraph "令牌桶算法"
-        Q[请求] --> R{有令牌?}
-        R -- 是 --> S[消耗令牌]
-        S --> T[处理请求]
-        R -- 否 --> U[拒绝请求]
-    end</pre>
-
 <h3 id="3-2-APIServer-中的限流"><a href="#3-2-APIServer-中的限流" class="headerlink" title="3.2 APIServer 中的限流"></a>3.2 APIServer 中的限流</h3><p>kube-apiserver 通过以下参数进行限流：</p>
 <ul>
 <li><code>--max-requests-inflight</code>：最大非 mutating 请求数。</li>
@@ -625,21 +592,6 @@
 <li><strong>多队列 (Multiple Queues)</strong>：每个优先级内部使用多个队列，通过公平排队算法避免单个 Flow 饿死其他 Flow。</li>
 </ul>
 <img src="/2025/03/17/kubernetes-API-server/image-20250317001019487.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001019487">
-
-<pre class="mermaid">graph LR
-    A[请求] --> B(FlowSchema)
-    B --> C{匹配?}
-    C -- 是 --> D[Priority Level]
-    D --> E(Queue Set)
-    E --> F[Queue 1]
-    E --> G[Queue 2]
-    E --> H[...]
-    E --> I[Queue N]
-    F --> J[处理请求]
-    G --> J
-    H --> J
-    I --> J
-    C -- 否 --> B(下一个 FlowSchema)</pre>
 
 <h4 id="3-4-2-关键概念"><a href="#3-4-2-关键概念" class="headerlink" title="3.4.2 关键概念"></a>3.4.2 关键概念</h4><ul>
 <li><strong>FlowSchema</strong>：将请求分类到不同的 Flow。</li>
@@ -805,6 +757,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/03/18/kubernetes-scheduler/" title="kubernetes_scheduler">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kubernetes_scheduler</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
