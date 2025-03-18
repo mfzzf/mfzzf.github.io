@@ -28,8 +28,9 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-scheduler/image-20250318141606770.png">
 <meta property="article:published_time" content="2025-03-18T05:51:26.000Z">
-<meta property="article:modified_time" content="2025-03-18T09:08:16.962Z">
+<meta property="article:modified_time" content="2025-03-18T14:28:39.956Z">
 <meta property="article:author" content="Mzzf">
+<meta property="article:tag" content="k8s">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-scheduler/image-20250318141606770.png">
   
@@ -224,7 +225,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          8.2k 字
+          9.3k 字
         
       </span>
     
@@ -235,7 +236,7 @@
         
         
         
-          69 分钟
+          78 分钟
         
       </span>
     
@@ -980,6 +981,75 @@
 </ul>
 </li>
 </ol>
+<p>在 Kubernetes 中，调度器是负责将 Pod 分配到集群中的合适节点上的组件。对于复杂的生产环境，可能会遇到调度效率、资源竞争和容灾等挑战，Kubernetes 提供了多种功能来优化调度策略，其中包括 <strong>PriorityClass（优先级调度）</strong> 和 <strong>多调度器（Multiple Schedulers）</strong>。</p>
+<hr>
+<h2 id="PriorityClass"><a href="#PriorityClass" class="headerlink" title="PriorityClass"></a>PriorityClass</h2><h3 id="1-优先级调度（PriorityClass）"><a href="#1-优先级调度（PriorityClass）" class="headerlink" title="1. 优先级调度（PriorityClass）"></a>1. <strong>优先级调度（PriorityClass）</strong></h3><p><strong>PriorityClass</strong> 是 Kubernetes 提供的一种机制，用于给不同 Pod 设置调度优先级。它允许用户指定某些工作负载的重要性，从而确保高优先级的工作负载能够获得优先调度。</p>
+<h4 id="关键概念"><a href="#关键概念" class="headerlink" title="关键概念"></a><strong>关键概念</strong></h4><ul>
+<li><strong>PriorityClass 对象</strong>: 定义了优先级名称和其对应的整数字段（<code>value</code>），<code>value</code> 越大，优先级越高。</li>
+<li><strong>系统优先级范围</strong>: <ul>
+<li><code>system-cluster-critical</code> 和 <code>system-node-critical</code> 是 Kubernetes 预定义的最高优先级，通常用于核心组件（如 <code>coredns</code>、<code>kube-proxy</code>）。</li>
+<li>自定义的优先级值取值范围为正整数，通常由管理员定义。</li>
+</ul>
+</li>
+<li><strong>抢占（Preemption）</strong>:<ul>
+<li>如果没有足够的资源调度高优先级 Pod，会触发抢占机制，驱逐低优先级的 Pod 为高优先级的 Pod 腾出资源。</li>
+</ul>
+</li>
+</ul>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a><strong>示例</strong></h4><ol>
+<li><p>定义一个 PriorityClass:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">scheduling.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">PriorityClass</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">high-priority</span><br><span class="hljs-attr">value:</span> <span class="hljs-number">1000</span><br><span class="hljs-attr">globalDefault:</span> <span class="hljs-literal">false</span><br><span class="hljs-attr">description:</span> <span class="hljs-string">&quot;This priority class is for high-priority workloads.&quot;</span><br></code></pre></td></tr></table></figure>
+<ul>
+<li><code>value</code>: 优先级值。</li>
+<li><code>globalDefault</code>: 是否默认应用到没有指定优先级的 Pod。</li>
+</ul>
+</li>
+<li><p>使用 PriorityClass 的 Pod 定义:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">high-priority-pod</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">priorityClassName:</span> <span class="hljs-string">high-priority</span><br>  <span class="hljs-attr">containers:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span><br>    <span class="hljs-attr">image:</span> <span class="hljs-string">nginx</span><br></code></pre></td></tr></table></figure></li>
+</ol>
+<h4 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a><strong>应用场景</strong></h4><ul>
+<li><strong>关键工作负载保障</strong>: 确保核心服务（如监控、日志）优先获得资源。</li>
+<li><strong>抢占低优先级任务</strong>: 在资源紧张时，驱逐低优先级的任务以调度高优先级任务。</li>
+</ul>
+<h4 id="生产问题分析"><a href="#生产问题分析" class="headerlink" title="生产问题分析"></a><strong>生产问题分析</strong></h4><ul>
+<li><strong>调度放大效应</strong>: 如图所示，当集群资源紧张或 Node 出现问题时，优先级调度可能导致某些 Pod（如低优先级的批量任务）无法被调度。</li>
+<li><strong>长时间调度失败问题</strong>: 调度缓存（scheduler cache）滞后可能导致调度错误。</li>
+</ul>
+<hr>
+<h3 id="2-多调度器（Multiple-Schedulers）"><a href="#2-多调度器（Multiple-Schedulers）" class="headerlink" title="2. 多调度器（Multiple Schedulers）"></a>2. <strong>多调度器（Multiple Schedulers）</strong></h3><p>Kubernetes 默认使用 <code>kube-scheduler</code> 作为调度器，但在某些场景下，我们可能需要自定义调度逻辑。这时可以部署多个调度器，每个调度器负责调度特定的 Pod 子集。</p>
+<h4 id="关键概念-1"><a href="#关键概念-1" class="headerlink" title="关键概念"></a><strong>关键概念</strong></h4><ul>
+<li><strong>调度器名称（SchedulerName）</strong>: 每个调度器需要有一个唯一的名称，Pod 可以通过 <code>spec.schedulerName</code> 指定其使用哪个调度器。</li>
+<li><strong>自定义调度器</strong>: 使用调度框架（如 Kubernetes 的调度器扩展 API 或自定义调度器）实现需求。</li>
+</ul>
+<h4 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a><strong>示例</strong></h4><ol>
+<li><p><strong>部署多个调度器</strong></p>
+<ul>
+<li>部署默认调度器 <code>kube-scheduler</code>。</li>
+<li>部署一个自定义调度器。</li>
+</ul>
+<p>自定义调度器示例配置：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">custom-scheduler</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">containers:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">custom-scheduler</span><br>    <span class="hljs-attr">image:</span> <span class="hljs-string">custom-scheduler-image</span><br>    <span class="hljs-attr">args:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">--scheduler-name=custom-scheduler</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>指定 Pod 使用自定义调度器</strong></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">custom-scheduled-pod</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">schedulerName:</span> <span class="hljs-string">custom-scheduler</span><br>  <span class="hljs-attr">containers:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span><br>    <span class="hljs-attr">image:</span> <span class="hljs-string">nginx</span><br></code></pre></td></tr></table></figure></li>
+</ol>
+<h4 id="应用场景-1"><a href="#应用场景-1" class="headerlink" title="应用场景"></a><strong>应用场景</strong></h4><ul>
+<li><strong>隔离调度逻辑</strong>: 不同调度器负责不同类型的任务（如批量任务、在线服务）。</li>
+<li><strong>性能优化</strong>: 当单一调度器无法满足高并发 Pod 创建需求时，使用多调度器分担调度压力。</li>
+<li><strong>自定义调度需求</strong>: 特定业务场景下需要定制复杂的调度策略，如基于 GPU 资源、拓扑感知等。</li>
+</ul>
+<h4 id="生产问题分析-1"><a href="#生产问题分析-1" class="headerlink" title="生产问题分析"></a><strong>生产问题分析</strong></h4><ul>
+<li><strong>小集群高并发调度问题</strong>: 如图所示，在高并发情况下，调度器可能因为缓存更新滞后导致调度失败，增加一个专用调度器可能缓解问题。</li>
+<li><strong>危险 Pod 爆炸问题</strong>: 自定义调度器可以用来隔离潜在的危险 Pod，从而避免调度到非预期的 Node。</li>
+</ul>
+<hr>
+<h3 id="3-总结生产经验"><a href="#3-总结生产经验" class="headerlink" title="3. 总结生产经验"></a>3. <strong>总结生产经验</strong></h3><p>根据图中的生产经验提示，我们可以结合优先级调度和多调度器功能来优化生产环境。</p>
+<ul>
+<li><strong>小集群高并发场景</strong>: 通过多调度器分摊调度压力，或优化调度器的缓存刷新机制。</li>
+<li><strong>资源倾斜与放大效应</strong>: 使用 PriorityClass 控制任务优先级，同时监控 Pod 的分布，避免过载单一 Node。</li>
+<li><strong>危险 Pod 防护</strong>: 结合资源配额（ResourceQuota）和自定义调度器，隔离潜在的恶意或异常工作负载。</li>
+</ul>
+<p>通过这些改进，可以有效提升系统的稳定性和调度效率，同时避免因调度问题引发的级联故障。</p>
 
                 
               </div>
@@ -988,6 +1058,13 @@
             <div>
               <div class="post-metas my-3">
   
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/k8s/" class="print-no-link">#k8s</a>
+      
+    </div>
   
 </div>
 
@@ -1041,6 +1118,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/03/18/kubernetes-controller-manager/" title="kubernetes_controller_manager">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kubernetes_controller_manager</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
