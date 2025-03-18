@@ -28,13 +28,13 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235410146.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235416843.png">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235421656.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/kubernetes-cluster-architecture-2265122.svg">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235428142.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235435441.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235445064.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235450125.png">
 <meta property="article:published_time" content="2025-03-16T15:39:49.000Z">
-<meta property="article:modified_time" content="2025-03-16T16:04:14.927Z">
+<meta property="article:modified_time" content="2025-03-18T02:32:43.026Z">
 <meta property="article:author" content="Mzzf">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mfzzf.github.io/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235410146.png">
@@ -230,7 +230,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          3.5k 字
+          3.1k 字
         
       </span>
     
@@ -241,7 +241,7 @@
         
         
         
-          30 分钟
+          26 分钟
         
       </span>
     
@@ -440,19 +440,7 @@
 <li><strong>Pod：</strong> 应用实例的抽象，包含镜像地址、资源需求等，是 K8s 最核心的对象。</li>
 <li><strong>Service：</strong> 将应用发布成服务，本质上是负载均衡和域名服务的声明。</li>
 </ul>
-<h4 id="3-4-Kubernetes-的架构"><a href="#3-4-Kubernetes-的架构" class="headerlink" title="3.4 Kubernetes 的架构"></a>3.4 Kubernetes 的架构</h4><img src="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235421656.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235421656">
-
-<pre class="mermaid">graph LR
-    subgraph Master Node
-        A[API Server] --> B(etcd)
-        A --> C[Controller Manager]
-        A --> D[Scheduler]
-    end
-    subgraph Worker Node
-        E[Kubelet] --> F[Container Runtime]
-        E --> G[Kube-proxy]
-        F --> H[Pod]
-    end</pre>
+<h4 id="3-4-Kubernetes-的架构"><a href="#3-4-Kubernetes-的架构" class="headerlink" title="3.4 Kubernetes 的架构"></a>3.4 Kubernetes 的架构</h4><img src="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/kubernetes-cluster-architecture-2265122.svg" srcset="/img/loading.gif" lazyload class="" title="image-20250316235421656">
 
 <ul>
 <li><strong>Master Node（主节点）：</strong><ul>
@@ -497,118 +485,12 @@
 </ul>
 <h3 id="4-深入理解-Kubernetes"><a href="#4-深入理解-Kubernetes" class="headerlink" title="4. 深入理解 Kubernetes"></a>4. 深入理解 Kubernetes</h3><h4 id="4-1-云计算的传统分类"><a href="#4-1-云计算的传统分类" class="headerlink" title="4.1 云计算的传统分类"></a>4.1 云计算的传统分类</h4><img src="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235428142.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235428142">
 
-<pre class="mermaid">graph LR
-    subgraph IaaS
-        A[Applications]
-        B[Data]
-        C[Runtime]
-        D[Middleware]
-        E[O/S]
-        F[Virtualization]
-        G[Servers]
-        H[Storage]
-        I[Networking]
-        style A fill:#f9f,stroke:#333,stroke-width:2px
-        style B fill:#f9f,stroke:#333,stroke-width:2px
-        style C fill:#f9f,stroke:#333,stroke-width:2px
-        style D fill:#f9f,stroke:#333,stroke-width:2px
-        style E fill:#ccf,stroke:#333,stroke-width:2px
-        style F fill:#ccf,stroke:#333,stroke-width:2px
-        style G fill:#ccf,stroke:#333,stroke-width:2px
-        style H fill:#ccf,stroke:#333,stroke-width:2px
-        style I fill:#ccf,stroke:#333,stroke-width:2px
-    end
-    subgraph PaaS
-        J[Applications]
-        K[Data]
-        L[Runtime]
-        M[Middleware]
-        N[O/S]
-        O[Virtualization]
-        P[Servers]
-        Q[Storage]
-        R[Networking]
-        style J fill:#f9f,stroke:#333,stroke-width:2px
-        style K fill:#f9f,stroke:#333,stroke-width:2px
-        style L fill:#ccf,stroke:#333,stroke-width:2px
-        style M fill:#ccf,stroke:#333,stroke-width:2px
-        style N fill:#ccf,stroke:#333,stroke-width:2px
-        style O fill:#ccf,stroke:#333,stroke-width:2px
-        style P fill:#ccf,stroke:#333,stroke-width:2px
-        style Q fill:#ccf,stroke:#333,stroke-width:2px
-        style R fill:#ccf,stroke:#333,stroke-width:2px
-    end
-    subgraph SaaS
-        S[Applications]
-        T[Data]
-        U[Runtime]
-        V[Middleware]
-        W[O/S]
-        X[Virtualization]
-        Y[Servers]
-        Z[Storage]
-        AA[Networking]
-        style S fill:#ccf,stroke:#333,stroke-width:2px
-        style T fill:#ccf,stroke:#333,stroke-width:2px
-        style U fill:#ccf,stroke:#333,stroke-width:2px
-        style V fill:#ccf,stroke:#333,stroke-width:2px
-        style W fill:#ccf,stroke:#333,stroke-width:2px
-        style X fill:#ccf,stroke:#333,stroke-width:2px
-        style Y fill:#ccf,stroke:#333,stroke-width:2px
-        style Z fill:#ccf,stroke:#333,stroke-width:2px
-        style AA fill:#ccf,stroke:#333,stroke-width:2px
-    end</pre>
-
 <ul>
 <li><strong>IaaS (Infrastructure as a Service)：</strong> 提供基础设施，如虚拟机、存储、网络。</li>
 <li><strong>PaaS (Platform as a Service)：</strong> 提供平台，如操作系统、运行时环境、数据库。</li>
 <li><strong>SaaS (Software as a Service)：</strong> 提供软件，如邮件服务、CRM 系统。</li>
 </ul>
 <h4 id="4-2-Kubernetes-生态系统"><a href="#4-2-Kubernetes-生态系统" class="headerlink" title="4.2 Kubernetes 生态系统"></a>4.2 Kubernetes 生态系统</h4><img src="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235435441.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235435441">
-
-<pre class="mermaid">graph LR
-    subgraph 应用开发者
-        A[应用开发] --> B(Kubernetes 公共服务)
-        C[应用管理] --> B
-        D[服务开发] --> B
-        E[持续集成] --> B
-        F[本地镜像仓库] --> B
-        G[分级部署] --> B
-    end
-    subgraph 集群管理员
-        H[集群管理] --> I(控制平面)
-        J[集群安装] --> I
-        K[节点管理] --> I
-        L[认证授权] --> I
-        M[网络] --> I
-        N[存储] --> I
-        O[配额管理] --> I
-        P[备份恢复] --> I
-    end
-    subgraph 基础架构管理
-        Q[主机上架] --> R(数据平面)
-        S[OS 管理] --> R
-        T[安全策略] --> R
-        U[主机网络] --> R
-        V[Docker Runtime] --> R
-    end
-    subgraph 企业公共服务
-        W[DNS] --> X(控制平面)
-        Y[镜像仓库] --> X
-        Z[ELB] --> X
-        AA[用户管理] --> X
-    end
-    B --> X
-    I --> X
-    R --> X
-    X --> BB[Pod]
-    X --> CC[PVC]
-    X --> DD[Service]
-    X --> EE[Ingress]
-    X --> FF[核心组件]
-    X --> GG[插件]
-    X --> HH[用户空间控制器]
-    X --> II[Assertion]</pre>
 
 <h4 id="4-3-Kubernetes-设计理念"><a href="#4-3-Kubernetes-设计理念" class="headerlink" title="4.3 Kubernetes 设计理念"></a>4.3 Kubernetes 设计理念</h4><ul>
 <li><strong>可扩展性：</strong> 基于 CRD 的扩展，插件化的生态系统。</li>
@@ -618,63 +500,7 @@
 </ul>
 <h4 id="4-4-Kubernetes-分层架构"><a href="#4-4-Kubernetes-分层架构" class="headerlink" title="4.4 Kubernetes 分层架构"></a>4.4 Kubernetes 分层架构</h4><img src="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/image-20250316235445064.png" srcset="/img/loading.gif" lazyload class="" title="image-20250316235445064">
 
-<pre class="mermaid">graph LR
-    subgraph Ecosystem
-        A[日志]
-        B[监控]
-        C[配置管理]
-        D[CI/CD]
-        E[Workflow]
-        F[FaaS]
-        G[OTS 应用]
-        H[ChatOps]
-    end
-    subgraph Interface Layer
-        I[Client Libraries]
-        J[Tools]
-    end
-    subgraph Governance Layer
-        K[Automation]
-        L[Policy Enforcement]
-    end
-    subgraph Application Layer
-        M[Deployment]
-        N[Routing]
-    end
-    subgraph Nucleus
-        O[API]
-        P[Execution]
-    end
-    subgraph Contianer Runtime
-        Q[Network Plugin]
-        R[Volume Plugin]
-    end
-    subgraph Other
-        S[Image Regietry]
-        T[Cloud Provider]
-        U[Identity Provider]
-    end
-    A --> I
-    B --> I
-    C --> I
-    D --> I
-    E --> I
-    F --> I
-    G --> I
-    H --> I
-    I --> K
-    I --> L
-    K --> M
-    K --> N
-    L --> M
-    L --> N
-    M --> O
-    N --> O
-    O --> Q
-    O --> R
-    O --> S
-    O --> T
-    O --> U</pre>
+
 
 <ul>
 <li><strong>核心层：</strong> 提供 API 构建高层应用，提供插件式应用执行环境。</li>
@@ -854,6 +680,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/03/17/kubernetes-API-server/" title="kubernetes_API_server">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kubernetes_API_server</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">

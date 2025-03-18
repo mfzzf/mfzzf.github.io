@@ -1,0 +1,1081 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Mzzf">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="深入理解 Kubernetes API Server：访问控制、限流与对象实现kube-apiserver 是 Kubernetes 集群的”大脑”，负责处理所有请求，是集群管理的核心组件。本文将深入探讨 kube-apiserver 的访问控制机制（认证、鉴权、准入控制）、限流策略以及 APIServer 对象的实现原理。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes_API_server">
+<meta property="og:url" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/index.html">
+<meta property="og:site_name" content="Mzzf&#39;s Blog">
+<meta property="og:description" content="深入理解 Kubernetes API Server：访问控制、限流与对象实现kube-apiserver 是 Kubernetes 集群的”大脑”，负责处理所有请求，是集群管理的核心组件。本文将深入探讨 kube-apiserver 的访问控制机制（认证、鉴权、准入控制）、限流策略以及 APIServer 对象的实现原理。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001413236.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001401046.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317141928036.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317141918159.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317145348516.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001000991.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001009246.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001019487.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001025889.png">
+<meta property="article:published_time" content="2025-03-16T16:09:25.000Z">
+<meta property="article:modified_time" content="2025-03-18T03:14:44.299Z">
+<meta property="article:author" content="Mzzf">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001413236.png">
+  
+  
+  
+  <title>kubernetes_API_server - Mzzf&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"mfzzf.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Mzzf&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="kubernetes_API_server"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-17 00:09" pubdate>
+          2025年3月17日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          43 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">kubernetes_API_server</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="深入理解-Kubernetes-API-Server：访问控制、限流与对象实现"><a href="#深入理解-Kubernetes-API-Server：访问控制、限流与对象实现" class="headerlink" title="深入理解 Kubernetes API Server：访问控制、限流与对象实现"></a>深入理解 Kubernetes API Server：访问控制、限流与对象实现</h1><p>kube-apiserver 是 Kubernetes 集群的”大脑”，负责处理所有请求，是集群管理的核心组件。本文将深入探讨 kube-apiserver 的访问控制机制（认证、鉴权、准入控制）、限流策略以及 APIServer 对象的实现原理。</p>
+<span id="more"></span>
+
+<h2 id="1-API-Server-的核心功能"><a href="#1-API-Server-的核心功能" class="headerlink" title="1. API Server 的核心功能"></a>1. API Server 的核心功能</h2><p>kube-apiserver 主要提供以下功能：</p>
+<ul>
+<li><strong>集群管理的 REST API 接口</strong>：提供认证授权、数据校验、集群状态变更等功能。</li>
+<li><strong>模块间数据交互枢纽</strong>：其他模块通过 API Server 查询或修改数据，只有 API Server 才直接操作 etcd。</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317001413236.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001413236">
+
+<h2 id="2-访问控制"><a href="#2-访问控制" class="headerlink" title="2. 访问控制"></a>2. 访问控制</h2><img src="/2025/03/17/kubernetes-API-server/image-20250317001401046.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001401046">
+
+<p>客户端（例如 <code>kubectl</code>、自定义控制器或其他 K8s 组件）发出的 API 请求首先到达 <code>kube-apiserver</code>。这些请求经过一系列处理步骤，最终被处理并存储到 <code>etcd</code> 中（或从 <code>etcd</code> 中检索）。</p>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317141928036.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317141928036">
+
+<ul>
+<li><p><strong>Panic Recovery</strong>: 捕获并处理任何 panic，防止整个 apiserver 崩溃。</p>
+</li>
+<li><p><strong>Request Timeout</strong>: 设置请求的超时时间，防止请求无限期挂起。</p>
+</li>
+<li><p><strong>Authentication</strong>: 验证请求者的身份。K8s 支持多种认证机制，如 X.509 证书、Service Account Tokens、Bearer Tokens 等。</p>
+</li>
+<li><p><strong>Audit</strong>: 记录请求的审计日志，用于安全审计和故障排除。</p>
+</li>
+<li><p><strong>Impersonation</strong>: 允许一个用户或服务账户以另一个用户或服务账户的身份执行操作。</p>
+</li>
+<li><p><strong>Max-in-flight</strong>: 限制并发处理的请求数量，防止服务器过载。</p>
+</li>
+<li><p><strong>Authorization</strong>: 确定经过身份验证的用户是否有权限执行请求的操作。K8s 支持多种授权机制，如 RBAC (Role-Based Access Control)、ABAC (Attribute-Based Access Control) 等。</p>
+</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317141918159.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317141918159">
+
+<h3 id="2-1-认证（Authentication）"><a href="#2-1-认证（Authentication）" class="headerlink" title="2.1 认证（Authentication）"></a>2.1 认证（Authentication）</h3><p>在 Kubernetes 中，认证是指对请求的发送者（用户或服务）进行身份识别，以确保只有合法的实体可以访问 Kubernetes API Server。以下是 Kubernetes 支持的多种认证机制的详细说明：</p>
+<hr>
+<h4 id="1-X-509-证书"><a href="#1-X-509-证书" class="headerlink" title="1. X.509 证书"></a><strong>1. X.509 证书</strong></h4><p><strong>概念</strong>：<br>X.509 是一种基于公钥基础设施 (PKI) 的证书标准，通常用于安全通信。Kubernetes 支持通过客户端证书进行身份验证。</p>
+<p><strong>工作原理</strong>：</p>
+<ol>
+<li>用户使用私钥和证书向 API Server 发起 HTTPS 请求。</li>
+<li>API Server 使用信任的 CA 证书对客户端证书进行验证。</li>
+<li>若验证通过，则认证成功。</li>
+</ol>
+<p><strong>配置方式</strong>：</p>
+<ul>
+<li><p>生成 CA 和用户证书：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 生成 CA 私钥和证书</span><br>openssl genrsa -out ca.key 2048<br>openssl req -x509 -new -nodes -key ca.key -subj <span class="hljs-string">&quot;/CN=kube-ca&quot;</span> -days 10000 -out ca.crt<br><br><span class="hljs-comment"># 生成用户私钥和 CSR</span><br>openssl genrsa -out user.key 2048<br>openssl req -new -key user.key -subj <span class="hljs-string">&quot;/CN=my-user/O=my-group&quot;</span> -out user.csr<br><br><span class="hljs-comment"># 使用 CA 签发用户证书</span><br>openssl x509 -req -<span class="hljs-keyword">in</span> user.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out user.crt -days 10000 -extensions v3_ext<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>配置 API Server：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver --client-ca-file=/path/to/ca.crt<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>注意事项</strong>：</p>
+<ul>
+<li>用户名（CN）由证书中的 <code>Common Name</code> 字段指定。</li>
+<li>组（Group）由证书中的 <code>Organization</code> 字段指定。</li>
+</ul>
+<hr>
+<h4 id="2-静态-Token-文件"><a href="#2-静态-Token-文件" class="headerlink" title="2. 静态 Token 文件"></a><strong>2. 静态 Token 文件</strong></h4><p><strong>概念</strong>：<br>静态 Token 是预定义的令牌，用于认证用户。它适合小型测试集群，但不推荐生产环境中使用。</p>
+<p><strong>工作原理</strong>：</p>
+<ol>
+<li>用户请求中携带 <code>Authorization: Bearer &lt;token&gt;</code>。</li>
+<li>API Server 从配置的 Token 文件中查找匹配的 Token。</li>
+<li>若匹配成功，则认证通过。</li>
+</ol>
+<p><strong>配置方式</strong>：</p>
+<ul>
+<li><p>创建 Token 文件（CSV 格式）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs csv">token1234,my-user,uid1234,&quot;group1,group2&quot;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>配置 API Server：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver --token-auth-file=/path/to/tokens.csv<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>优缺点</strong>：</p>
+<ul>
+<li><strong>优点</strong>：简单易用，易于共享。</li>
+<li><strong>缺点</strong>：缺乏安全性（Token 没有过期机制）。</li>
+</ul>
+<hr>
+<h4 id="3-引导-Token-Bootstrap-Token"><a href="#3-引导-Token-Bootstrap-Token" class="headerlink" title="3. 引导 Token (Bootstrap Token)"></a><strong>3. 引导 Token (Bootstrap Token)</strong></h4><p><strong>概念</strong>：<br>引导 Token 是一种动态令牌，主要用于集群引导阶段（例如 <code>kubeadm join</code>）。Token 生命周期由 <code>kube-controller-manager</code> 管理。</p>
+<p><strong>工作原理</strong>：</p>
+<ol>
+<li>Token 以 Kubernetes Secret 的形式存储于 <code>kube-system</code> 命名空间。</li>
+<li>当客户端请求使用 Token 时，API Server 查询对应的 Secret 以验证其合法性。</li>
+<li><code>TokenCleaner</code> 控制器会自动清理过期的 Token。</li>
+</ol>
+<p><strong>常见命令</strong>：</p>
+<ul>
+<li><p>查看引导 Token：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubeadm token list<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>创建引导 Token：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubeadm token create<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>优缺点</strong>：</p>
+<ul>
+<li><strong>优点</strong>：动态管理，支持自动过期。</li>
+<li><strong>缺点</strong>：只适合用于集群引导。</li>
+</ul>
+<hr>
+<h4 id="4-静态密码文件"><a href="#4-静态密码文件" class="headerlink" title="4. 静态密码文件"></a><strong>4. 静态密码文件</strong></h4><p><strong>概念</strong>：<br>通过用户名和密码进行认证。这种方式简单但不安全，因此不推荐在生产环境中使用。</p>
+<p><strong>配置方式</strong>：</p>
+<ul>
+<li><p>创建密码文件（CSV 格式）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs csv">password1234,my-user,uid1234,&quot;group1,group2&quot;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>配置 API Server：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver --basic-auth-file=/path/to/passwords.csv<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>用户名和密码以明文方式存储。</li>
+<li>缺乏强制密码保护机制。</li>
+</ul>
+<hr>
+<h4 id="5-Service-Account-Token"><a href="#5-Service-Account-Token" class="headerlink" title="5. Service Account Token"></a><strong>5. Service Account Token</strong></h4><p><strong>概念</strong>：<br>Service Account 是 Kubernetes 原生的认证机制，主要为 Pod 提供身份认证。</p>
+<p><strong>工作原理</strong>：</p>
+<ol>
+<li>每个 Pod 都可以绑定一个 Service Account。</li>
+<li>默认情况下，Service Account 的 Token 会自动挂载到 Pod 的文件系统路径 <code>/run/secrets/kubernetes.io/serviceaccount</code>。</li>
+<li>Pod 使用 Token 与 API Server 通信。</li>
+</ol>
+<p><strong>优点</strong>：</p>
+<ul>
+<li>安全性高，自动管理。</li>
+<li>适合 Pod 内部访问 API Server。</li>
+</ul>
+<hr>
+<h4 id="6-OpenID-Connect-OIDC"><a href="#6-OpenID-Connect-OIDC" class="headerlink" title="6. OpenID Connect (OIDC)"></a><strong>6. OpenID Connect (OIDC)</strong></h4><p><strong>概念</strong>：<br>OIDC 是基于 OAuth 2.0 的身份认证协议，用于对接外部身份认证服务（例如 Google, Keycloak）。</p>
+<p><strong>工作原理</strong>：</p>
+<ol>
+<li>用户向 OIDC 提供商请求 Token。</li>
+<li>用户携带 Token 向 API Server 发起请求。</li>
+<li>API Server 验证 Token 的签名及有效性。</li>
+<li>验证成功后，返回认证成功。</li>
+</ol>
+<p><strong>配置方式</strong>：</p>
+<ul>
+<li>配置 API Server：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver \<br>  --oidc-issuer-url=https://issuer.example.com \<br>  --oidc-client-id=kubernetes \<br>  --oidc-username-claim=email \<br>  --oidc-groups-claim=<span class="hljs-built_in">groups</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>优点</strong>：</p>
+<ul>
+<li>集成第三方身份认证系统。</li>
+<li>支持复杂身份和组管理。</li>
+</ul>
+<hr>
+<h4 id="7-Webhook-Token-认证"><a href="#7-Webhook-Token-认证" class="headerlink" title="7. Webhook Token 认证"></a><strong>7. Webhook Token 认证</strong></h4><p><strong>概念</strong>：<br>通过 Webhook 调用外部服务来验证 Token 的合法性。</p>
+<p><strong>工作原理</strong>：</p>
+<ol>
+<li>用户携带 Token 向 API Server 发起请求。</li>
+<li>API Server 将 Token 转发到配置的 Webhook 服务。</li>
+<li>Webhook 服务返回认证结果。</li>
+<li>API Server 根据认证结果决定是否通过。</li>
+</ol>
+<p><strong>配置方式</strong>：</p>
+<ul>
+<li><p>配置 Webhook：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># webhook-config.yaml</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Config</span><br><span class="hljs-attr">clusters:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">example</span><br>  <span class="hljs-attr">cluster:</span><br>    <span class="hljs-attr">server:</span> <span class="hljs-string">https://auth.example.com/authenticate</span><br><span class="hljs-attr">users:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">example</span><br><span class="hljs-attr">contexts:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">context:</span><br>    <span class="hljs-attr">cluster:</span> <span class="hljs-string">example</span><br>    <span class="hljs-attr">user:</span> <span class="hljs-string">example</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">example-context</span><br><span class="hljs-attr">current-context:</span> <span class="hljs-string">example-context</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p>启用 Webhook：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver --authentication-token-webhook-config-file=/path/to/webhook-config.yaml<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>优点</strong>：</p>
+<ul>
+<li>灵活性高，可以集成复杂的认证逻辑。</li>
+</ul>
+<hr>
+<h4 id="8-匿名请求"><a href="#8-匿名请求" class="headerlink" title="8. 匿名请求"></a><strong>8. 匿名请求</strong></h4><p><strong>概念</strong>：<br>当未提供身份凭据时，API Server 将请求识别为匿名请求。匿名请求默认启用，但可以禁用。</p>
+<p><strong>配置方式</strong>：</p>
+<ul>
+<li>禁用匿名请求：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver --anonymous-auth=<span class="hljs-literal">false</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>优缺点</strong>：</p>
+<ul>
+<li><strong>优点</strong>：允许调试和测试。</li>
+<li><strong>缺点</strong>：不适合生产环境，可能引发安全问题。</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317145348516.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317145348516">
+
+<h4 id=""><a href="#" class="headerlink" title=""></a></h4><h4 id="2-1-1-基于-Webhook-的认证服务集成"><a href="#2-1-1-基于-Webhook-的认证服务集成" class="headerlink" title="2.1.1 基于 Webhook 的认证服务集成"></a>2.1.1 基于 Webhook 的认证服务集成</h4><p>可以构建符合 Kubernetes 规范的自定义认证服务。以下是构建认证服务的要点：</p>
+<ul>
+<li><strong>规范</strong>：<ul>
+<li>URL：<code>https://authn.example.com/authenticate</code></li>
+<li>Method：<code>POST</code></li>
+<li>Input：<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;apiVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;authentication.k8s.io/v1beta1&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;TokenReview&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;spec&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span> <span class="hljs-attr">&quot;token&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;(BEARERTOKEN)&quot;</span> <span class="hljs-punctuation">&#125;</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure></li>
+<li>Output：<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;apiVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;authentication.k8s.io/v1beta1&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;TokenReview&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><br>    <span class="hljs-attr">&quot;authenticated&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span><br>    <span class="hljs-attr">&quot;user&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><br>      <span class="hljs-attr">&quot;username&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;janedoe@example.com&quot;</span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;uid&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;42&quot;</span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;groups&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><br>        <span class="hljs-string">&quot;developers&quot;</span><span class="hljs-punctuation">,</span><br>        <span class="hljs-string">&quot;qa&quot;</span><br>      <span class="hljs-punctuation">]</span><br>    <span class="hljs-punctuation">&#125;</span><br>  <span class="hljs-punctuation">&#125;</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<p>以下为go代码示例</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">//解码认证请求</span><br>decoder := json.NewDecoder(r.Body)<br><span class="hljs-keyword">var</span> tr authentication.TokenReview<br>err := decoder.Decode(&amp;tr)<br><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;<br>    <span class="hljs-comment">//...错误处理</span><br>    <span class="hljs-keyword">return</span><br>&#125;<br><br><span class="hljs-comment">// 转发认证请求至认证服务器(以github为例)</span><br>ts := oauth2.StaticTokenSource(<br>	&amp;oauth2.Token&#123;AccessToken: tr.Spec.Token&#125;,<br>)<br>tc := oauth2.NewClient(oauth2.NoContext, ts)<br>client := github.NewClient(tc)<br>user, _, err := client.Users.Get(context.Background(), <span class="hljs-string">&quot;&quot;</span>)<br><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;<br>    <span class="hljs-comment">//...错误处理</span><br>	<span class="hljs-keyword">return</span><br>&#125;<br><span class="hljs-comment">// 认证结果返回给APIServer</span><br>w.WriteHeader(http.StatusOK)<br>trs := authentication.TokenReviewStatus&#123;<br>	Authenticated: <span class="hljs-literal">true</span>,<br>	User: authentication.UserInfo&#123;<br>		Username: *user.Login,<br>		UID:      *user.Login,<br>	&#125;,<br>&#125;<br>json.NewEncoder(w).Encode(<span class="hljs-keyword">map</span>[<span class="hljs-type">string</span>]<span class="hljs-keyword">interface</span>&#123;&#125;&#123;<br>	<span class="hljs-string">&quot;apiVersion&quot;</span>: <span class="hljs-string">&quot;authentication.k8s.io/v1beta1&quot;</span>,<br>	<span class="hljs-string">&quot;kind&quot;</span>:       <span class="hljs-string">&quot;TokenReview&quot;</span>,<br>	<span class="hljs-string">&quot;status&quot;</span>:     trs,<br>&#125;)<br></code></pre></td></tr></table></figure>
+
+<h4 id="2-1-2-keystone认证的陷阱"><a href="#2-1-2-keystone认证的陷阱" class="headerlink" title="2.1.2 keystone认证的陷阱"></a>2.1.2 keystone认证的陷阱</h4><p>Keystone 是很多企业的核心认证服务。Kubernetes 中使用 Keystone 作为认证插件可能会导致 Keystone 故障且无法恢复。<br>原因：gophercloud 针对过期 token 会一直 retry,导致服务无法恢复</p>
+<p><strong>解决方案:</strong></p>
+<ul>
+<li>熔断</li>
+<li>限流</li>
+</ul>
+<h3 id="2-2-授权"><a href="#2-2-授权" class="headerlink" title="2.2 授权"></a>2.2 授权</h3><p>授权阶段负责确定已认证的用户是否有权限执行请求的操作。Kubernetes 支持以下授权模式：</p>
+<ul>
+<li><strong>ABAC (Attribute-Based Access Control)</strong>：基于属性的访问控制，配置复杂，不推荐。</li>
+<li><strong>RBAC (Role-Based Access Control)</strong>：基于角色的访问控制，推荐使用。</li>
+<li><strong>Webhook</strong>：将授权决策委托给外部 Webhook 服务。</li>
+<li><strong>Node</strong>：一种特殊用途的授权模式，用于授予 kubelet 访问特定资源的权限。</li>
+</ul>
+<h4 id="2-2-1-RBAC"><a href="#2-2-1-RBAC" class="headerlink" title="2.2.1 RBAC"></a>2.2.1 RBAC</h4><p>RBAC 的核心概念：</p>
+<ul>
+<li><strong>Role（角色）</strong>：定义了一组权限规则。</li>
+<li><strong>ClusterRole（集群角色）</strong>：与 Role 类似，但作用于整个集群。</li>
+<li><strong>RoleBinding（角色绑定）</strong>：将 Role 或 ClusterRole 与用户、组或 ServiceAccount 绑定。</li>
+<li><strong>ClusterRoleBinding（集群角色绑定）</strong>：将 ClusterRole 与用户、组或 ServiceAccount 绑定。</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317001000991.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001000991">
+
+<ul>
+<li><strong>针对群组授权</strong></li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">ClusterRoleBinding</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">read-secrets-global</span><br><span class="hljs-attr">subjects:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">kind:</span> <span class="hljs-string">Group</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">manager</span> <span class="hljs-comment"># &#x27;name&#x27; 是区分大小写的</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br><span class="hljs-attr">roleRef:</span><br>  <span class="hljs-attr">kind:</span> <span class="hljs-string">ClusterRole</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">secret-reader</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="2-2-2-规划系统角色"><a href="#2-2-2-规划系统角色" class="headerlink" title="2.2.2 规划系统角色"></a>2.2.2 规划系统角色</h4><p>在规划 Kubernetes 集群的权限时，需要考虑以下角色：</p>
+<ul>
+<li><strong>管理员</strong>：拥有集群的最高权限。</li>
+<li><strong>普通用户</strong>：拥有其创建的命名空间内资源的操作权限，对其他命名空间可能有只读权限。</li>
+<li><strong>SystemAccount</strong>：用于 Kubernetes 组件或自定义应用与 API Server 通信。</li>
+</ul>
+<h4 id="2-2-3-实现自定义授权逻辑的方案"><a href="#2-2-3-实现自定义授权逻辑的方案" class="headerlink" title="2.2.3 实现自定义授权逻辑的方案"></a>2.2.3 实现自定义授权逻辑的方案</h4><ol>
+<li>在集群创建时，创建自定义的 Role，例如 <code>namespace-creator</code>，定义用户可操作的对象和读写权限。</li>
+<li>创建自定义的 Namespace 准入控制器，在 Namespace 创建请求被处理时，获取当前用户信息并将其添加到 Namespace 的 Annotation 中。</li>
+<li>创建 RBAC 控制器，监视 Namespace 的创建事件，获取 Namespace 创建者信息，并在当前 Namespace 中创建 RoleBinding 对象，将 <code>namespace-creator</code> 角色与用户绑定。</li>
+</ol>
+<h4 id="2-2-4-权限相关的最佳实践"><a href="#2-2-4-权限相关的最佳实践" class="headerlink" title="2.2.4 权限相关的最佳实践"></a>2.2.4 权限相关的最佳实践</h4><ul>
+<li>ClusterRole 是非命名空间绑定的，针对整个集群生效。</li>
+<li>通常需要创建一个管理员角色，并且绑定给开发运营团队成员。</li>
+<li>ThirdPartyResource 和 CustomResourceDefinition 是全局资源，普通用户创建<br>ThirdPartyResource 以后，需要管理员授予相应权限后才能真正操作该对象。</li>
+<li>针对所有的角色管理，建议创建 spec，用源代码驱动。</li>
+<li>权限是可以传递的，用户 A 可以将其对某对象的某操作，抽取成一个权限，并赋给用户 B。</li>
+<li>防止海量的角色和角色绑定对象，因为大量的对象会导致鉴权效率低，同时给 apiserver 增加负担。</li>
+<li>ServiceAccount 也需要授权的。</li>
+<li>Tips：SSH 到 master 节点通过 insecure port 访问 apiserver 可绕过鉴权，当需要做管理操作又没有权限时可以使用（不推荐）</li>
+</ul>
+<p><strong>授权相关的坑：</strong><br>研发人员忘记在生产环境更新 rolebinding 导致权限不足</p>
+<h3 id="2-3-准入控制"><a href="#2-3-准入控制" class="headerlink" title="2.3 准入控制"></a>2.3 准入控制</h3><p>准入控制在授权之后对请求进行进一步的验证或修改。与认证和授权不同，准入控制可以处理请求的内容，并且仅对创建、更新、删除或连接（如代理）等操作有效。</p>
+<p>Kubernetes 内置了许多准入控制插件，例如：</p>
+<ul>
+<li><strong>AlwaysPullImages</strong>：强制拉取最新镜像。</li>
+<li><strong>DenyEscalatingExec</strong>：禁止特权容器的 exec 和 attach 操作。</li>
+<li><strong>ServiceAccount</strong>：自动创建默认 ServiceAccount。</li>
+<li><strong>ResourceQuota</strong>：限制 Pod 的资源请求。</li>
+<li><strong>LimitRanger</strong>：为 Pod 设置默认资源请求和限制。</li>
+<li><strong>NamespaceLifecycle</strong>：确保处于 termination 状态的命名空间不再接收新的对象创建请求。</li>
+<li><strong>PodSecurityPolicy</strong>：实施 Pod 安全策略。</li>
+<li><strong>NodeRestriction</strong>：限制 kubelet 仅可访问 node、endpoint、pod、service 以及 secret、<br> configmap、PV 和 PVC 等相关的资源</li>
+</ul>
+<h4 id="2-3-1-准入控制插件的开发"><a href="#2-3-1-准入控制插件的开发" class="headerlink" title="2.3.1 准入控制插件的开发"></a>2.3.1 准入控制插件的开发</h4><p>除了默认的准入控制插件，Kubernetes 还支持自定义准入控制插件：</p>
+<ul>
+<li><strong>MutatingWebhookConfiguration</strong>：修改准入对象。</li>
+<li><strong>ValidatingWebhookConfiguration</strong>：校验准入对象，但不修改。<br>准入控制例子：</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span><br><span class="hljs-string">admissionregistration.k8s.io/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">MutatingWebhookConfiguration</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">ns-mutating.webhook.k8s.io</span><br><span class="hljs-attr">webhooks:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">clientConfig:</span><br>    <span class="hljs-attr">caBundle:</span> &#123;&#123;<span class="hljs-string">.serverca_base64</span>&#125;&#125;<br>    <span class="hljs-attr">url:</span><br><span class="hljs-string">https://admission.local.tess.io/apis/admission.k8s.io/v1alpha1/ns-mutating</span><br>  <span class="hljs-attr">failurePolicy:</span> <span class="hljs-string">Fail</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">ns-mutating.webhook.k8s.io</span><br>  <span class="hljs-attr">namespaceSelector:</span> &#123;&#125;<br>  <span class="hljs-attr">rules:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">apiGroups:</span><br>     <span class="hljs-string">&quot;&quot;</span><br>    <span class="hljs-attr">apiVersions:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&#x27;*&#x27;</span><br>    <span class="hljs-attr">operations:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">CREATE</span><br>    <span class="hljs-attr">resources:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">nodes</span><br>    <span class="hljs-attr">sideEffects:</span> <span class="hljs-string">Unknown</span><br></code></pre></td></tr></table></figure>
+<h4 id="2-3-2-配额管理"><a href="#2-3-2-配额管理" class="headerlink" title="2.3.2 配额管理"></a>2.3.2 配额管理</h4><p><strong>原因：</strong><br>资源有限，如何限定某个用户有多少资源？<br><strong>方案：</strong></p>
+<ul>
+<li>预定义每个Namespace的ResourceQuota，并把spec保存为configmap</li>
+<li>创建ResourceQuota Controller</li>
+<li>apiserver中开启ResourceQuota的admission plugin</li>
+</ul>
+<h2 id="3-限流"><a href="#3-限流" class="headerlink" title="3. 限流"></a>3. 限流</h2><p>限流是保护 API Server 免受过多请求影响的重要机制。</p>
+<h3 id="3-1-传统限流算法"><a href="#3-1-传统限流算法" class="headerlink" title="3.1 传统限流算法"></a>3.1 传统限流算法</h3><ul>
+<li><strong>计数器固定窗口算法</strong>：在固定时间窗口内对请求计数，超过阈值则拒绝。</li>
+<li><strong>计数器滑动窗口算法</strong>：将固定窗口划分为多个小窗口，分别计数，窗口滑动时更新计数。</li>
+<li><strong>漏斗算法</strong>：请求进入漏斗，以恒定速率流出，漏斗满时溢出。</li>
+<li><strong>令牌桶算法</strong>：以恒定速率向令牌桶中放入令牌，请求消耗令牌，桶空时拒绝。</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317001009246.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001009246">
+
+<pre class="mermaid">graph LR
+    subgraph "计数器固定窗口"
+        A[请求] --> B{计数器 < 阈值?}
+        B -- 是 --> C[处理请求]
+        B -- 否 --> D[拒绝请求]
+    end
+
+    subgraph "计数器滑动窗口"
+        E[请求] --> F[小窗口1]
+        F --> G[小窗口2]
+        G --> H[...]
+        H --> I[小窗口N]
+        I --> J{总数 < 阈值?}
+        J -- 是 --> K[处理请求]
+        J -- 否 --> L[拒绝请求]
+    end
+
+    subgraph "漏斗算法"
+        M[请求] --> N(漏斗)
+        N -- 恒定速率 --> O[处理请求]
+        N -- 溢出 --> P[拒绝请求]
+    end
+
+    subgraph "令牌桶算法"
+        Q[请求] --> R{有令牌?}
+        R -- 是 --> S[消耗令牌]
+        S --> T[处理请求]
+        R -- 否 --> U[拒绝请求]
+    end</pre>
+
+<h3 id="3-2-APIServer-中的限流"><a href="#3-2-APIServer-中的限流" class="headerlink" title="3.2 APIServer 中的限流"></a>3.2 APIServer 中的限流</h3><p>kube-apiserver 通过以下参数进行限流：</p>
+<ul>
+<li><code>--max-requests-inflight</code>：最大非 mutating 请求数。</li>
+<li><code>--max-mutating-requests-inflight</code>：最大 mutating 请求数。</li>
+<li>代码： <code>staging/src/k8s.io/apiserver/pkg/server/filters/maxinflight.go:WithMaxInFlightLimit()</code></li>
+</ul>
+<p>默认值：</p>
+<table>
+<thead>
+<tr>
+<th>节点数</th>
+<th>max-requests-inflight</th>
+<th>max-mutating-requests-inflight</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1000-3000</td>
+<td>400&#x2F;1500</td>
+<td>200&#x2F;500</td>
+</tr>
+<tr>
+<td>&gt;3000</td>
+<td>3000</td>
+<td>1000</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-传统限流方法的局限性"><a href="#3-3-传统限流方法的局限性" class="headerlink" title="3.3 传统限流方法的局限性"></a>3.3 传统限流方法的局限性</h3><ul>
+<li><strong>粒度粗</strong>：无法针对不同用户、场景进行精细化限流。</li>
+<li><strong>单队列</strong>：所有请求共享限流资源，可能导致单个用户的行为影响整个系统。</li>
+<li><strong>不公平</strong>：正常用户的请求可能被排在队尾，无法及时处理。</li>
+<li><strong>无优先级</strong>：重要请求可能被限流，导致系统故障难以恢复。</li>
+</ul>
+<h3 id="3-4-API-Priority-and-Fairness-APF"><a href="#3-4-API-Priority-and-Fairness-APF" class="headerlink" title="3.4 API Priority and Fairness (APF)"></a>3.4 API Priority and Fairness (APF)</h3><p>APF 是 Kubernetes 1.18 引入的新特性，提供更细粒度的请求分类和隔离，以及有限的排队机制，避免短暂突发流量导致请求被拒绝。</p>
+<h4 id="3-4-1-APF-的核心概念"><a href="#3-4-1-APF-的核心概念" class="headerlink" title="3.4.1 APF 的核心概念"></a>3.4.1 APF 的核心概念</h4><ul>
+<li><strong>多等级 (Priority Level)</strong>：不同优先级的请求拥有独立的并发资源。</li>
+<li><strong>多队列 (Multiple Queues)</strong>：每个优先级内部使用多个队列，通过公平排队算法避免单个 Flow 饿死其他 Flow。</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317001019487.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001019487">
+
+<pre class="mermaid">graph LR
+    A[请求] --> B(FlowSchema)
+    B --> C{匹配?}
+    C -- 是 --> D[Priority Level]
+    D --> E(Queue Set)
+    E --> F[Queue 1]
+    E --> G[Queue 2]
+    E --> H[...]
+    E --> I[Queue N]
+    F --> J[处理请求]
+    G --> J
+    H --> J
+    I --> J
+    C -- 否 --> B(下一个 FlowSchema)</pre>
+
+<h4 id="3-4-2-关键概念"><a href="#3-4-2-关键概念" class="headerlink" title="3.4.2 关键概念"></a>3.4.2 关键概念</h4><ul>
+<li><strong>FlowSchema</strong>：将请求分类到不同的 Flow。</li>
+<li><strong>PriorityLevelConfiguration</strong>：定义每个优先级的并发限制和排队参数。</li>
+<li><strong>Distinguisher</strong>：在 FlowSchema 内部进一步区分请求（例如，按用户或命名空间）。</li>
+<li><strong>Shuffle Sharding</strong>：将请求分配到队列的算法，隔离低强度和高强度流量。</li>
+<li><strong>Fair Queuing</strong>：从队列中选择请求的算法，确保同一优先级内不同 Flow 的公平性。</li>
+</ul>
+<h4 id="3-4-3-豁免请求"><a href="#3-4-3-豁免请求" class="headerlink" title="3.4.3 豁免请求"></a>3.4.3 豁免请求</h4><p>某些特别重要的请求（例如，<code>system:masters</code> 组的请求）不受 APF 限制。</p>
+<h4 id="3-4-4-默认配置"><a href="#3-4-4-默认配置" class="headerlink" title="3.4.4 默认配置"></a>3.4.4 默认配置</h4><p>Kubernetes 提供了以下默认配置：</p>
+<ul>
+<li><code>system</code>：用于 <code>system:nodes</code> 组的请求。</li>
+<li><code>leader-election</code>：用于内置控制器的领导者选举请求。</li>
+<li><code>workload-high</code>：用于内置控制器的请求。</li>
+<li><code>workload-low</code>：用于来自任何服务帐户的请求。</li>
+<li><code>global-default</code>：处理所有其他流量。</li>
+<li><code>exempt</code>：完全不受流控限制。</li>
+<li><code>catch-all</code>：确保每个请求都被分类。</li>
+</ul>
+<h4 id="3-4-5-PriorityLevelConfiguration"><a href="#3-4-5-PriorityLevelConfiguration" class="headerlink" title="3.4.5 PriorityLevelConfiguration"></a>3.4.5 PriorityLevelConfiguration</h4><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">flowcontrol.apiserver.k8s.io/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">PriorityLevelConfiguration</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">global-default</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">limited:</span><br>    <span class="hljs-attr">assuredConcurrencyShares:</span> <span class="hljs-number">20</span><br>    <span class="hljs-attr">limitResponse:</span><br>      <span class="hljs-attr">queuing:</span><br>        <span class="hljs-attr">handSize:</span> <span class="hljs-number">6</span><br>        <span class="hljs-attr">queueLengthLimit:</span> <span class="hljs-number">50</span><br>        <span class="hljs-attr">queues:</span> <span class="hljs-number">128</span><br>      <span class="hljs-attr">type:</span> <span class="hljs-string">Queue</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">Limited</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="3-4-6-FlowSchema"><a href="#3-4-6-FlowSchema" class="headerlink" title="3.4.6 FlowSchema"></a>3.4.6 FlowSchema</h4><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">flowcontrol.apiserver.k8s.io/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">FlowSchema</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">kube-scheduler</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">distinguisherMethod:</span><br>    <span class="hljs-attr">type:</span> <span class="hljs-string">ByNamespace</span><br>  <span class="hljs-attr">matchingPrecedence:</span> <span class="hljs-number">800</span><br>  <span class="hljs-attr">priorityLevelConfiguration:</span><br>    <span class="hljs-attr">name:</span> <span class="hljs-string">workload-high</span><br>  <span class="hljs-attr">rules:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">resourceRules:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">resources:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">&#x27;*&#x27;</span><br>      <span class="hljs-attr">verbs:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">&#x27;*&#x27;</span><br>    <span class="hljs-attr">subjects:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">kind:</span> <span class="hljs-string">User</span><br>      <span class="hljs-attr">user:</span><br>        <span class="hljs-attr">name:</span> <span class="hljs-string">system:kube-scheduler</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="3-4-7-调试"><a href="#3-4-7-调试" class="headerlink" title="3.4.7 调试"></a>3.4.7 调试</h4><p>可以使用以下命令调试 APF：</p>
+<ul>
+<li><code>/debug/api_priority_and_fairness/dump_priority_levels</code></li>
+<li><code>/debug/api_priority_and_fairness/dump_queues</code></li>
+<li><code>/debug/api_priority_and_fairness/dump_requests</code></li>
+</ul>
+<h2 id="4-高可用-APIServer"><a href="#4-高可用-APIServer" class="headerlink" title="4. 高可用 APIServer"></a>4. 高可用 APIServer</h2><h3 id="4-1-启动-apiserver-示例"><a href="#4-1-启动-apiserver-示例" class="headerlink" title="4.1 启动 apiserver 示例"></a>4.1 启动 apiserver 示例</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs bash">kube-apiserver --feature-gates=AllAlpha=<span class="hljs-literal">true</span> --runtime-config=api/all=<span class="hljs-literal">true</span> \<br>--requestheader-allowed-names=front-proxy-client \<br>--client-ca-file=/etc/kubernetes/pki/ca.crt \<br>--allow-privileged=<span class="hljs-literal">true</span> \<br>--experimental-bootstrap-token-auth=<span class="hljs-literal">true</span> \<br>--storage-backend=etcd3 \<br>--requestheader-username-headers=X-Remote-User \<br>--requestheader-extra-headers-prefix=X-Remote-Extra- \<br>--service-account-key-file=/etc/kubernetes/pki/sa.pub \<br>--tls-cert-file=/etc/kubernetes/pki/apiserver.crt \<br>--tls-private-key-file=/etc/kubernetes/pki/apiserver.key \<br>--kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt \<br>--requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt \<br>--enabled-hooks=NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota \<br>--requestheader-group-headers=X-Remote-Group \<br>--kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key \<br>--secure-port=6443 \<br>--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname \<br>--service-cluster-ip-range=10.96.0.0/12 \<br>--advertise-address=192.168.0.20 --etcd-servers=http://127.0.0.1:2379<br></code></pre></td></tr></table></figure>
+<h3 id="4-2-构建高可用的多副本-apiserver"><a href="#4-2-构建高可用的多副本-apiserver" class="headerlink" title="4.2 构建高可用的多副本 apiserver"></a>4.2 构建高可用的多副本 apiserver</h3><p>apiserver是无状态的Rest Server,无状态所以方便Scale Up／down,在多个apiserver实例之上，配置负载均衡,证书可能需要加上Loadbalancer VIP重新生成</p>
+<h3 id="4-3-其他最佳实践"><a href="#4-3-其他最佳实践" class="headerlink" title="4.3 其他最佳实践"></a>4.3 其他最佳实践</h3><ul>
+<li><strong>预留充足的 CPU、内存资源</strong>。</li>
+<li><strong>善用速率限制（RateLimit）</strong>。</li>
+<li><strong>设置合适的缓存大小</strong>。</li>
+<li><strong>客户端尽量使用长连接</strong>。</li>
+<li><strong>访问 APIServer</strong>:<ul>
+<li>外部客户：通过 LoadBalancer 访问。</li>
+<li>内部客户端：优先访问 Cluster IP。</li>
+</ul>
+</li>
+</ul>
+<h2 id="5-搭建多租户的-Kubernetes-集群"><a href="#5-搭建多租户的-Kubernetes-集群" class="headerlink" title="5. 搭建多租户的 Kubernetes 集群"></a>5. 搭建多租户的 Kubernetes 集群</h2><h3 id="5-1-目标"><a href="#5-1-目标" class="headerlink" title="5.1 目标"></a>5.1 目标</h3><ul>
+<li><strong>授信</strong>：认证和授权，确保只有可信用户才能访问集群，并防止用户越权操作。</li>
+<li><strong>隔离</strong>：可见性隔离、资源隔离、应用访问隔离，确保不同租户之间的隔离性。</li>
+<li><strong>资源管理</strong>：Quota 管理，控制每个租户的资源使用量。</li>
+</ul>
+<h3 id="5-2-实现"><a href="#5-2-实现" class="headerlink" title="5.2 实现"></a>5.2 实现</h3><ul>
+<li><strong>认证</strong>：与企业现有认证系统集成（例如，使用 Webhook 认证插件与 Microsoft Active Directory 集成）。</li>
+<li><strong>授权</strong>：使用 RBAC 进行细粒度的权限控制。</li>
+<li><strong>可见性隔离</strong>：通过命名空间对不同租户可见的资源进行隔离</li>
+<li><strong>资源隔离</strong>：通过专有设备给特定租户使用</li>
+<li><strong>应用访问隔离</strong>： 通过设置，只允许特定租户访问某些应用</li>
+<li><strong>Quota 管理</strong>：通过 ResourceQuota 控制每个命名空间的资源使用。</li>
+</ul>
+<h2 id="6-APIServer-对象的实现"><a href="#6-APIServer-对象的实现" class="headerlink" title="6. APIServer 对象的实现"></a>6. APIServer 对象的实现</h2><h3 id="6-1-GKV-Group-Kind-Version"><a href="#6-1-GKV-Group-Kind-Version" class="headerlink" title="6.1  GKV (Group, Kind, Version)"></a>6.1  GKV (Group, Kind, Version)</h3><ul>
+<li><strong>Group</strong>：API 资源的分组。</li>
+<li><strong>Kind</strong>：API 资源的类型。</li>
+<li><strong>Version</strong>：API 资源的版本（Internal version 和 External version）。</li>
+</ul>
+<img src="/2025/03/17/kubernetes-API-server/image-20250317001025889.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001025889">
+
+<pre class="mermaid">graph LR
+    A[API Resource] --> B(Group)
+    A --> C(Kind)
+    A --> D(Version)
+    D --> E(Internal)
+    D --> F(External)</pre>
+
+<h3 id="6-2-定义-Group"><a href="#6-2-定义-Group" class="headerlink" title="6.2  定义 Group"></a>6.2  定义 Group</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// pkg/apis/core/register.go</span><br><span class="hljs-keyword">package</span> core<br><span class="hljs-keyword">const</span> GroupName = <span class="hljs-string">&quot;&quot;</span> <span class="hljs-comment">// core group 的 GroupName 为空</span><br><span class="hljs-keyword">var</span> SchemeGroupVersion = schema.GroupVersion&#123;Group: GroupName, Version: runtime.APIVersionInternal&#125;<br><br><span class="hljs-keyword">var</span> (<br>	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)<br>	AddToScheme   = SchemeBuilder.AddToScheme<br>)<br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">addKnownTypes</span><span class="hljs-params">(scheme *runtime.Scheme)</span></span> <span class="hljs-type">error</span> &#123;<br>	<span class="hljs-keyword">if</span> err := scheme.AddIgnoredConversionType(&amp;metav1.TypeMeta&#123;&#125;, &amp;metav1.TypeMeta&#123;&#125;); err != <span class="hljs-literal">nil</span> &#123;<br>		<span class="hljs-keyword">return</span> err<br>	&#125;<br>	scheme.AddKnownTypes(SchemeGroupVersion,<br>		&amp;Pod&#123;&#125;,<br>		&amp;PodList&#123;&#125;,<br>	)<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="6-3-定义对象类型"><a href="#6-3-定义对象类型" class="headerlink" title="6.3 定义对象类型"></a>6.3 定义对象类型</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// types.go</span><br><span class="hljs-keyword">type</span> Pod <span class="hljs-keyword">struct</span> &#123;<br>	metav1.TypeMeta <span class="hljs-string">`json:&quot;,inline&quot;`</span><br>	metav1.ObjectMeta <span class="hljs-string">`json:&quot;metadata,omitempty&quot; protobuf:&quot;bytes,1,opt,name=metadata&quot;`</span><br>	Spec PodSpec <span class="hljs-string">`json:&quot;spec,omitempty&quot; protobuf:&quot;bytes,2,opt,name=spec&quot;`</span><br>	Status PodStatus <span class="hljs-string">`json:&quot;status,omitempty&quot; protobuf:&quot;bytes,3,opt,name=status&quot;`</span><br>&#125;<br><br><span class="hljs-keyword">type</span> PodList <span class="hljs-keyword">struct</span> &#123;<br>	metav1.TypeMeta <span class="hljs-string">`json:&quot;,inline&quot;`</span><br>	metav1.ListMeta <span class="hljs-string">`json:&quot;metadata,omitempty&quot; protobuf:&quot;bytes,1,opt,name=metadata&quot;`</span><br>	Items []Pod <span class="hljs-string">`json:&quot;items&quot; protobuf:&quot;bytes,2,rep,name=items&quot;`</span><br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<h3 id="6-4-代码生成-Tags"><a href="#6-4-代码生成-Tags" class="headerlink" title="6.4 代码生成 Tags"></a>6.4 代码生成 Tags</h3><ul>
+<li><strong>Global Tags</strong>：定义在 <code>doc.go</code> 中，例如 <code>// +k8s:deepcopy-gen=package</code>。</li>
+<li><strong>Local Tags</strong>：定义在 <code>types.go</code> 中的每个对象里，例如 <code>// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object</code>。</li>
+</ul>
+<h3 id="6-5-实现-etcd-storage"><a href="#6-5-实现-etcd-storage" class="headerlink" title="6.5  实现 etcd storage"></a>6.5  实现 etcd storage</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// pkg/registry/core/configmap/storage/storage.go</span><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewREST</span><span class="hljs-params">(optsGetter generic.RESTOptionsGetter)</span></span> *REST &#123;<br>	store := &amp;genericregistry.Store&#123;<br>		NewFunc:                  <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> runtime.Object &#123; <span class="hljs-keyword">return</span> &amp;api.ConfigMap&#123;&#125; &#125;,<br>		NewListFunc:              <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> runtime.Object &#123; <span class="hljs-keyword">return</span> &amp;api.ConfigMapList&#123;&#125; &#125;,<br>		DefaultQualifiedResource: api.Resource(<span class="hljs-string">&quot;configmaps&quot;</span>),<br>		CreateStrategy:           configmap.Strategy,<br>		UpdateStrategy:           configmap.Strategy,<br>		DeleteStrategy:           configmap.Strategy,<br>		TableConvertor:           printerstorage.TableConvertor&#123;TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)&#125;,<br>	&#125;<br>	options := &amp;generic.StoreOptions&#123;RESTOptions: optsGetter&#125;<br>	<span class="hljs-keyword">if</span> err := store.CompleteWithOptions(options); err != <span class="hljs-literal">nil</span> &#123;<br>		<span class="hljs-built_in">panic</span>(err) <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> Propagate error up</span><br>	&#125;<br>	<span class="hljs-keyword">return</span> &amp;REST&#123;store&#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<h3 id="6-6-创建和更新对象时的业务逻辑-Strategy"><a href="#6-6-创建和更新对象时的业务逻辑-Strategy" class="headerlink" title="6.6  创建和更新对象时的业务逻辑-Strategy"></a>6.6  创建和更新对象时的业务逻辑-Strategy</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// pkg/registry/core/configmap/strategy.go</span><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(strategy)</span></span> PrepareForCreate(ctx context.Context, obj runtime.Object) &#123;<br>	_ = obj.(*api.ConfigMap)<br>&#125;<br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(strategy)</span></span> Validate(ctx context.Context, obj runtime.Object) field.ErrorList &#123;<br>	cfg := obj.(*api.ConfigMap)<br>	<span class="hljs-keyword">return</span> validation.ValidateConfigMap(cfg)<br>&#125;<br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(strategy)</span></span> PrepareForUpdate(ctx context.Context, newObj, oldObj runtime.Object) &#123;<br>	_ = oldObj.(*api.ConfigMap)<br>	_ = newObj.(*api.ConfigMap)<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="6-7-subresource"><a href="#6-7-subresource" class="headerlink" title="6.7 subresource"></a>6.7 subresource</h3><p>内嵌在kubernetes对象中，有独立的操作逻辑的属性集合，如podstatus</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs go">statusStore.UpdateStrategy = pod.StatusStrategy<br><span class="hljs-keyword">var</span> StatusStrategy = podStatusStrategy&#123;Strategy&#125;<br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(podStatusStrategy)</span></span> PrepareForUpdate(ctx context.Context, obj, old runtime.Object)<br>&#123;<br>	newPod := obj.(*api.Pod)<br>	oldPod := old.(*api.Pod)<br>	newPod.Spec = oldPod.Spec<br>	newPod.DeletionTimestamp = <span class="hljs-literal">nil</span><br><span class="hljs-comment">// don&#x27;t allow the pods/status endpoint to touch owner references since old kubelets corrupt them in a way</span><br><span class="hljs-comment">// that breaks garbage collection</span><br>	newPod.OwnerReferences = oldPod.OwnerReferences<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="6-8-注册-APIGroup"><a href="#6-8-注册-APIGroup" class="headerlink" title="6.8 注册 APIGroup"></a>6.8 注册 APIGroup</h3><ol>
+<li>定义 Storage：<code>configMapStorage := configmapstore.NewREST(restOptionsGetter)</code>。</li>
+<li>定义对象的 StorageMap：<code>apiGroupInfo.VersionedResourcesStorageMap[&quot;v1&quot;] = restStorageMap</code>。</li>
+<li>将对象注册至 APIServer（挂载 handler）：</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">if</span> err :=<br>m.GenericAPIServer.InstallLegacyAPIGroup(genericapiserver.DefaultLegacyAPIPrefix,<br>&amp;apiGroupInfo); err != <span class="hljs-literal">nil</span> &#123;<br>    klog.Fatalf(<span class="hljs-string">&quot;Error in registering group versions: %v&quot;</span>, err)<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="6-9-代码生成"><a href="#6-9-代码生成" class="headerlink" title="6.9 代码生成"></a>6.9 代码生成</h3><p>Kubernetes 使用以下代码生成器：</p>
+<ul>
+<li><code>deepcopy-gen</code>：为对象生成 DeepCopy 方法。</li>
+<li><code>client-gen</code>：创建 Clientset。</li>
+<li><code>informer-gen</code>：创建 Informer 框架。</li>
+<li><code>lister-gen</code>：创建 Lister 框架。</li>
+<li><code>conversion-gen</code>：创建版本转换方法。</li>
+</ul>
+<p>代码生成器位于：<a target="_blank" rel="noopener" href="https://github.com/kubernetes/code-generator">https://github.com/kubernetes/code-generator</a></p>
+<p><code>hack/update-codegen.sh</code> 脚本用于生成代码。<br>命令示例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-variable">$&#123;GOPATH&#125;</span>/bin/deepcopy-gen --input-dirs &#123;versioned-package-pach&#125; \<br>-O zz_generated.deepcopy \<br>--bounding-dirs &#123;output-package-path&#125; \<br>--go-header-file <span class="hljs-variable">$&#123;SCRIPT_ROOT&#125;</span>/hack/boilerplate.go.txt<br></code></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文深入探讨了 Kubernetes API Server 的内部机制，包括访问控制、限流策略和 APIServer 对象的实现。理解这些概念对于构建和管理 Kubernetes 集群至关重要。希望这篇博客能帮助你更好地理解 Kubernetes API Server 的工作原理。<br>apiserver 代码走读可以参考：<a target="_blank" rel="noopener" href="https://cncamp.notion.site/kube-apiserver-10d5695cbbb14387b60c6d622005583d">https://cncamp.notion.site/kube-apiserver-10d5695cbbb14387b60c6d622005583d</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>kubernetes_API_server</div>
+      <div>https://mfzzf.github.io/2025/03/17/kubernetes-API-server/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Mzzf</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年3月17日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/" title="kubernetes架构原则与对象设计">
+                        <span class="hidden-mobile">kubernetes架构原则与对象设计</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
