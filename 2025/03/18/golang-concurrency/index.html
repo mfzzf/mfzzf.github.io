@@ -19,15 +19,15 @@
   <meta name="author" content="Mzzf">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Cloud Native &amp; Golang">
+    <meta name="description" content="GO并发编程（Concurrency）通过通信共享内存（Share by communicating）并发编程是一个广泛的话题，这里只讨论一些与 Go 语言相关的重点。 在许多环境中，并发编程的难点在于如何正确访问共享变量。Go 语言鼓励一种不同的方法： 通过通道（channel）传递共享值，而不是让多个执行线程主动共享内存。 在任何给定时间，只有一个 goroutine 可以访问该值。通过设计，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Golang并发编程">
 <meta property="og:url" content="https://mfzzf.github.io/2025/03/18/golang-concurrency/index.html">
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
-<meta property="og:description" content="Cloud Native &amp; Golang">
+<meta property="og:description" content="GO并发编程（Concurrency）通过通信共享内存（Share by communicating）并发编程是一个广泛的话题，这里只讨论一些与 Go 语言相关的重点。 在许多环境中，并发编程的难点在于如何正确访问共享变量。Go 语言鼓励一种不同的方法： 通过通道（channel）传递共享值，而不是让多个执行线程主动共享内存。 在任何给定时间，只有一个 goroutine 可以访问该值。通过设计，">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-03-18T14:27:20.000Z">
-<meta property="article:modified_time" content="2025-03-18T14:27:39.675Z">
+<meta property="article:modified_time" content="2025-03-18T16:49:38.516Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="golang">
 <meta name="twitter:card" content="summary_large_image">
@@ -223,7 +223,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          0 字
+          2.9k 字
         
       </span>
     
@@ -234,7 +234,7 @@
         
         
         
-          1 分钟
+          25 分钟
         
       </span>
     
@@ -276,7 +276,76 @@
             
               <div class="markdown-body">
                 
-                
+                <h1 id="GO并发编程（Concurrency）"><a href="#GO并发编程（Concurrency）" class="headerlink" title="GO并发编程（Concurrency）"></a>GO并发编程（Concurrency）</h1><h4 id="通过通信共享内存（Share-by-communicating）"><a href="#通过通信共享内存（Share-by-communicating）" class="headerlink" title="通过通信共享内存（Share by communicating）"></a>通过通信共享内存（Share by communicating）</h4><p>并发编程是一个广泛的话题，这里只讨论一些与 Go 语言相关的重点。</p>
+<p>在许多环境中，并发编程的难点在于如何正确访问共享变量。Go 语言鼓励一种不同的方法：</p>
+<p><strong>通过通道（channel）传递共享值，而不是让多个执行线程主动共享内存。</strong></p>
+<p>在任何给定时间，只有一个 goroutine 可以访问该值。通过设计，数据竞争不会发生。为了鼓励这种思维方式，我们将其简化为一个口号：</p>
+<p><strong>不要通过共享内存来通信；相反，通过通信来共享内存。</strong></p>
+<p>这种方法有时可能被过度使用。例如，引用计数可能最好通过在一个整数变量周围加锁来实现。但作为一种高级方法，使用通道来控制访问可以更容易编写清晰、正确的程序。</p>
+<p>这种模型的一个思考方式是考虑一个在单个 CPU 上运行的典型单线程程序。它不需要同步原语。</p>
+<p>现在运行另一个这样的实例；它也不需要同步。现在让这两个实例进行通信；如果通信本身就是同步器，那么仍然不需要其他同步。例如，Unix 管道完美地符合这种模型。尽管 Go 的并发方法源自 Hoare 的通信顺序进程（CSP），但它也可以被视为 Unix 管道的一种类型安全的泛化。</p>
+<h4 id="Goroutines"><a href="#Goroutines" class="headerlink" title="Goroutines"></a>Goroutines</h4><p>它们被称为 goroutines，因为现有的术语（线程、协程、进程等）传达了不准确的含义。Goroutine 有一个简单的模型：它是一个与同一地址空间中的其他 goroutine 并发执行的函数。它是轻量级的，成本几乎只比分配栈空间多一点。而且栈一开始很小，所以它们很便宜，并且根据需要分配（和释放）堆存储来增长。</p>
+<p>Goroutines 被多路复用到多个操作系统线程上，因此如果一个 goroutine 阻塞（例如等待 I&#x2F;O），其他 goroutine 可以继续运行。它们的设计隐藏了许多线程创建和管理的复杂性。</p>
+<p>在函数或方法调用前加上 <code>go</code> 关键字，可以在一个新的 goroutine 中运行该调用。当调用完成时，goroutine 会静默退出。（效果类似于 Unix shell 的 <code>&amp;</code> 符号，用于在后台运行命令。）</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">go</span> list.Sort()  <span class="hljs-comment">// 并发运行 list.Sort；不等待它完成。</span><br></code></pre></td></tr></table></figure>
+
+<p>在 goroutine 调用中，函数字面量（匿名函数）非常方便。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Announce</span><span class="hljs-params">(message <span class="hljs-type">string</span>, delay time.Duration)</span></span> &#123;<br>    <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>        time.Sleep(delay)<br>        fmt.Println(message)<br>    &#125;()  <span class="hljs-comment">// 注意括号 - 必须调用函数。</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在 Go 中，函数字面量是闭包：实现确保函数引用的变量在它们活跃时一直存在。</p>
+<p>这些例子不太实用，因为函数没有办法通知完成。为此，我们需要通道。</p>
+<h4 id="通道（Channels）"><a href="#通道（Channels）" class="headerlink" title="通道（Channels）"></a>通道（Channels）</h4><p>与映射（map）一样，通道是用 <code>make</code> 分配的，结果值是对底层数据结构的引用。如果提供了一个可选的整数参数，它会设置通道的缓冲区大小。默认值为零，表示无缓冲或同步通道。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs go">ci := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>)            <span class="hljs-comment">// 无缓冲的整数通道</span><br>cj := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>, <span class="hljs-number">0</span>)         <span class="hljs-comment">// 无缓冲的整数通道</span><br>cs := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> *os.File, <span class="hljs-number">100</span>)  <span class="hljs-comment">// 缓冲的文件指针通道</span><br></code></pre></td></tr></table></figure>
+
+<p>无缓冲通道将通信（值的交换）与同步（保证两个计算（goroutine）处于已知状态）结合在一起。</p>
+<p>使用通道有很多好的习惯用法。这里有一个例子。在上一节中，我们在后台启动了一个排序。通道可以让启动的 goroutine 等待排序完成。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs go">c := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>)  <span class="hljs-comment">// 分配一个通道。</span><br><span class="hljs-comment">// 在 goroutine 中启动排序；完成后，通过通道发送信号。</span><br><span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>    list.Sort()<br>    c &lt;- <span class="hljs-number">1</span>  <span class="hljs-comment">// 发送信号；值不重要。</span><br>&#125;()<br>doSomethingForAWhile()<br>&lt;-c   <span class="hljs-comment">// 等待排序完成；丢弃发送的值。</span><br></code></pre></td></tr></table></figure>
+
+<p>接收者总是阻塞，直到有数据可以接收。如果通道是无缓冲的，发送者会阻塞，直到接收者接收到值。如果通道有缓冲区，发送者只会在值被复制到缓冲区之前阻塞；如果缓冲区已满，这意味着等待某个接收者检索一个值。</p>
+<p>缓冲通道可以像信号量一样使用，例如限制吞吐量。在这个例子中，传入的请求被传递给 <code>handle</code>，它向通道发送一个值，处理请求，然后从通道接收一个值，以便为下一个消费者准备好“信号量”。通道缓冲区的容量限制了同时调用 <code>process</code> 的数量。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">var</span> sem = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>, MaxOutstanding)<br><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">handle</span><span class="hljs-params">(r *Request)</span></span> &#123;<br>    sem &lt;- <span class="hljs-number">1</span>    <span class="hljs-comment">// 等待活动队列排空。</span><br>    process(r)  <span class="hljs-comment">// 可能需要很长时间。</span><br>    &lt;-sem       <span class="hljs-comment">// 完成；启用下一个请求运行。</span><br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Serve</span><span class="hljs-params">(queue <span class="hljs-keyword">chan</span> *Request)</span></span> &#123;<br>    <span class="hljs-keyword">for</span> &#123;<br>        req := &lt;-queue<br>        <span class="hljs-keyword">go</span> handle(req)  <span class="hljs-comment">// 不要等待 handle 完成。</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>一旦 <code>MaxOutstanding</code> 个处理程序正在执行 <code>process</code>，任何更多的处理程序都会阻塞，尝试向已满的通道缓冲区发送数据，直到现有的处理程序之一完成并从缓冲区接收数据。</p>
+<p>不过，这个设计有一个问题：<code>Serve</code> 为每个传入的请求创建一个新的 goroutine，即使在任何时刻只有 <code>MaxOutstanding</code> 个 goroutine 可以运行。因此，如果请求来得太快，程序可能会消耗无限的资源。我们可以通过修改 <code>Serve</code> 来限制 goroutine 的创建来解决这个问题：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Serve</span><span class="hljs-params">(queue <span class="hljs-keyword">chan</span> *Request)</span></span> &#123;<br>    <span class="hljs-keyword">for</span> req := <span class="hljs-keyword">range</span> queue &#123;<br>        sem &lt;- <span class="hljs-number">1</span><br>        <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>            process(req)<br>            &lt;-sem<br>        &#125;()<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>（注意，在 Go 1.22 之前的版本中，这段代码有一个 bug：循环变量在所有 goroutine 之间共享。详情请参阅 Go wiki。）</p>
+<p>另一种管理资源的方法是启动固定数量的 <code>handle</code> goroutine，它们都从请求通道中读取。goroutine 的数量限制了同时调用 <code>process</code> 的数量。这个 <code>Serve</code> 函数还接受一个通道，用于通知它退出；在启动 goroutine 后，它会阻塞接收该通道。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">handle</span><span class="hljs-params">(queue <span class="hljs-keyword">chan</span> *Request)</span></span> &#123;<br>    <span class="hljs-keyword">for</span> r := <span class="hljs-keyword">range</span> queue &#123;<br>        process(r)<br>    &#125;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Serve</span><span class="hljs-params">(clientRequests <span class="hljs-keyword">chan</span> *Request, quit <span class="hljs-keyword">chan</span> <span class="hljs-type">bool</span>)</span></span> &#123;<br>    <span class="hljs-comment">// 启动处理程序</span><br>    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; MaxOutstanding; i++ &#123;<br>        <span class="hljs-keyword">go</span> handle(clientRequests)<br>    &#125;<br>    &lt;-quit  <span class="hljs-comment">// 等待被告知退出。</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="通道的通道（Channels-of-channels）"><a href="#通道的通道（Channels-of-channels）" class="headerlink" title="通道的通道（Channels of channels）"></a>通道的通道（Channels of channels）</h4><p>Go 最重要的特性之一是通道是一等值，可以像其他值一样分配和传递。这个特性的一个常见用途是实现安全的并行多路分解。</p>
+<p>在上一节的例子中，<code>handle</code> 是一个理想化的请求处理程序，但我们没有定义它处理的类型。如果该类型包含一个用于回复的通道，每个客户端都可以提供自己的答案路径。以下是 <code>Request</code> 类型的示意定义。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">type</span> Request <span class="hljs-keyword">struct</span> &#123;<br>    args        []<span class="hljs-type">int</span><br>    f           <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">([]<span class="hljs-type">int</span>)</span></span> <span class="hljs-type">int</span><br>    resultChan  <span class="hljs-keyword">chan</span> <span class="hljs-type">int</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>客户端提供一个函数及其参数，以及请求对象中的一个通道，用于接收答案。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">sum</span><span class="hljs-params">(a []<span class="hljs-type">int</span>)</span></span> (s <span class="hljs-type">int</span>) &#123;<br>    <span class="hljs-keyword">for</span> _, v := <span class="hljs-keyword">range</span> a &#123;<br>        s += v<br>    &#125;<br>    <span class="hljs-keyword">return</span><br>&#125;<br><br>request := &amp;Request&#123;[]<span class="hljs-type">int</span>&#123;<span class="hljs-number">3</span>, <span class="hljs-number">4</span>, <span class="hljs-number">5</span>&#125;, sum, <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>)&#125;<br><span class="hljs-comment">// 发送请求</span><br>clientRequests &lt;- request<br><span class="hljs-comment">// 等待响应。</span><br>fmt.Printf(<span class="hljs-string">&quot;answer: %d\n&quot;</span>, &lt;-request.resultChan)<br></code></pre></td></tr></table></figure>
+
+<p>在服务器端，处理函数是唯一改变的部分。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">handle</span><span class="hljs-params">(queue <span class="hljs-keyword">chan</span> *Request)</span></span> &#123;<br>    <span class="hljs-keyword">for</span> req := <span class="hljs-keyword">range</span> queue &#123;<br>        req.resultChan &lt;- req.f(req.args)<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>显然，要使它更现实，还有很多工作要做，但这段代码是一个限速、并行、非阻塞 RPC 系统的框架，而且没有使用任何互斥锁。</p>
+<h4 id="并行化（Parallelization）"><a href="#并行化（Parallelization）" class="headerlink" title="并行化（Parallelization）"></a>并行化（Parallelization）</h4><p>这些思想的另一个应用是在多个 CPU 核心上并行化计算。如果计算可以分解为可以独立执行的单独部分，那么它可以并行化，并使用通道来通知每个部分何时完成。</p>
+<p>假设我们有一个对向量中的项目执行昂贵操作的需求，并且每个项目的操作值是独立的，如这个理想化的例子所示。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">type</span> Vector []<span class="hljs-type">float64</span><br><br><span class="hljs-comment">// 对 v[i], v[i+1] ... 直到 v[n-1] 应用操作。</span><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v Vector)</span></span> DoSome(i, n <span class="hljs-type">int</span>, u Vector, c <span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>) &#123;<br>    <span class="hljs-keyword">for</span> ; i &lt; n; i++ &#123;<br>        v[i] += u.Op(v[i])<br>    &#125;<br>    c &lt;- <span class="hljs-number">1</span>    <span class="hljs-comment">// 发送信号表示这部分已完成</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>我们在循环中独立启动这些部分，每个 CPU 一个。它们可以以任何顺序完成，但这并不重要；我们只需在启动所有 goroutine 后通过排空通道来计算完成信号。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">const</span> numCPU = <span class="hljs-number">4</span> <span class="hljs-comment">// CPU 核心数</span><br><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v Vector)</span></span> DoAll(u Vector) &#123;<br>    c := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>, numCPU)  <span class="hljs-comment">// 缓冲是可选的，但明智的。</span><br>    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; numCPU; i++ &#123;<br>        <span class="hljs-keyword">go</span> v.DoSome(i*<span class="hljs-built_in">len</span>(v)/numCPU, (i+<span class="hljs-number">1</span>)*<span class="hljs-built_in">len</span>(v)/numCPU, u, c)<br>    &#125;<br>    <span class="hljs-comment">// 排空通道。</span><br>    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; numCPU; i++ &#123;<br>        &lt;-c    <span class="hljs-comment">// 等待一个任务完成</span><br>    &#125;<br>    <span class="hljs-comment">// 全部完成。</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>与其为 <code>numCPU</code> 创建一个常量值，我们可以询问运行时什么值是合适的。函数 <code>runtime.NumCPU</code> 返回机器中的硬件 CPU 核心数，因此我们可以这样写：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">var</span> numCPU = runtime.NumCPU()<br></code></pre></td></tr></table></figure>
+
+<p>还有一个函数 <code>runtime.GOMAXPROCS</code>，它报告（或设置）用户指定的 Go 程序可以同时运行的 CPU 核心数。它默认为 <code>runtime.NumCPU</code> 的值，但可以通过设置同名的 shell 环境变量或调用该函数并传递一个正数来覆盖。传递零只是查询该值。因此，如果我们想尊重用户的资源请求，我们应该这样写：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">var</span> numCPU = runtime.GOMAXPROCS(<span class="hljs-number">0</span>)<br></code></pre></td></tr></table></figure>
+
+<p>确保不要混淆并发（将程序结构化为独立执行的组件）和并行（在多个 CPU 上并行执行计算以提高效率）的概念。尽管 Go 的并发特性可以使一些问题容易结构化为并行计算，但 Go 是一种并发语言，而不是并行语言，并非所有并行化问题都适合 Go 的模型。有关区别的讨论，请参阅此博客文章中引用的演讲。</p>
+<h4 id="漏桶（Leaky-buffer）"><a href="#漏桶（Leaky-buffer）" class="headerlink" title="漏桶（Leaky buffer）"></a>漏桶（Leaky buffer）</h4><p>并发编程的工具甚至可以使非并发的思想更容易表达。这里有一个从 RPC 包中抽象出来的例子。客户端 goroutine 循环从某个源（可能是网络）接收数据。为了避免分配和释放缓冲区，它保留一个空闲列表，并使用一个缓冲通道来表示它。如果通道为空，则分配一个新的缓冲区。一旦消息缓冲区准备好，它就会被发送到 <code>serverChan</code> 上的服务器。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-keyword">var</span> freeList = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> *Buffer, <span class="hljs-number">100</span>)<br><span class="hljs-keyword">var</span> serverChan = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> *Buffer)<br><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">client</span><span class="hljs-params">()</span></span> &#123;<br>    <span class="hljs-keyword">for</span> &#123;<br>        <span class="hljs-keyword">var</span> b *Buffer<br>        <span class="hljs-comment">// 如果有可用的缓冲区，则获取；否则分配一个新的。</span><br>        <span class="hljs-keyword">select</span> &#123;<br>        <span class="hljs-keyword">case</span> b = &lt;-freeList:<br>            <span class="hljs-comment">// 获取一个；无需做更多操作。</span><br>        <span class="hljs-keyword">default</span>:<br>            <span class="hljs-comment">// 没有空闲的，所以分配一个新的。</span><br>            b = <span class="hljs-built_in">new</span>(Buffer)<br>        &#125;<br>        load(b)              <span class="hljs-comment">// 从网络读取下一条消息。</span><br>        serverChan &lt;- b      <span class="hljs-comment">// 发送到服务器。</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>服务器循环接收来自客户端的每条消息，处理它，并将缓冲区返回到空闲列表。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">server</span><span class="hljs-params">()</span></span> &#123;<br>    <span class="hljs-keyword">for</span> &#123;<br>        b := &lt;-serverChan    <span class="hljs-comment">// 等待工作。</span><br>        process(b)<br>        <span class="hljs-comment">// 如果有空间，则重用缓冲区。</span><br>        <span class="hljs-keyword">select</span> &#123;<br>        <span class="hljs-keyword">case</span> freeList &lt;- b:<br>            <span class="hljs-comment">// 缓冲区在空闲列表上；无需做更多操作。</span><br>        <span class="hljs-keyword">default</span>:<br>            <span class="hljs-comment">// 空闲列表已满，继续执行。</span><br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>客户端尝试从 <code>freeList</code> 中检索一个缓冲区；如果没有可用的，则分配一个新的。服务器的发送到 <code>freeList</code> 将 <code>b</code> 放回空闲列表，除非列表已满，在这种情况下，缓冲区会被丢弃，由垃圾回收器回收。（<code>select</code> 语句中的 <code>default</code> 子句在没有其他 case 准备就绪时执行，这意味着 <code>select</code> 永远不会阻塞。）这个实现在几行代码中构建了一个漏桶空闲列表，依赖于缓冲通道和垃圾回收器进行簿记。</p>
+
                 
               </div>
             
@@ -344,6 +413,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/03/21/kubernetes-kubelet/" title="kubernetes_kubelet">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kubernetes_kubelet</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
