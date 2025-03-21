@@ -26,11 +26,16 @@
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
 <meta property="og:description" content="k8s-Controller-ManagerController Manager 是 Kubernetes（K8S）中的一个核心组件，负责管理和运行各种控制器（Controllers）。控制器是 Kubernetes 的自动化机制之一，Controller Manager 通过与 API Server 的交互来获取和更新集群的状态信息。它使用 Kubernetes 的 watch API 来实时监">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-controller-manager/image-20250319131225932.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-controller-manager/image-20250319132531577.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-controller-manager/image-20250321170252430.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-controller-manager/image-20250321170234148.png">
 <meta property="article:published_time" content="2025-03-18T13:33:57.000Z">
 <meta property="article:modified_time" content="2025-03-21T09:07:57.654Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="k8s">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/18/kubernetes-controller-manager/image-20250319131225932.png">
   
   
   
@@ -279,7 +284,7 @@
                 <h1 id="k8s-Controller-Manager"><a href="#k8s-Controller-Manager" class="headerlink" title="k8s-Controller-Manager"></a>k8s-Controller-Manager</h1><p><code>Controller Manager</code> 是 Kubernetes（K8S）中的一个核心组件，负责管理和运行各种控制器（Controllers）。控制器是 Kubernetes 的自动化机制之一，Controller Manager 通过与 API Server 的交互来获取和更新集群的状态信息。它使用 Kubernetes 的 <code>watch</code> API 来实时监控资源的变化，并根据这些变化执行相应的操作。</p>
 <!--more--->
 
-<h2 id="控制器的工作流程"><a href="#控制器的工作流程" class="headerlink" title="控制器的工作流程"></a>控制器的工作流程</h2>
+<h2 id="控制器的工作流程"><a href="#控制器的工作流程" class="headerlink" title="控制器的工作流程"></a>控制器的工作流程</h2><img src="/2025/03/18/kubernetes-controller-manager/image-20250319131225932.png" srcset="/img/loading.gif" lazyload class="">
 
 <h3 id="Informer-和-Lister-的关系"><a href="#Informer-和-Lister-的关系" class="headerlink" title="Informer 和 Lister 的关系"></a>Informer 和 Lister 的关系</h3><p>Informer内部通过<code>Store</code>（基于<code>cache.FIFO</code>或<code>cache.RateLimiter</code>）存储资源对象数据，而Lister的接口实现（如<code>GridLister</code>）<strong>直接读取Informer的Store</strong>，因此Lister是Informer数据的<strong>查询接口</strong>。</p>
 <p>Informer负责<strong>实时监听API Server变更</strong>（通过ListAndWatch机制），将资源变化事件（Add&#x2F;Update&#x2F;Delete）写入Store并触发处理链。</p>
@@ -357,13 +362,13 @@
 </ul>
 </li>
 </ul>
-<h2 id="Informer-详解"><a href="#Informer-详解" class="headerlink" title="Informer 详解"></a>Informer 详解</h2>
+<h2 id="Informer-详解"><a href="#Informer-详解" class="headerlink" title="Informer 详解"></a>Informer 详解</h2><img src="/2025/03/18/kubernetes-controller-manager/image-20250319132531577.png" srcset="/img/loading.gif" lazyload class="" title="image-20250319132531577">
 
 <hr>
 <p>通用 Controller</p>
+<img src="/2025/03/18/kubernetes-controller-manager/image-20250321170252430.png" srcset="/img/loading.gif" lazyload class="" title="image-20250321170252430">
 
-
-
+<img src="/2025/03/18/kubernetes-controller-manager/image-20250321170234148.png" srcset="/img/loading.gif" lazyload class="" title="image-20250321170213798">
 
 <h2 id="Leader-Election"><a href="#Leader-Election" class="headerlink" title="Leader Election"></a>Leader Election</h2><h3 id="Leader-Election-的工作原理"><a href="#Leader-Election-的工作原理" class="headerlink" title="Leader Election 的工作原理"></a>Leader Election 的工作原理</h3><p>Kubernetes 使用 <strong>分布式锁</strong> 来实现 Leader Election。具体来说，它利用了 Kubernetes 的 API Server 作为分布式锁的存储后端，通过 <code>Lease</code> 资源来实现选举。</p>
 <h4 id="关键组件"><a href="#关键组件" class="headerlink" title="关键组件"></a>关键组件</h4><ol>
