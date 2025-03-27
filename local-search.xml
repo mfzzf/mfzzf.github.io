@@ -4,6 +4,44 @@
   
   
   <entry>
+    <title>kubernetes_CNI</title>
+    <link href="/2025/03/25/kubernetes-CNI/"/>
+    <url>/2025/03/25/kubernetes-CNI/</url>
+    
+    <content type="html"><![CDATA[<h1 id="CNI"><a href="#CNI" class="headerlink" title="CNI"></a>CNI</h1><p>CNI 是 Kubernetes 中一个至关重要的组件，它定义了一套标准接口，用于配置和管理容器的网络连接。CNI 将 Kubernetes 与底层网络实现解耦，允许用户选择不同的网络方案，从而提高了 Kubernetes 的灵活性和可扩展性。理解 CNI 的工作原理对于深入理解 Kubernetes 网络至关重要。</p><span id="more"></span><h2 id="Kubernetes-网络模型的核心原则"><a href="#Kubernetes-网络模型的核心原则" class="headerlink" title="Kubernetes 网络模型的核心原则"></a><strong>Kubernetes 网络模型的核心原则</strong></h2><p>Kubernetes 网络模型的设计目标是提供一个扁平的、易于理解和使用的网络环境，让应用程序可以像在传统虚拟机环境中一样运行，而无需关心底层网络的复杂性。为此，Kubernetes 确立了以下三个核心原则：</p><ol><li><p><strong>所有 Pod 能够不通过 NAT 就能相互访问</strong></p><ul><li><p><strong>含义：</strong> 这意味着集群内的任何 Pod 都可以直接使用彼此的 IP 地址进行通信，无需进行网络地址转换（NAT）。这简化了应用程序的开发和调试，因为应用程序可以使用标准的 IP 地址和端口进行通信，而无需担心 NAT 带来的问题。</p></li><li><p>实现方式：</p><p>为了实现这一目标，Kubernetes 需要提供一种机制，使得集群内的所有 Pod 都能被分配到唯一的 IP 地址，并且这些 IP 地址在集群内都是可路由的。这通常通过以下方式实现：</p><ul><li><strong>容器网络接口（CNI）：</strong> Kubernetes 使用 CNI 插件来配置 Pod 的网络。CNI 插件负责为 Pod 分配 IP 地址、配置路由规则和创建必要的网络设备。</li><li><strong>网络插件：</strong> CNI 插件通常会依赖于底层的网络插件来实现具体的网络功能。常见的网络插件包括 Flannel、Calico、Weave Net 等。这些网络插件会使用不同的技术来实现 Pod 之间的网络连通性，例如 VXLAN、IPIP、BGP 等。</li><li><strong>路由配置：</strong> Kubernetes 会自动配置集群内的路由规则，使得所有 Pod 都能通过彼此的 IP 地址进行通信。这通常通过在每个节点上配置路由表来实现。</li></ul></li></ul></li><li><p><strong>所有节点能够不通过 NAT 就能相互访问</strong></p><ul><li><strong>含义：</strong> 这意味着集群内的任何节点都可以直接使用彼此的 IP 地址进行通信，无需进行 NAT。这对于 Kubernetes 的控制平面组件（例如 kube-apiserver、kube-scheduler、kube-controller-manager）之间的通信至关重要。</li><li><strong>实现方式：</strong> 为了实现这一目标，Kubernetes 通常会要求集群内的所有节点都位于同一个网络中，或者通过 VPN 等技术实现节点之间的网络连通性。</li></ul></li><li><p><strong>容器内看见的 IP 地址和外部组件看到的容器 IP 是一样的</strong></p><ul><li><strong>含义：</strong> 这意味着 Pod 内的容器看到的 IP 地址与 Kubernetes 集群内其他组件（例如其他 Pod、Service）看到的 IP 地址是相同的。这消除了应用程序的歧义，简化了网络配置。</li><li><strong>实现方式：</strong> 这主要通过 CNI 插件来实现。CNI 插件会为 Pod 创建一个网络命名空间，并将容器连接到该命名空间。容器在该命名空间中看到的 IP 地址就是 Pod 的 IP 地址。</li></ul></li></ol>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>k8s</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>kubernetes_CRI</title>
+    <link href="/2025/03/22/kubernetes-CRI/"/>
+    <url>/2025/03/22/kubernetes-CRI/</url>
+    
+    <content type="html"><![CDATA[<p>CRI 是 Kubernetes 定义的一组 gRPC 接口。它允许 kubelet（Kubernetes 的节点代理）与容器运行时（例如 Docker, containerd, CRI-O 等）进行通信。</p><span id="more"></span><h1 id="CRI"><a href="#CRI" class="headerlink" title="CRI"></a>CRI</h1><h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>CRI 是 Kubernetes 定义的一组 gRPC 接口。它允许 <strong>kubelet</strong>与<strong>容器运行时</strong>（例如 Docker, containerd, CRI-O 等）进行通信。这种接口的设计目的是为了<strong>解耦 Kubernetes 和特定的容器运行时实现</strong>，使得 Kubernetes 可以支持多种容器运行时，而无需修改 Kubernetes 的核心代码。</p><img src="/2025/03/22/kubernetes-CRI/image-20250324125824154.png" class="" title="image-20250324125824154"><h2 id="容器运行时"><a href="#容器运行时" class="headerlink" title="容器运行时"></a><strong>容器运行时</strong></h2><p>容器运行时通常被分为两个主要层级：高级运行时（High-level Runtime）和低级运行时（Low-level Runtime）。 这种分层架构有助于解耦容器管理的各个方面，提高了灵活性和可维护性。</p><ol><li><p><strong>高级运行时 (High-level Runtime)</strong></p><ul><li><p><strong>功能</strong>：高级运行时主要负责容器镜像的管理、容器生命周期的管理以及与容器编排系统（如 Kubernetes）的交互。它们提供了一个更友好的接口，简化了容器的创建、启动、停止和删除等操作。</p></li><li><p><strong>代表</strong>：<code>Docker shim</code>、<code>containerd</code>和<code>CRI-O</code></p></li><li><p><strong>流程</strong>：</p><ul><li>接收来自容器编排系统的指令（例如，创建容器）。</li><li>从镜像仓库下载容器镜像。</li><li>将镜像解压成 OCI 运行时文件系统包（filesystem bundle）。</li><li>调用低级运行时来实际创建和运行容器。</li><li>监控容器的生命周期，并向容器编排系统报告状态。</li></ul></li><li><p><strong>例如</strong>，当你使用 <code>docker run</code> 命令时，Docker 守护进程（dockerd）会调用 containerd，然后 containerd 负责拉取镜像、创建容器的元数据，并最终调用 runC 来启动容器。</p></li></ul></li><li><p><strong>低级运行时 (Low-level Runtime)</strong></p><ul><li><p><strong>功能</strong>：低级运行时直接与操作系统内核交互，负责创建和管理容器的隔离环境，包括命名空间（namespaces）、控制组（cgroups）以及文件系统的挂载等。</p></li><li><p><strong>标准</strong>：遵循 OCI（Open Container Initiative）运行时规范（Runtime Specification），该规范定义了如何从 OCI 运行时文件系统包运行容器进程，并定义了容器的配置、运行环境和生命周期。</p></li><li><p><strong>代表</strong>：<code>runC</code>、<code>kata-runtime</code>等。</p></li><li><p><strong>流程</strong>：</p><ul><li>接收来自高级运行时的指令和配置信息。</li><li>使用 Linux 内核的特性（如 namespaces 和 cgroups）来创建容器的隔离环境。</li><li>执行容器内的进程。</li><li>管理容器的资源限制。</li></ul></li><li><p><strong>深入理解 runC</strong>：</p><ul><li><code>runC</code> 是一个轻量级的、可移植的容器运行时工具，它是 Docker 的核心组件之一。它直接调用 Linux 内核的 API 来创建容器。</li><li><code>runC</code> 的主要功能包括：<ul><li><strong>命名空间（Namespaces）</strong>：为容器提供隔离的运行环境，包括 PID、网络、IPC、Mount、UTS 和 User namespaces。</li><li><strong>控制组（Cgroups）</strong>：限制容器可以使用的资源，如 CPU、内存、磁盘 I&#x2F;O 等。</li><li><strong>文件系统隔离</strong>：通过 chroot 或 pivot_root 将容器的文件系统与主机隔离。</li><li><strong>能力（Capabilities）</strong>：控制容器内进程可以执行的特权操作。</li></ul></li></ul></li></ul></li></ol><h2 id="OCI（Open-Container-Initiative）"><a href="#OCI（Open-Container-Initiative）" class="headerlink" title="OCI（Open Container Initiative）"></a><strong>OCI（Open Container Initiative）</strong></h2><p>OCI 是一个开源项目，旨在制定容器格式和运行时的开放标准。OCI 定义了两个主要的规范：</p><ul><li><strong>镜像规范（Image Specification）</strong>：定义了容器镜像的格式。</li><li><strong>运行时规范（Runtime Specification）</strong>：定义了如何运行容器。</li></ul><p>通过遵循 OCI 标准，不同的容器运行时可以互操作，从而避免了厂商锁定。</p><h2 id="开源运行时的比较"><a href="#开源运行时的比较" class="headerlink" title="开源运行时的比较"></a>开源运行时的比较</h2><p><strong>1. 整体架构</strong></p><ul><li><strong>Docker:</strong> 从图中可以看出，Docker 的架构相对复杂，涉及多个组件，包括 dockershim, docker, containerd。这使得 Docker 在 Kubernetes 中的集成略显笨重，维护和调试也相对复杂。</li><li><strong>Containerd:</strong> Containerd 的架构更为简洁，直接通过 <code>cri-containerd</code> 与 Kubernetes 集成，减少了中间环节，提高了效率和稳定性。Containerd 通过 <code>containerd-shim</code> 与底层的 OCI 运行时交互，负责容器的生命周期管理。</li><li><strong>CRI-O:</strong> CRI-O 的设计目标是成为 Kubernetes 的专用容器运行时。它直接实现了 Kubernetes CRI (Container Runtime Interface)，通过 <code>conmon</code> 监控容器进程，并使用 OCI 运行时 (如 runc) 创建和管理容器。</li></ul><p><strong>2. 关键组件</strong></p><ul><li><strong>dockershim:</strong>  dockershim 是 Kubernetes 为了兼容 Docker 而引入的组件，它充当了 Docker 和 Kubernetes 之间的适配器。但 dockershim 的引入增加了维护成本，也限制了 Kubernetes 对其他容器运行时的支持。在 Kubernetes 1.24 版本中，dockershim 已被移除。</li><li><strong>containerd:</strong> Containerd 是一个 CNCF (Cloud Native Computing Foundation) 项目，它提供了一个工业标准的容器运行时。Containerd 专注于容器的生命周期管理、镜像分发和存储等核心功能。</li><li><strong>CRI-O:</strong> CRI-O 是一个轻量级的容器运行时，专门为 Kubernetes 设计。它只关注 Kubernetes 需要的功能，例如镜像拉取、容器创建、启动、停止和删除等。</li><li><strong>OCI Runtime:</strong> OCI (Open Container Initiative) 运行时，如 runc，是真正创建和运行容器的组件。它们负责与操作系统内核交互，完成容器的隔离、资源限制等操作。</li></ul><p><strong>3. 与 Kubernetes 的集成</strong></p><ul><li><strong>Docker:</strong> 通过 dockershim 集成，已被 Kubernetes 废弃。</li><li><strong>Containerd:</strong> 通过 <code>cri-containerd</code> 插件直接集成，是 Kubernetes 推荐的容器运行时。</li><li><strong>CRI-O:</strong> 原生支持 Kubernetes CRI，无需额外的适配层。</li></ul><img src="/2025/03/22/kubernetes-CRI/image-20250325124303637.png" class="" title="image-20250325124303637"><ol start="4"><li><strong>性能比较</strong></li></ol><img src="/2025/03/22/kubernetes-CRI/image-20250325124452967.png" class="" title="image-20250325124452967">]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>k8s</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>kubernetes_kubelet</title>
     <link href="/2025/03/21/kubernetes-kubelet/"/>
     <url>/2025/03/21/kubernetes-kubelet/</url>
