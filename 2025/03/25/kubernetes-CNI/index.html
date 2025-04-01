@@ -26,11 +26,14 @@
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
 <meta property="og:description" content="CNICNI 是 Kubernetes 中一个至关重要的组件，它定义了一套标准接口，用于配置和管理容器的网络连接。CNI 将 Kubernetes 与底层网络实现解耦，允许用户选择不同的网络方案，从而提高了 Kubernetes 的灵活性和可扩展性。理解 CNI 的工作原理对于深入理解 Kubernetes 网络至关重要。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/25/kubernetes-CNI/image-20250328201253599.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/03/25/kubernetes-CNI/image-20250328201905840.png">
 <meta property="article:published_time" content="2025-03-25T07:35:09.000Z">
-<meta property="article:modified_time" content="2025-03-25T07:55:58.644Z">
+<meta property="article:modified_time" content="2025-03-29T04:53:55.602Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="k8s">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/25/kubernetes-CNI/image-20250328201253599.png">
   
   
   
@@ -223,7 +226,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          806 字
+          5.6k 字
         
       </span>
     
@@ -234,7 +237,7 @@
         
         
         
-          7 分钟
+          47 分钟
         
       </span>
     
@@ -276,7 +279,7 @@
             
               <div class="markdown-body">
                 
-                <h1 id="CNI"><a href="#CNI" class="headerlink" title="CNI"></a>CNI</h1><p>CNI 是 Kubernetes 中一个至关重要的组件，它定义了一套标准接口，用于配置和管理容器的网络连接。CNI 将 Kubernetes 与底层网络实现解耦，允许用户选择不同的网络方案，从而提高了 Kubernetes 的灵活性和可扩展性。理解 CNI 的工作原理对于深入理解 Kubernetes 网络至关重要。</p>
+                <h1 id="CNI"><a href="#CNI" class="headerlink" title="CNI"></a><strong>CNI</strong></h1><p>CNI 是 Kubernetes 中一个至关重要的组件，它定义了一套标准接口，用于配置和管理容器的网络连接。CNI 将 Kubernetes 与底层网络实现解耦，允许用户选择不同的网络方案，从而提高了 Kubernetes 的灵活性和可扩展性。理解 CNI 的工作原理对于深入理解 Kubernetes 网络至关重要。</p>
 <span id="more"></span>
 
 <h2 id="Kubernetes-网络模型的核心原则"><a href="#Kubernetes-网络模型的核心原则" class="headerlink" title="Kubernetes 网络模型的核心原则"></a><strong>Kubernetes 网络模型的核心原则</strong></h2><p>Kubernetes 网络模型的设计目标是提供一个扁平的、易于理解和使用的网络环境，让应用程序可以像在传统虚拟机环境中一样运行，而无需关心底层网络的复杂性。为此，Kubernetes 确立了以下三个核心原则：</p>
@@ -308,6 +311,152 @@
 </ul>
 </li>
 </ol>
+<h2 id="CNI插件分类"><a href="#CNI插件分类" class="headerlink" title="CNI插件分类"></a><strong>CNI插件分类</strong></h2><ul>
+<li>IPAM: IP 地址分配</li>
+<li>主插件：网卡设置<ul>
+<li>bridge：创建一个网桥，并把主机端口和容器端口插入网桥</li>
+<li>ipvlan：为容器添加 vlan 网口</li>
+<li>loopback：设置 loopback 网口</li>
+</ul>
+</li>
+<li>Meta：附加功能<ul>
+<li>portmap：主机和容器的端口映射</li>
+<li>bandwidth：利用 Linux Traffic Control 进行限流</li>
+<li>firewall： 通过 iptables 或firewalld 为容器设置防火墙规则</li>
+</ul>
+</li>
+</ul>
+<h2 id="CNI-插件运行机制"><a href="#CNI-插件运行机制" class="headerlink" title="CNI 插件运行机制"></a><strong>CNI 插件运行机制</strong></h2><ol>
+<li><p><strong>配置文件读取：</strong> 容器运行时（例如，kubelet）在启动时，会从 CNI 的配置目录中读取 JSON 格式的配置文件。这些配置文件的后缀可以是 <code>.conf</code>、<code>.conflist</code> 或 <code>.json</code>。</p>
+</li>
+<li><p><strong>配置文件选择：</strong> 如果配置目录中包含多个配置文件，通常情况下，会以文件名<strong>字母顺序</strong>排序，选择第一个文件作为默认的网络配置。然后，加载并获取其中指定的 CNI 插件名称和配置参数。</p>
+<ul>
+<li><code>.conflist</code> 文件：<code>.conflist</code> 文件允许定义一个 CNI 插件列表，容器运行时会按照列表中插件的顺序依次调用。这允许你配置更复杂的网络功能，例如，先创建一个虚拟网络接口，然后配置防火墙规则。</li>
+</ul>
+</li>
+<li><p><strong>CNI 操作 (ADD&#x2F;DEL)：</strong>  容器运行时根据容器的生命周期，调用 CNI 插件执行网络配置操作。主要有两种操作：</p>
+<ul>
+<li><strong>ADD：</strong> 当容器创建时，CNI 插件被调用，负责为容器创建网络接口（例如 <code>veth pair</code>），配置 IP 地址、路由规则，并将容器连接到指定的网络。</li>
+<li><strong>DEL：</strong> 当容器删除时，CNI 插件被调用，负责清理容器的网络配置，例如删除虚拟网络接口，移除路由规则等。</li>
+</ul>
+</li>
+<li><p><strong>网络插件类型：</strong> CNI 插件有很多种，常见的包括：</p>
+<ul>
+<li><code>loopback</code>：创建 loopback 接口 (lo)。</li>
+<li><code>bridge</code>：创建网桥，并将容器连接到该网桥。这是最常用的 CNI 插件之一。</li>
+<li><code>ipvlan</code>：创建 <code>ipvlan</code> 接口，允许容器直接连接到主机网络接口。</li>
+<li><code>macvlan</code>：创建 <code>macvlan</code> 接口，为容器分配一个独立的 MAC 地址。</li>
+</ul>
+</li>
+</ol>
+<h2 id="CNI-的运行机制"><a href="#CNI-的运行机制" class="headerlink" title="CNI 的运行机制"></a><strong>CNI 的运行机制</strong></h2><ol>
+<li><p><strong>参数配置：</strong> 为了使容器能够正确地配置网络，通常需要配置两个关键参数：</p>
+<ul>
+<li><code>--cni-bin-dir</code>： 指定 CNI 插件可执行文件所在的目录。默认情况下，是 <code>/opt/cni/bin</code>。容器运行时会在此目录下查找可执行的 CNI 插件。</li>
+<li><code>--cni-conf-dir</code>：指定 CNI 配置文件的目录。默认情况下，是 <code>/etc/cni/net.d</code>。容器运行时会在此目录下查找网络配置文件。</li>
+</ul>
+</li>
+<li><p><strong>Kubelet 与 CNI：</strong> 在 Kubernetes 中，<code>kubelet</code> 负责管理节点上的容器。当 <code>kubelet</code> 使用内置的 Docker 作为容器运行时，它会负责查找 CNI 插件，并调用这些插件来为容器设置网络。</p>
+</li>
+</ol>
+<p><strong>简而言之， CNI 定义了一套接口规范，允许容器运行时（如 kubelet）通过调用不同的插件来配置容器的网络。</strong> 你可以理解为，CNI 就像一个“驱动程序”，使得 Kubernetes 可以支持各种不同的网络方案。</p>
+<p><strong>示例配置（&#x2F;etc&#x2F;cni&#x2F;net.d&#x2F;mycni.conflist）：</strong></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;cniVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;0.3.1&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;mycni&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;plugins&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><br>    <span class="hljs-punctuation">&#123;</span><br>      <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;bridge&quot;</span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;bridge&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;cni0&quot;</span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;isGateway&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;ipMasq&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;ipam&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><br>        <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;host-local&quot;</span><span class="hljs-punctuation">,</span><br>        <span class="hljs-attr">&quot;subnet&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.244.0.0/16&quot;</span><span class="hljs-punctuation">,</span><br>        <span class="hljs-attr">&quot;routes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><br>          <span class="hljs-punctuation">&#123;</span> <span class="hljs-attr">&quot;dst&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;0.0.0.0/0&quot;</span> <span class="hljs-punctuation">&#125;</span><br>        <span class="hljs-punctuation">]</span><br>      <span class="hljs-punctuation">&#125;</span><br>    <span class="hljs-punctuation">&#125;</span><span class="hljs-punctuation">,</span><br>    <span class="hljs-punctuation">&#123;</span><br>      <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;portmap&quot;</span><span class="hljs-punctuation">,</span><br>      <span class="hljs-attr">&quot;capabilities&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><span class="hljs-attr">&quot;portMappings&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">&#125;</span><br>    <span class="hljs-punctuation">&#125;</span><br>  <span class="hljs-punctuation">]</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure>
+
+<p>这个配置文件定义了一个名为 “mycni” 的 CNI 配置，它使用 <code>bridge</code> 插件创建网桥，并使用 <code>host-local</code> IPAM 插件为容器分配 IP 地址。<code>portmap</code> 插件则用于端口映射。</p>
+<h2 id="CNI-插件设计考量"><a href="#CNI-插件设计考量" class="headerlink" title="CNI 插件设计考量"></a><strong>CNI 插件设计考量</strong></h2><ol>
+<li><p><strong>“容器运行时必须在调用任何插件之前为容器创建一个新的网络命名空间。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这是容器网络隔离的基础。在 Linux 中，网络命名空间（Network Namespace）是内核提供的一种资源隔离机制。每个网络命名空间都拥有独立的网络栈，包括网络接口（如 lo, eth0）、路由表、iptables 规则、套接字等。容器运行时（如 containerd）在启动容器进程之前，会调用 <code>clone()</code> 或 <code>unshare()</code> 系统调用，并带上 <code>CLONE_NEWNET</code> 标志，为即将运行的容器进程创建一个全新的、隔离的网络环境。这个空的网络命名空间只有 <code>lo</code> 回环设备，并且处于 <code>down</code> 状态。CNI 插件的职责就是在这个已经创建好的命名空间内配置网络。运行时会将这个命名空间的路径（例如 <code>/proc/&lt;pid&gt;/ns/net</code>）传递给 CNI 插件，以便插件可以进入该命名空间进行操作（通常通过 <code>setns()</code> 系统调用）。</li>
+</ul>
+</li>
+<li><p><strong>“容器运行时必须决定这个容器属于哪些网络，针对每个网络，哪些插件必须要执行。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这涉及到配置的发现和解析。容器的网络需求可能很复杂，比如一个 Pod 在 Kubernetes 中可能需要连接到默认的 Pod 网络，还可能通过 Multus CNI 连接到其他如 SR-IOV 或 Macvlan 网络。运行时需要读取相应的配置（在 Kubernetes 中，这通常由 Kubelet 根据 Pod 定义和 CNI 配置文件 <code>/etc/cni/net.d/</code> 下的内容来决定）。配置文件（<code>.conf</code> 或 <code>.conflist</code>）定义了网络的名称、类型（即要调用的 CNI 插件二进制文件）以及其他参数（如 IPAM 类型）。运行时负责根据这些配置，确定需要为当前容器调用哪个或哪些 CNI 插件的二进制文件。</li>
+</ul>
+</li>
+<li><p><strong>“容器运行时必须加载配置文件，并确定设置网络时哪些插件必须被执行。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这是对上一点的补充和具体化。CNI 的配置通常放在主机的特定目录（默认为 <code>/etc/cni/net.d/</code>）。配置文件可以是单个网络配置 (<code>.conf</code>)，也可以是一个网络配置列表 (<code>.conflist</code>)，后者支持插件链（Chaining）。例如，一个 <code>.conflist</code> 文件可能先调用一个 IPAM 插件（如 <code>host-local</code>）来分配 IP 地址，然后调用一个主插件（如 <code>bridge</code> 或 <code>calico</code>）来创建网络设备并连接到网络，最后可能还会调用一个策略插件（如 <code>portmap</code>）来设置端口映射。运行时需要解析这个 JSON 配置，理解插件的类型和顺序，并将正确的配置信息传递给每个插件。</li>
+</ul>
+</li>
+<li><p><strong>“网络配置采用 JSON 格式，可以很容易地存储在文件中。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 选择 JSON 作为配置格式是基于其广泛的接受度、易于人类阅读和编写，以及极其方便的机器解析性。几乎所有的现代编程语言（包括 Golang）都有成熟的库来处理 JSON。CNI 规范严格定义了配置的 JSON 结构，包括 <code>cniVersion</code>, <code>name</code>, <code>type</code>, <code>ipam</code>, <code>dns</code>, <code>args</code> 等字段。这使得不同开发者编写的运行时和插件能够无缝协作。在 Golang 中，<code>encoding/json</code> 标准库使得 CNI 插件或运行时可以轻松地将 JSON 数据 unmarshal 到结构体中，或将结构体 marshal 成 JSON 字符串。</li>
+</ul>
+</li>
+<li><p><strong>“容器运行时必须按顺序执行配置文件里相应的插件。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这特指 CNI 插件链（Plugin Chaining）的执行顺序。当使用 <code>.conflist</code> 配置文件时，<code>plugins</code> 数组中的插件必须按照它们在数组中出现的顺序被依次调用。前一个插件执行成功后，其输出的 CNI Result（通常包含分配的 IP 地址、DNS 信息等）会作为下一个插件的输入配置（通过 <code>prevResult</code> 字段）。这种机制允许将复杂的网络功能分解为一系列可组合的、单一职责的插件。例如，IP 分配、网络设备创建、路由设置、端口映射、带宽限制等可以由不同的插件按顺序完成。运行时需要确保这种严格的顺序执行和结果传递。</li>
+</ul>
+</li>
+<li><p><strong>“在完成容器生命周期后，容器运行时必须按照与执行添加容器相反的顺序执行插件，以便将容器与网络断开连接。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这是资源清理的关键。当容器被删除时，运行时需要调用 CNI 插件的 <code>DEL</code> 命令来清理网络资源。对于插件链，清理操作必须按照添加操作（<code>ADD</code>）的<strong>相反顺序</strong>执行。这是因为后执行的 <code>ADD</code> 操作可能依赖于先执行的 <code>ADD</code> 操作创建的资源。例如，<code>portmap</code> 插件设置的 iptables 规则可能依赖于 <code>bridge</code> 插件创建的 veth 设备。因此，必须先调用 <code>portmap</code> 的 <code>DEL</code> 来删除规则，然后才能调用 <code>bridge</code> 的 <code>DEL</code> 来删除设备。这种反向顺序确保了依赖关系的正确解除和资源的干净回收。</li>
+</ul>
+</li>
+<li><p><strong>“容器运行时被同一容器调用时不能并行操作，但被不同的容器调用时，允许并行操作。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这是为了保证单个容器网络配置的一致性。对同一个容器的网络进行并发的 <code>ADD</code> 或 <code>DEL</code> 操作可能会导致竞态条件（Race Condition）和不可预测的网络状态。例如，两个进程同时尝试为同一个容器配置 IP 地址，可能会导致配置冲突或状态不一致。因此，运行时必须确保对特定容器（由 <code>ContainerID</code> 标识）的所有 CNI 操作（针对同一网络或不同网络）是串行执行的，通常通过加锁（如基于 ContainerID 的锁）来实现。然而，为 <em>不同</em> 的容器配置网络通常是互不影响的，运行时应该允许这些操作并行执行，以提高效率，尤其是在节点上需要同时启动或销毁大量容器时。</li>
+</ul>
+</li>
+<li><p><strong>“容器运行时针对一个容器必须按顺序执行 ADD 和 DEL 操作，ADD 后面总是跟着相应的 DEL。DEL 可能跟着额外的 DEL，插件应该允许处理多个 DEL。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> 这定义了基本的 <code>ADD</code>&#x2F;<code>DEL</code> 调用模式，并强调了 <code>DEL</code> 操作的幂等性（Idempotency）。一个成功的 <code>ADD</code> 操作最终应该对应一个 <code>DEL</code> 操作来清理资源。但是，由于运行时或节点可能发生故障、重启或用户强制清理，同一个容器的同一个网络接口可能会收到多次 <code>DEL</code> 命令。因此，CNI 插件在实现 <code>DEL</code> 逻辑时，必须设计成幂等的。也就是说，即使 <code>DEL</code> 被调用多次，也应该能正确处理（例如，第一次删除资源，后续调用发现资源已不存在，则直接返回成功，而不是报错）。这保证了清理操作的健壮性。</li>
+</ul>
+</li>
+<li><p><strong>“容器必须由 ContainerID 来唯一标识，需要存储状态的插件需要使用网络名称、容器 ID 和网络接口组成的主 key 用于索引。”</strong></p>
+<ul>
+<li><strong>深度解析：</strong> <code>ContainerID</code> 是运行时（如 containerd）生成的唯一标识符，用于区分节点上的不同容器。对于需要持久化状态的 CNI 插件（最典型的例子是 IPAM 插件，需要记录哪个 IP 地址分配给了哪个容器），<code>ContainerID</code> 是必不可少的。然而，仅有 <code>ContainerID</code> 可能不够，因为一个容器可能连接到多个网络，或者同一个网络在配置中可能有不同的实例（虽然不常见）。CNI 规范建议（虽然没有强制要求所有插件都这样做），使用一个组合键，通常是 <code>(网络名称, ContainerID, 网络接口名称)</code>，来唯一地标识一个特定的网络连接实例。这个组合键可以用来在持久化存储（如本地文件、etcd、数据库）中查找或存储与该连接相关的状态（如分配的 IP 地址）。例如，<code>host-local</code> IPAM 插件默认就在本地磁盘上使用包含这些信息的文件路径或内容来存储 IP 分配记录。</li>
+</ul>
+</li>
+<li><p><strong>“容器运行时针对同一个网络、同一个容器、同一个网络接口，不能连续调用两次 ADD 命令。”</strong><br>*   <strong>深度解析：</strong> 这是对运行时行为的约束，旨在防止意外的重复配置。如果运行时已经成功为某个容器的特定接口（如 <code>eth0</code>）在特定网络上执行了 <code>ADD</code> 操作，那么在没有执行相应的 <code>DEL</code> 操作之前，不应该再次对完全相同的目标（相同网络名、相同 ContainerID、相同接口名）发起 <code>ADD</code> 请求。这简化了插件的逻辑，插件通常可以假设收到的 <code>ADD</code> 请求是针对一个尚未配置或已被清理的接口。如果运行时违反了此规则，插件的行为是未定义的，可能会失败或导致状态混乱。</p>
+</li>
+</ol>
+<h2 id="打通主机层插件"><a href="#打通主机层插件" class="headerlink" title="打通主机层插件"></a>打通主机层插件</h2><ol>
+<li><p><strong>基础要求：CNI <code>lo</code> 插件</strong></p>
+<ul>
+<li><code>Kubernetes 还需要标准的 CNI 插件 lo, 最低版本为 0.2.0 版本。</code></li>
+<li><strong>解析：</strong> 每个 Pod 都有自己独立的网络命名空间（Network Namespace）。在这个命名空间里，必须有一个 <code>lo</code> (loopback) 网络接口，IP 地址通常是 <code>127.0.0.1</code>。这是网络栈正常工作的基础，允许 Pod 内的进程通过 <code>localhost</code> 互相通信，或者访问绑定在 <code>localhost</code> 上的服务。CNI <code>lo</code> 插件的职责就是在创建 Pod 的网络命名空间后，执行 <code>ip link set lo up</code> 之类的操作，确保这个最基本的接口是启动和可用的。虽然简单，但它是所有 Pod 网络功能的前提。</li>
+</ul>
+</li>
+<li><p><strong>CNI 插件与 Kube-proxy (Iptables 模式) 的协同</strong></p>
+<ul>
+<li><code>网络插件除支持设置和清理 Pod 网络接口外，该插件还需要支持 Iptables。如果 Kube-proxy 工作在 Iptables 模式，网络插件需要确保容器流量能使用 Iptables 转发。</code></li>
+<li><strong>解析：</strong> CNI 插件的主要职责是为 Pod 创建网络接口（例如 veth pair 中的一端），分配 IP 地址，并将其连接到主机网络或某种覆盖网络。然而，仅仅设置好接口和 IP 是不够的。Kubernetes 中的 <code>Service</code> 对象提供了一个稳定的访问入口，其背后由 <code>Kube-proxy</code> 组件实现负载均衡和转发。</li>
+<li><code>Kube-proxy</code> 有多种工作模式，其中 <code>iptables</code> 模式是最经典也曾经是默认的模式。在这种模式下，<code>Kube-proxy</code> 会在宿主机上创建大量的 Iptables 规则（主要在 <code>nat</code> 表的 <code>PREROUTING</code>、<code>OUTPUT</code>、<code>KUBE-SERVICES</code>、<code>KUBE-SVC-*</code>、<code>KUBE-SEP-*</code> 等链中）。这些规则的作用是：当有数据包访问 Service 的 ClusterIP 时，将其目标地址（DNAT）修改为后端某个具体 Pod 的 IP 地址和端口。</li>
+<li><strong>关键点：</strong> 为了让 <code>Kube-proxy</code> 的 Iptables 规则生效，从 Pod 发出、目标是 Service ClusterIP 的流量，或者从外部进入、目标是 NodePort&#x2F;LoadBalancer IP 并最终需要转发给 Pod 的流量，都<strong>必须</strong>经过宿主机上设置了这些 Iptables 规则的 Netfilter 处理点。CNI 插件的设计和配置<strong>必须保证</strong>这一点。如果 CNI 插件创建的网络路径绕过了宿主机的 Iptables 处理，那么 Service 就会失效。</li>
+</ul>
+</li>
+<li><p><strong>Linux 网桥场景：<code>bridge-nf-call-iptables</code> 的重要性</strong></p>
+<ul>
+<li><code>例如，如果网络插件将容器连接到 Linux 网桥，必须将 net/bridge/bridge-nf-call-iptables 参数 sysctl 设置为 1，网桥上数据包将遍历 Iptables 规则。</code></li>
+<li><strong>解析：</strong> 一种非常常见的 CNI 实现方式（例如 Flannel 的 <code>host-gw</code> 或 <code>vxlan</code> 模式的部分配置，以及早期的 Docker 网络）是在宿主机上创建一个 Linux 网桥（如 <code>cni0</code> 或 <code>docker0</code>），然后将每个 Pod 的 veth pair 的宿主机端接入这个网桥。</li>
+<li><strong>Linux 内核行为：</strong> 默认情况下，Linux 网桥工作在 OSI 模型的第二层（数据链路层）。当数据包从一个连接到网桥的接口（比如 Pod 的 veth）进入，网桥会根据目标 MAC 地址决定将其从哪个接口转发出去（如果目标 MAC 在本地，则转发；如果未知，则广播）。这个二层转发过程<strong>通常不会</strong>经过宿主机的三层（IP 层）处理，也就是<strong>不会</strong>经过 Netfilter&#x2F;Iptables 的钩子（Hooks）。</li>
+<li><strong>问题：</strong> 如果 Pod A（IP: 10.1.1.2）访问一个 Service（ClusterIP: 10.96.0.10），数据包从 Pod A 的 veth 进入宿主机的网桥。如果目标 Pod B（IP: 10.1.1.3）也在同一个网桥上，并且网桥已经学习了 Pod B veth 的 MAC 地址，那么数据包可能会被直接二层转发给 Pod B 的 veth，完全绕过了宿主机的 Iptables <code>nat</code> 表，导致 DNAT 规则无法匹配和执行，Service 访问失败。</li>
+<li><strong>解决方案：<code>net.bridge.bridge-nf-call-iptables = 1</code></strong><ul>
+<li>这个 <code>sysctl</code> 参数位于 <code>/proc/sys/net/bridge/bridge-nf-call-iptables</code>。当它被设置为 <code>1</code> 时，会启用 <code>br_netfilter</code> 内核模块的功能。</li>
+<li><code>br_netfilter</code> 模块会在 Linux 网桥处理数据包的路径上增加 Netfilter 钩子。具体来说，它使得即使是<strong>二层桥接</strong>的数据包，也会被提交到 Iptables 的 <code>PREROUTING</code>、<code>FORWARD</code> 和 <code>POSTROUTING</code> 链（以及相关的 <code>filter</code>、<code>nat</code>、<code>mangle</code> 表）进行处理。</li>
+<li>这样一来，即使 Pod A 和目标 Service 的后端 Pod B 在同一个网桥上，从 Pod A 发往 Service ClusterIP 的数据包在进入网桥后，也会被强制送入 Iptables <code>nat</code> 表的 <code>PREROUTING</code> 或 <code>OUTPUT</code> 链（取决于流量发起点），从而被 <code>Kube-proxy</code> 设置的 DNAT 规则正确匹配和修改，最终转发给 Pod B。</li>
+<li><strong>注意：</strong> 相关的还有 <code>bridge-nf-call-ip6tables</code> (用于 IPv6) 和 <code>bridge-nf-call-arptables</code> (用于 ARP)。通常都需要一并检查或设置。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>非 Linux 网桥场景：路由是关键</strong></p>
+<ul>
+<li><code>如果插件不使用 Linux 桥接器（而是类似 Open vSwitch 或其他某种机制的插件），则应确保容器流量被正确设置了路由。</code></li>
+<li><strong>解析：</strong> 有些 CNI 插件（如 Calico 的 BGP 模式，或者一些基于 OVS 的实现）不依赖 Linux 内核原生的网桥。<ul>
+<li><strong>Calico BGP 模式示例：</strong> Calico 通常为每个 Pod 的 veth 接口配置一个 <code>/32</code> 的路由，并在宿主机上维护到各个 Pod IP 的路由信息（通过 BGP 协议交换或直接写入路由表）。当 Pod A 访问 Service ClusterIP 时，数据包离开 Pod A 的网络命名空间，进入宿主机。宿主机的路由表会将目标为 ClusterIP 的数据包导向正确的处理路径（通常是本地处理，触发 <code>OUTPUT</code> 链或 <code>PREROUTING</code> 链的 Iptables 规则）。或者，如果 Pod A 访问 Pod B，路由表会直接将数据包导向 Pod B 所在的节点或其本地 veth 接口。由于这种方式天然依赖宿主机的 IP 层路由，流量自然会经过 Netfilter&#x2F;Iptables 处理点，因此不需要 <code>bridge-nf-call-iptables</code>。关键在于 CNI 插件必须正确配置宿主机的路由表。</li>
+<li><strong>Open vSwitch (OVS) 示例：</strong> 基于 OVS 的插件（如 OVN-Kubernetes）使用 OVS 作为虚拟交换机。OVS 有自己复杂的流表处理逻辑。这类插件需要配置 OVS 的流表规则，确保 Pod 发出的流量在 OVS 内部被正确处理后，能够到达宿主机的网络栈（如果需要 Iptables 处理 Service），或者直接被 OVS 转发到目标 Pod 或下一跳。配置的细节取决于具体的 OVS 实现，但核心目标一致：确保流量能被 Kube-proxy 的机制（无论是 Iptables 还是 IPVS）拦截和处理。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<img src="/2025/03/25/kubernetes-CNI/image-20250328201253599.png" srcset="/img/loading.gif" lazyload class="" title="image-20250328201253599">
+
+<img src="/2025/03/25/kubernetes-CNI/image-20250328201905840.png" srcset="/img/loading.gif" lazyload class="" title="image-20250328201905840">
 
                 
               </div>
@@ -376,6 +525,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/03/28/kubernetes-CSI/" title="kubernetes_CSI">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kubernetes_CSI</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
