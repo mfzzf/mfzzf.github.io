@@ -1,0 +1,879 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Mzzf">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Service 对象  Kubernetes Service 是集群内网络抽象的核心对象，其核心功能是通过稳定的虚拟 IP 和 DNS 名称对外暴露动态变化的 Pod 集合。我们从网络协议栈实现和控制器模式两个维度深入剖析其核心机制： 1. Service Selector 的标签驱动机制  底层基于 Kubernetes API 的 List-Watch 机制，Service Controlle">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Service对象">
+<meta property="og:url" content="https://mfzzf.github.io/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/index.html">
+<meta property="og:site_name" content="Mzzf&#39;s Blog">
+<meta property="og:description" content="Service 对象  Kubernetes Service 是集群内网络抽象的核心对象，其核心功能是通过稳定的虚拟 IP 和 DNS 名称对外暴露动态变化的 Pod 集合。我们从网络协议栈实现和控制器模式两个维度深入剖析其核心机制： 1. Service Selector 的标签驱动机制  底层基于 Kubernetes API 的 List-Watch 机制，Service Controlle">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/image-20250410100845025.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/image-20250410100946603.png">
+<meta property="article:published_time" content="2025-04-03T11:34:45.000Z">
+<meta property="article:modified_time" content="2025-04-10T02:23:30.373Z">
+<meta property="article:author" content="Mzzf">
+<meta property="article:tag" content="kubernetes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/image-20250410100845025.png">
+  
+  
+  
+  <title>Service对象 - Mzzf&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"mfzzf.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Mzzf&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Service对象"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-04-03 19:34" pubdate>
+          2025年4月3日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.6k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          22 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Service对象</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="Service-对象"><a href="#Service-对象" class="headerlink" title="Service 对象"></a>Service 对象</h2><img src="/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/image-20250410100845025.png" srcset="/img/loading.gif" lazyload class="" title="image-20250410100845025">
+
+<p>Kubernetes Service 是集群内网络抽象的核心对象，其核心功能是通过稳定的虚拟 IP 和 DNS 名称对外暴露动态变化的 Pod 集合。我们从网络协议栈实现和控制器模式两个维度深入剖析其核心机制：</p>
+<p><strong>1. Service Selector 的标签驱动机制</strong></p>
+<ul>
+<li>底层基于 Kubernetes API 的 List-Watch 机制，Service Controller 通过 Informer 持续监控 Endpoints 对象</li>
+<li>标签选择器采用集合查询语义（equality-based selector），执行逻辑等价于 <code>kubectl get pods -l app=nginx</code></li>
+<li>符合标签的 Pod 会被加入 Endpoints 对象，kube-proxy 据此动态维护 iptables&#x2F;IPVS 规则</li>
+<li>选择器与 Pod 的标签匹配采用实时更新策略，任何 Pod 标签变更都会触发 Endpoints 的原子更新</li>
+</ul>
+<p><strong>2. Ports 的多层端口映射体系</strong></p>
+<ul>
+<li><code>port: 80</code> 定义 Service 的虚拟 IP 监听端口，对应 kube-proxy 在节点上开放的端口</li>
+<li><code>targetPort: 80</code> 指向 Pod 内容器实际监听的端口，支持数字端口或命名端口（需与容器端口定义一致）</li>
+<li>协议字段支持 TCP&#x2F;UDP&#x2F;SCTP，其中 TCP 默认开启 Nagle 算法，需注意与短连接服务的兼容性</li>
+<li>端口映射本质是在 CNI 插件实现的 overlay 网络基础上构建的虚拟四层负载均衡</li>
+</ul>
+<p><strong>3. 示例配置的深度解析</strong></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">nginx-service</span>  <span class="hljs-comment"># 生成 DNS 记录 nginx-service.&lt;namespace&gt;.svc.cluster.local</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx</span>  <span class="hljs-comment"># 与 Pod 的 metadata.labels 形成级联关系</span><br>  <span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span>    <span class="hljs-comment"># 传输层协议类型</span><br>    <span class="hljs-attr">port:</span> <span class="hljs-number">80</span>         <span class="hljs-comment"># Service 暴露的虚拟端口</span><br>    <span class="hljs-attr">targetPort:</span> <span class="hljs-number">80</span>   <span class="hljs-comment"># 容器实际监听端口，支持端口名称(如 web-port)</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>4. 底层流量转发机制</strong></p>
+<ul>
+<li>对于 ClusterIP 类型 Service，kube-proxy 通过 iptables 的 DNAT 规则实现流量转发</li>
+<li>每个 Service 对应 iptables 链中的 KUBE-SVC-XXXXX 规则链，采用随机概率轮询算法</li>
+<li>在 IPVS 模式下，会创建虚拟服务地址，采用更丰富的负载均衡算法（rr&#x2F;lc&#x2F;dh&#x2F;sh等）</li>
+</ul>
+<p><strong>5. 服务发现的双模机制</strong></p>
+<ul>
+<li>环境变量方式：Service 创建时，kubelet 向 Pod 注入形如 NGINX_SERVICE_SERVICE_HOST 的环境变量</li>
+<li>DNS 方式：CoreDNS 创建 A&#x2F;AAAA 记录和 SRV 记录，支持全限定域名(FQDN)解析</li>
+</ul>
+<p>从系统设计视角看，Service 对象实现了关键的网络抽象层：</p>
+<ul>
+<li>解耦前端访问与后端实例的映射关系</li>
+<li>提供跨节点、跨网络的透明通信能力</li>
+<li>通过 Endpoints API 实现控制平面与数据平面的分离</li>
+<li>与 kube-proxy 组件配合完成服务代理的声明式配置</li>
+</ul>
+<p>该设计使得应用可以无视底层基础设施的差异，获得一致的网络访问体验，是 Kubernetes 实现弹性伸缩和滚动升级的基础设施保障。</p>
+<h3 id="Headless-Service"><a href="#Headless-Service" class="headerlink" title="Headless Service"></a>Headless Service</h3><p><code>Cluster IP: None</code></p>
+<h3 id="External-Name"><a href="#External-Name" class="headerlink" title="External Name"></a>External Name</h3><p><code>externalName: example.com</code></p>
+<h3 id="Service-Topology"><a href="#Service-Topology" class="headerlink" title="Service Topology"></a>Service Topology</h3><p>在 Kubernetes 集群跨多可用区（AZ）或多区域（Region）部署时，传统 Service 的流量分发存在以下问题：</p>
+<ol>
+<li><strong>非智能路由</strong>：默认的 <code>kube-proxy</code> 通过随机或轮询算法选择端点，可能导致跨 AZ 流量（如 Pod 在 AZ-A，请求来自 AZ-B 的节点）。</li>
+<li><strong>高延迟与成本</strong>：跨区域通信涉及公网带宽或专线费用，延迟显著高于同区域通信（例如 AWS 同 AZ 延迟约 0.1ms，跨 AZ 约 1-5ms）。</li>
+</ol>
+<hr>
+<p>Service Topology 的实现依赖 <strong>拓扑键（Topology Keys）</strong> 机制，其核心流程如下：</p>
+<h4 id="1-节点标签定义"><a href="#1-节点标签定义" class="headerlink" title="1. 节点标签定义"></a><strong>1. 节点标签定义</strong></h4><ul>
+<li>节点需标记拓扑标签（如 <code>topology.kubernetes.io/zone=us-east-1a</code>）。</li>
+<li>典型拓扑层级：<code>kubernetes.io/hostname</code>（节点） → <code>topology.kubernetes.io/zone</code>（可用区） → <code>topology.kubernetes.io/region</code>（区域）。</li>
+</ul>
+<h4 id="2-Service-配置"><a href="#2-Service-配置" class="headerlink" title="2. Service 配置"></a><strong>2. Service 配置</strong></h4><p>在 Service Spec 中声明 <code>topologyKeys</code>，按优先级指定路由策略：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">my-service</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">my-app</span><br>  <span class="hljs-attr">ports:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>      <span class="hljs-attr">port:</span> <span class="hljs-number">80</span><br>      <span class="hljs-attr">targetPort:</span> <span class="hljs-number">9376</span><br>  <span class="hljs-attr">topologyKeys:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;topology.kubernetes.io/zone&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;topology.kubernetes.io/region&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;*&quot;</span>  <span class="hljs-comment"># 全局回退（可选）</span><br><br></code></pre></td></tr></table></figure>
+
+<p><strong>路由逻辑</strong>：</p>
+<ol>
+<li>优先选择与请求源节点<strong>同 Zone</strong> 的端点（Endpoints）。</li>
+<li>若无同 Zone 端点，选择同 Region 的端点。</li>
+<li>若仍无匹配，根据 <code>*</code> 回退到全局（需显式配置）。</li>
+</ol>
+<h2 id="Topology-Aware-Hints"><a href="#Topology-Aware-Hints" class="headerlink" title="Topology Aware Hints"></a>Topology Aware Hints</h2><table>
+<thead>
+<tr>
+<th><strong>维度</strong></th>
+<th><strong>Service Topology</strong></th>
+<th><strong>Topology Aware Hints</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>配置方式</td>
+<td>显式定义 <code>topologyKeys</code></td>
+<td>自动识别 + 注解触发</td>
+</tr>
+<tr>
+<td>流量分配</td>
+<td>全有或全无（匹配层级）</td>
+<td>按比例分配（权重化）</td>
+</tr>
+<tr>
+<td>控制粒度</td>
+<td>拓扑域级别</td>
+<td>单个端点级别</td>
+</tr>
+<tr>
+<td>会话保持</td>
+<td>无</td>
+<td>通过 iptables –recent 实现</td>
+</tr>
+<tr>
+<td>回退机制</td>
+<td>立即回退到下一层级</td>
+<td>渐进式回退 + 比例控制</td>
+</tr>
+</tbody></table>
+<h2 id="Endpoint-对象"><a href="#Endpoint-对象" class="headerlink" title="Endpoint 对象"></a>Endpoint 对象</h2><p>Endpoint 对象是 Kubernetes 服务发现机制的核心组件，其工作原理和细节可从以下四个维度深入理解：</p>
+<img src="/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/image-20250410100946603.png" srcset="/img/loading.gif" lazyload class="" title="image-20250410100946603">
+
+<h4 id="一、控制器协同机制"><a href="#一、控制器协同机制" class="headerlink" title="一、控制器协同机制"></a>一、控制器协同机制</h4><p>Endpoint Controller 通过监听 Service 和 Pod 的变更事件实现动态同步：</p>
+<ol>
+<li>采用 Informer 机制监听 API Server 事件（Watch 机制 + 增量队列）</li>
+<li>事件处理逻辑：</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// kubernetes/pkg/controller/endpoint/endpoints_controller.go</span><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *Controller)</span></span> syncService(key <span class="hljs-type">string</span>) <span class="hljs-type">error</span> &#123;<br>    service, exists, err := e.serviceStore.GetByKey(key)<br>    <span class="hljs-comment">// 获取匹配的 Pod 列表</span><br>    pods, err := e.podLister.Pods(namespace).List(selector)<br>    <span class="hljs-comment">// 构建 subsets 数据结构</span><br>    subsets := []v1.EndpointSubset&#123;&#125;<br>    <span class="hljs-keyword">for</span> _, pod := <span class="hljs-keyword">range</span> pods &#123;<br>        <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(pod.Status.PodIP) == <span class="hljs-number">0</span> &#123;<br>            <span class="hljs-keyword">continue</span><br>        &#125;<br>        <span class="hljs-comment">// 就绪状态判断逻辑</span><br>        ready := podutil.IsPodReady(pod)<br>        <span class="hljs-keyword">if</span> !ready &amp;&amp; !service.Spec.PublishNotReadyAddresses &#123;<br>            <span class="hljs-keyword">continue</span><br>        &#125;<br>        <span class="hljs-comment">// 填充 endpoint 地址</span><br>        epAddress := v1.EndpointAddress&#123;<br>            IP:       pod.Status.PodIP,<br>            NodeName: &amp;pod.Spec.NodeName,<br>            TargetRef: &amp;v1.ObjectReference&#123;<br>                Kind:      <span class="hljs-string">&quot;Pod&quot;</span>,<br>                Namespace: pod.Namespace,<br>                Name:      pod.Name,<br>                UID:       pod.UID,<br>            &#125;,<br>        &#125;<br>        <span class="hljs-comment">// 端口映射处理</span><br>        <span class="hljs-keyword">for</span> _, svcPort := <span class="hljs-keyword">range</span> service.Spec.Ports &#123;<br>            <span class="hljs-comment">// 端口匹配逻辑...</span><br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="二、就绪状态判定体系"><a href="#二、就绪状态判定体系" class="headerlink" title="二、就绪状态判定体系"></a>二、就绪状态判定体系</h4><ol>
+<li>就绪探针深度集成：</li>
+</ol>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># Pod 定义示例</span><br><span class="hljs-attr">readinessProbe:</span><br>  <span class="hljs-attr">httpGet:</span><br>    <span class="hljs-attr">path:</span> <span class="hljs-string">/healthz</span><br>    <span class="hljs-attr">port:</span> <span class="hljs-number">8080</span><br>  <span class="hljs-attr">initialDelaySeconds:</span> <span class="hljs-number">5</span><br>  <span class="hljs-attr">periodSeconds:</span> <span class="hljs-number">10</span><br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>状态机转换逻辑：</li>
+</ol>
+<ul>
+<li>Pod 的 <code>status.conditions</code> 包含 <code>PodReady</code> 条件</li>
+<li>kubelet 每 10 秒（默认）执行探针检测</li>
+<li>连续成功次数达到阈值后标记为 Ready</li>
+<li>失败时触发 endpoint 地址移除（默认配置下）</li>
+</ul>
+<h4 id="三、网络流量控制实现"><a href="#三、网络流量控制实现" class="headerlink" title="三、网络流量控制实现"></a>三、网络流量控制实现</h4><ol>
+<li>kube-proxy 同步机制：</li>
+</ol>
+<ul>
+<li>通过 EndpointSlice 控制器监听变更</li>
+<li>实现 IPVS 规则动态更新：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># IPVS 规则示例</span><br>ipvsadm -Ln -t 10.96.0.10:80<br>Prot LocalAddress:Port Scheduler Flags<br>  -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn<br>  -&gt; 10.244.1.2:9376              Masq    1      0          0<br>  -&gt; 10.244.1.3:9376              Masq    1      0          0<br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>流量切换策略：</li>
+</ol>
+<ul>
+<li>滚动更新时新旧 endpoint 共存</li>
+<li>连接保持时间（默认 15s）影响长连接服务</li>
+</ul>
+<h4 id="四、生产环境最佳实践"><a href="#四、生产环境最佳实践" class="headerlink" title="四、生产环境最佳实践"></a>四、生产环境最佳实践</h4><ol>
+<li>监控指标体系建设：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs prometheus"># 关键监控指标<br>kube_endpoint_address_available<br>kube_endpoint_address_not_ready<br>kubeproxy_sync_proxy_rules_duration_seconds<br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>异常场景处理：</li>
+</ol>
+<ul>
+<li>僵尸 endpoint 检测（IP 冲突&#x2F;残留）</li>
+<li>大规模集群 EndpointSlice 优化（默认每 EndpointSlice 包含 100 地址）</li>
+</ul>
+<ol start="3">
+<li>高级调度策略：</li>
+</ol>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">topologyKeys:</span> [<span class="hljs-string">&quot;kubernetes.io/hostname&quot;</span>]<br>  <span class="hljs-attr">externalTrafficPolicy:</span> <span class="hljs-string">Local</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="典型故障排查流程："><a href="#典型故障排查流程：" class="headerlink" title="典型故障排查流程："></a>典型故障排查流程：</h4><ol>
+<li>检查 endpoint 状态：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl get endpoints &lt;service-name&gt; -o yaml<br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>验证 kube-proxy 日志：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">journalctl -u kube-proxy --since <span class="hljs-string">&quot;5 minutes ago&quot;</span> | grep SyncProxy<br></code></pre></td></tr></table></figure>
+<ol start="3">
+<li>网络连通性测试：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl <span class="hljs-built_in">exec</span> -it test-pod -- curl -v http://service-ip:port<br></code></pre></td></tr></table></figure>
+
+<p>理解 Endpoint 对象需要结合 Kubernetes 控制器模式、网络插件实现、探针机制等多个子系统。生产环境中需特别注意 endpoint 更新延迟（默认 30 秒同步周期）对服务发现的影响，大规模部署时应考虑启用 EndpointSlice 提升性能。</p>
+<h2 id="EndpointSlice"><a href="#EndpointSlice" class="headerlink" title="EndpointSlice"></a><strong>EndpointSlice</strong></h2><h3 id="什么是-EndpointSlice-对象？"><a href="#什么是-EndpointSlice-对象？" class="headerlink" title="什么是 EndpointSlice 对象？"></a>什么是 <strong>EndpointSlice</strong> 对象？</h3><p><code>EndpointSlice</code> 是 Kubernetes 1.16 引入的一种 API 对象，旨在优化服务端点（Endpoints）的管理和扩展性问题。它是 <code>Endpoints</code> 的增强版本，用于解决服务规模变大时 <code>Endpoints</code> 对象所表现出的性能和可扩展性限制。</p>
+<hr>
+<h3 id="为什么需要-EndpointSlice？"><a href="#为什么需要-EndpointSlice？" class="headerlink" title="为什么需要 EndpointSlice？"></a>为什么需要 <strong>EndpointSlice</strong>？</h3><ol>
+<li><p><strong>Endpoints 的膨胀问题</strong><br><code>Endpoints</code> 对象会存储某个 <code>Service</code> 所有后端 Pod 的地址信息。当后端 Pod 数量增多时，<code>Endpoints</code> 对象会变得异常庞大，从而导致：</p>
+<ul>
+<li>接近集群对象的天花板（例如 etcd 存储负载的增长）。</li>
+<li><code>Endpoints</code> 的更新操作影响性能（所有节点需要重新 watch 它）。</li>
+<li>集群网络带宽的浪费。</li>
+</ul>
+</li>
+<li><p><strong>高频更新带来的开销</strong></p>
+<ul>
+<li>当 Pod 状态变化时，<code>Endpoints</code> 会更新所有服务相关的地址信息，并将这些变更分发给所有与集群相关的组件（如 kube-proxy）。</li>
+<li>这可能会导致高容量的网络流量。</li>
+</ul>
+</li>
+<li><p><strong>缺乏可扩展性</strong><br>大量的 <code>Endpoints</code> 数据会导致 kube-proxy、DNS 解析等组件性能下降，尤其是当服务规模达到上千个 Pod 时。</p>
+</li>
+</ol>
+<hr>
+<h3 id="EndpointSlice-的工作原理和设计"><a href="#EndpointSlice-的工作原理和设计" class="headerlink" title="EndpointSlice 的工作原理和设计"></a><strong>EndpointSlice</strong> 的工作原理和设计</h3><p><code>EndpointSlice</code> 提供了一种通过分片（Slice）方式存储服务端点的机制，它将服务的端点列表分割成更小的片段——每个 <code>EndpointSlice</code> 对象中可以存储一小段后端 Pod 的信息。这样实现了灵活性和扩展性的平衡。</p>
+<ol>
+<li><p><strong>分片存储</strong></p>
+<ul>
+<li>每个 <code>EndpointSlice</code> 对象内只维护部分服务端点。</li>
+<li>默认情况下，Kubernetes 控制每个切片中包含 100 个端点（该值可以通过 <code>--max-endpoints-per-slice</code> 参数调整）。</li>
+</ul>
+</li>
+<li><p><strong>高效的更新机制</strong></p>
+<ul>
+<li>只更新发生变更的 <code>EndpointSlice</code>，而不是整个 <code>Endpoints</code> 对象。</li>
+<li>降低了更新的频率和数据量，从而减少了网络流量的开销。</li>
+</ul>
+</li>
+<li><p><strong>更灵活的拓扑信息</strong></p>
+<ul>
+<li><code>EndpointSlice</code> 中引入了 <code>topology</code> 字段，可以用来标识这些端点的位置（例如节点名、可用区信息等）。</li>
+<li>通过这种方式实现流量的智能调度，如跨区域分发或节点本地访问。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3 id="示例解析"><a href="#示例解析" class="headerlink" title="示例解析"></a>示例解析</h3><p>以下是 <code>EndpointSlice</code> 的 YAML 配置示例及关键字段说明：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">discovery.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">EndpointSlice</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">example-abc</span><br>  <span class="hljs-attr">labels:</span><br>    <span class="hljs-attr">kubernetes.io/service-name:</span> <span class="hljs-string">example</span>  <span class="hljs-comment"># 与 Service 绑定的名称</span><br><span class="hljs-attr">addressType:</span> <span class="hljs-string">IPv4</span>  <span class="hljs-comment"># 支持 IPv4、IPv6 和 FQDN（全限定域名）</span><br><span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">http</span><br>    <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>    <span class="hljs-attr">port:</span> <span class="hljs-number">80</span><br><span class="hljs-attr">endpoints:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">addresses:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;10.1.2.3&quot;</span>  <span class="hljs-comment"># 后端 Pod 的 IP 地址</span><br>    <span class="hljs-attr">conditions:</span><br>      <span class="hljs-attr">ready:</span> <span class="hljs-literal">true</span>  <span class="hljs-comment"># 标识 Pod 是否处于 Ready 状态</span><br>    <span class="hljs-attr">hostname:</span> <span class="hljs-string">pod-1</span>  <span class="hljs-comment"># Pod 名称</span><br>    <span class="hljs-attr">topology:</span><br>      <span class="hljs-attr">kubernetes.io/hostname:</span> <span class="hljs-string">node-1</span>  <span class="hljs-comment"># 节点名</span><br>      <span class="hljs-attr">topology.kubernetes.io/zone:</span> <span class="hljs-string">us-west2-a</span>  <span class="hljs-comment"># 区域位置</span><br></code></pre></td></tr></table></figure>
+
+<p><strong>重要字段：</strong></p>
+<ul>
+<li><code>addressType</code>：定义服务的通信地址类型，比如 IPv4。</li>
+<li><code>ports</code>：服务所暴露的端口信息，包括协议和端口号。</li>
+<li><code>endpoints</code>：具体到某组 Pod 的地址、状态等信息。</li>
+<li><code>topology</code>：拓扑信息，可以用来做流量调度优化。</li>
+</ul>
+<hr>
+<h3 id="解决了哪些问题？"><a href="#解决了哪些问题？" class="headerlink" title="解决了哪些问题？"></a>解决了哪些问题？</h3><ol>
+<li><p><strong>降低资源消耗</strong></p>
+<ul>
+<li><code>EndpointSlice</code> 减少了随着服务规模增加而带来的 etcd 和网络负担。</li>
+</ul>
+</li>
+<li><p><strong>增强可扩展性</strong></p>
+<ul>
+<li>通过对服务端点列表进行分片，解决了大规模服务中单个 <code>Endpoints</code> 对象过大的问题。</li>
+<li>更快的更新和更小的更新负载适合超大规模的分布式系统。</li>
+</ul>
+</li>
+<li><p><strong>改进网络流量管理</strong></p>
+<ul>
+<li>只通知变更的 Slice。</li>
+<li>减少 kube-proxy 或 CoreDNS 等组件重新获取巨大端点列表的流量。</li>
+</ul>
+</li>
+<li><p><strong>灵活的拓扑感知</strong></p>
+<ul>
+<li>允许用户进行区域或节点本地化流量路由。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h3 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h3><ul>
+<li><p><strong>高可扩展性需求</strong><br>当一个 Service 的后端 Pod 数量达到数百甚至数千个时，<code>EndpointSlice</code> 的分片存储能够极大提高效率。</p>
+</li>
+<li><p><strong>分布式系统</strong><br>在跨区域、多节点的场景中，通过 <code>topology</code> 字段实现基于位置的流量优化。</p>
+</li>
+<li><p><strong>动态更新场景</strong><br>在高频率动态更新的场景中，<code>EndpointSlice</code> 减少网络更新的开销和对节点的广播负载。</p>
+</li>
+</ul>
+<hr>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/kubernetes/" class="print-no-link">#kubernetes</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Service对象</div>
+      <div>https://mfzzf.github.io/2025/04/03/kubernetes-Service对象/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Mzzf</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年4月3日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/04/10/kube-proxy/" title="kube_proxy">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kube_proxy</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/29/%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%AE%A1%E7%90%86%E5%92%8C%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0/" title="生命周期管理和服务发现">
+                        <span class="hidden-mobile">生命周期管理和服务发现</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

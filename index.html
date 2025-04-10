@@ -229,15 +229,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2025/04/01/2025-04-01/" target="_self">
-          
+        <a href="/2025/04/10/kube-proxy/" target="_self">
+          kube_proxy
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/01/2025-04-01/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/10/kube-proxy/" target="_self">
         <div>
-          
+          Kube-proxy 的深度解析核心定位与设计目标kube-proxy 是 Kubernetes 网络体系的核心组件，本质是集群服务的智能流量调度器。它以 DaemonSet 形式部署于每个节点，通过监听 API Server 的 Service 和 Endpoints 对象变化，动态维护节点网络规则，实现两大核心功能：服务发现（将抽象服务名解析为具体后端实例）和负载均衡（智能分配服务流量）。其设
         </div>
       </a>
 
@@ -245,12 +245,59 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2025-04-01 11:30" pubdate>
-              2025-04-01
+            <time datetime="2025-04-10 10:23" pubdate>
+              2025-04-10
             </time>
           </div>
         
         
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/kubernetes/">#kubernetes</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/" target="_self">
+          Service对象
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/" target="_self">
+        <div>
+          Service 对象  Kubernetes Service 是集群内网络抽象的核心对象，其核心功能是通过稳定的虚拟 IP 和 DNS 名称对外暴露动态变化的 Pod 集合。我们从网络协议栈实现和控制器模式两个维度深入剖析其核心机制： 1. Service Selector 的标签驱动机制  底层基于 Kubernetes API 的 List-Watch 机制，Service Controlle
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-03 19:34" pubdate>
+              2025-04-03
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/kubernetes/">#kubernetes</a>
+            
+          </div>
         
       </div>
     </article>
@@ -284,6 +331,13 @@
           </div>
         
         
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/kubernetes/">#kubernetes</a>
+            
+          </div>
         
       </div>
     </article>
@@ -552,46 +606,6 @@
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
             <time datetime="2025-03-18 21:33" pubdate>
-              2025-03-18
-            </time>
-          </div>
-        
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/k8s/">#k8s</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/18/kubernetes-scheduler/" target="_self">
-          kubernetes_scheduler
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/18/kubernetes-scheduler/" target="_self">
-        <div>
-          Kube-Schedular简介kube-scheduler 是 Kubernetes 核心组件之一，负责 Pod 的调度（Scheduling）。简而言之，它的主要职责是决定一个未绑定到节点的 Pod 应该被分配到哪个节点上运行。调度器在 Kubernetes 中起到“任务分派员”的作用，其调度的核心目标是满足工作负载的资源需求（如 CPU、内存等），并同时遵循用户定义的调度策略和约束（如 Po
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-18 13:51" pubdate>
               2025-03-18
             </time>
           </div>
