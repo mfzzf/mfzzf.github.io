@@ -39,7 +39,7 @@
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/10/kube-proxy/image-20250415104221941.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/10/kube-proxy/image-20250415105305996.png">
 <meta property="article:published_time" content="2025-04-10T02:23:46.000Z">
-<meta property="article:modified_time" content="2025-04-15T02:57:45.177Z">
+<meta property="article:modified_time" content="2025-04-16T03:11:59.316Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="kubernetes">
 <meta name="twitter:card" content="summary_large_image">
@@ -247,7 +247,7 @@
         
         
         
-          159 分钟
+          157 分钟
         
       </span>
     
@@ -507,8 +507,7 @@
 <p>在这个示例代码 <code>check_tcp_packet_hook</code>（调整了函数签名以匹配 Netfilter 钩子原型）中，我们首先通过 <code>ip_hdr(skb)</code> 获取 IP 头指针 <code>iph</code>。然后，检查 <code>iph-&gt;protocol</code> 是否等于 <code>IPPROTO_TCP</code>。如果是 TCP 包，就通过 IP 头长度 <code>iph-&gt;ihl * 4</code> 计算出 TCP 头 <code>tcphdr</code> 的地址。接着，提取目的端口 <code>tcph-&gt;dest</code>，并使用 <code>ntohs()</code> 将其从网络字节序转换为主机字节序。最后，将转换后的端口号与 25 进行比较，如果相等，则返回 <code>NF_DROP</code> 丢弃该包；否则，返回 <code>NF_ACCEPT</code> 允许该包继续传递。对于非 TCP 包或者不满足丢弃条件的 TCP 包，函数默认返回 <code>NF_ACCEPT</code>。这种基于传输层端口的过滤能力，使得我们可以对特定的网络服务进行精细化的访问控制。</p>
 <h2 id="Kube-Proxy-工作原理"><a href="#Kube-Proxy-工作原理" class="headerlink" title="Kube-Proxy 工作原理"></a>Kube-Proxy 工作原理</h2><h4 id=""><a href="#" class="headerlink" title=""></a><img src="/2025/04/10/kube-proxy/image-20250412133507210.png" srcset="/img/loading.gif" lazyload class="" title="image-20250412133507210"></h4><h3 id="kube-proxy-的核心职责与解决的问题"><a href="#kube-proxy-的核心职责与解决的问题" class="headerlink" title="kube-proxy 的核心职责与解决的问题"></a>kube-proxy 的核心职责与解决的问题</h3><p>在 Kubernetes 集群中，<strong>Pod 是短暂的，它们的 IP 地址会随着 Pod 的创建和销毁而改变</strong>。然而，应用程序（无论是集群内部的客户端还是外部的客户端）需要一个稳定的方式来访问这些可能不断变化的 Pod 集合提供的服务。这就是 Kubernetes <code>Service</code> 对象解决的问题，它提供了一个稳定的虚拟 IP（ClusterIP）和端口，作为访问后端 Pod 的入口。</p>
 <p><code>kube-proxy</code> 正是实现 <code>Service</code> 概念的关键组件。它并不是传统意义上的用户空间代理（尽管它曾经有过 userspace 模式，但现在已不常用且效率低下），而是一个运行在每个 Node 上的网络代理和负载均衡器。它的核心职责是 <strong>监视（watch）<code>kube-apiserver</code> 上关于 <code>Service</code> 和 <code>Endpoints</code> (或更现代的 <code>EndpointSlice</code>) 对象的变化，并将这些变化转化为节点本地的网络规则</strong>，从而确保发送到 Service IP 的流量能够被正确地路由和负载均衡到后端健康的 Pod 上。简而言之，<code>kube-proxy</code> 让 Service 的虚拟 IP 地址真正“可用”。</p>
-<h3 id="基于图示的工作原理解析-iptables-模式"><a href="#基于图示的工作原理解析-iptables-模式" class="headerlink" title="基于图示的工作原理解析 (iptables 模式)"></a>基于图示的工作原理解析 (iptables 模式)</h3><p>这张图清晰地展示了 <code>kube-proxy</code> 在 <code>iptables</code> 模式下的工作流程（这也是最常见和默认的模式之一）。</p>
-<ol>
+<h3 id="工作原理解析-iptables-模式"><a href="#工作原理解析-iptables-模式" class="headerlink" title="工作原理解析 (iptables 模式)"></a>工作原理解析 (iptables 模式)</h3><ol>
 <li><p><strong>信息获取</strong>: <code>kube-proxy</code> 作为一个客户端，持续地通过 List-Watch 机制与 <code>kube-apiserver</code> 通信。它关注 <code>Service</code> 对象的创建、更新和删除，以及与之关联的 <code>Endpoints</code> 或 <code>EndpointSlice</code> 对象的变化。<code>Endpoints</code> 对象记录了构成一个 <code>Service</code> 的所有后端 Pod 的实际 IP 地址和端口。</p>
 </li>
 <li><p><strong>规则生成</strong>: 当 <code>kube-proxy</code> 检测到变化时（例如，一个新的 Service 被创建，或者一个 Pod 变成 Ready 状态并被添加到 Service 的 Endpoints 中），它会在其所在的 Node 上修改网络规则。在 <code>iptables</code> 模式下，它主要利用 Linux 内核的 <code>netfilter</code> 框架，通过操作 <code>iptables</code> 规则来实现 Service 的虚拟 IP 和端口到后端 Pod IP 和端口的转换。</p>
@@ -527,7 +526,6 @@
 </ul>
 </li>
 </ol>
-<h3 id="其他模式：IPVS"><a href="#其他模式：IPVS" class="headerlink" title="其他模式：IPVS"></a>其他模式：IPVS</h3><p>值得注意的是，除了 <code>iptables</code> 模式，<code>kube-proxy</code> 还支持 <code>IPVS</code> (IP Virtual Server) 模式。IPVS 也是构建在 <code>netfilter</code> 之上，但在 Linux 内核中提供了专门用于负载均衡的功能层。相比 <code>iptables</code>，IPVS 通常在大规模集群（大量 Service）下具有更好的性能和更低的延迟，因为它使用哈希表来查找服务，而不是像 <code>iptables</code> 那样需要线性遍历规则链。在 IPVS 模式下，<code>kube-proxy</code> 会使用 <code>netlink</code> 接口与内核的 IPVS 模块交互，创建虚拟服务器（对应 Service）和真实服务器（对应 Endpoints），并提供更丰富的负载均衡算法（如轮询、最少连接等）。工作流程的核心思想类似：监听 API Server，将 Service&#x2F;Endpoints 信息转化为内核中的 IPVS 规则。</p>
 <h2 id="Kube-proxy-与-iptables-模式概述"><a href="#Kube-proxy-与-iptables-模式概述" class="headerlink" title="Kube-proxy 与 iptables 模式概述"></a>Kube-proxy 与 iptables 模式概述</h2><p>在 Kubernetes 集群中，Service 提供了一个稳定的访问入口（虚拟 IP 地址 ClusterIP 和端口），用于访问后端一组动态变化的 Pod。<code>kube-proxy</code> 是运行在每个 Node 上的一个关键组件，它的核心职责之一就是实现 Service 的概念。当 <code>kube-proxy</code> 配置为 <code>iptables</code> 模式时（这是早期和广泛使用的一种模式），它会监听 Kubernetes API Server 关于 Service 和 Endpoint (Pod IP + Port) 的变化，并将这些信息转化为 Linux 内核 Netfilter 子系统中的 <code>iptables</code> 规则。这些规则共同作用，拦截发往 Service IP 的流量，并将其负载均衡地转发到后端健康的 Pod 上。其核心思想是利用 <code>iptables</code> 的 DNAT（Destination Network Address Translation）和 SNAT（Source Network Address Translation，通常通过 MASQUERADE 实现）功能，结合用户自定义的 chain 来管理复杂的转发逻辑。</p>
 <h3 id="来自其他主机的请求：PREROUTING-链的处理"><a href="#来自其他主机的请求：PREROUTING-链的处理" class="headerlink" title="来自其他主机的请求：PREROUTING 链的处理"></a>来自其他主机的请求：PREROUTING 链的处理</h3><p>当一个网络数据包从集群外部或者集群内的另一个节点（“其他主机”）发送到当前节点，并且其目标是本节点上的某个 Service 时，这个数据包首先会经过 Linux 内核网络栈的 <code>PREROUTING</code> 链。这是 Netfilter 框架在进行路由决策 <em>之前</em> 处理数据包的第一个钩子点。<code>kube-proxy</code> 在 <code>nat</code> 表的 <code>PREROUTING</code> 链中插入了一条或多条规则。</p>
 <p>这些规则会检查数据包的目标 IP 和端口。如果数据包的目标是某个 Service 的 ClusterIP 和端口，或者目标是本节点的 IP 加上某个 Service 暴露的 NodePort，那么这个数据包就会被匹配到。根据你图示的逻辑，入口通常会跳转（<code>JUMP</code>）到 <code>KUBE-SERVICES</code> 这个自定义链。<code>KUBE-SERVICES</code> 链是 <code>kube-proxy</code> 管理 Service 规则的总入口。</p>
@@ -557,6 +555,10 @@
 <p>这样，经过 DNAT 转发给 Pod 的数据包，在离开节点（无论是发往外部客户端还是集群内其他节点上的 Pod）之前，其源 IP 会被修改为节点的 IP。这确保了响应数据包能够正确地路由回该节点，节点再根据其连接跟踪（conntrack）表将响应转发给原始的请求者（无论是外部客户端还是集群内的 Pod）。</p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>Kubernetes 利用 <code>iptables</code> 实现 Service 的机制，本质上是将 Linux 内核强大的 Netfilter&#x2F;iptables 功能自动化、规模化地应用于服务发现和负载均衡场景。通过在 <code>PREROUTING</code>、<code>OUTPUT</code>、<code>POSTROUTING</code> 等关键 Netfilter 钩子点注入精心设计的规则链 (<code>KUBE-SERVICES</code>, <code>KUBE-NODEPORTS</code>, <code>KUBE-SVC-*</code>, <code>KUBE-SEP-*</code>, <code>KUBE-MARK-MASQ</code>, <code>KUBE-POSTROUTING</code>)，<code>kube-proxy</code> 实现了将对稳定虚拟 Service IP 的请求，透明地、负载均衡地（例如随机）重定向（DNAT）到后端动态变化的 Pod IP，并通过标记（mark）和地址伪装（Masquerade&#x2F;SNAT）确保了网络连接在各种复杂场景下（如跨节点访问、NodePort 访问）的双向通信路径正确无误。这套机制虽然规则数量可能庞大，性能在超大规模集群下有挑战，但它稳定、可靠，并且不依赖任何特殊的网络硬件或协议，具有良好的兼容性。</p>
 <h2 id="IPVS-模式"><a href="#IPVS-模式" class="headerlink" title="IPVS 模式"></a>IPVS 模式</h2><img src="/2025/04/10/kube-proxy/image-20250415103628349.png" srcset="/img/loading.gif" lazyload class="" title="image-20250415103628349">
+
+
+
+
 
 <h3 id="服务发现与负载均衡的挑战"><a href="#服务发现与负载均衡的挑战" class="headerlink" title="服务发现与负载均衡的挑战"></a>服务发现与负载均衡的挑战</h3><p>在 Kubernetes 这样动态的环境中，Pod 的生命周期是短暂的，它们的 IP 地址会随着创建和销毁而改变。如果让客户端直接连接 Pod IP，那么当 Pod 发生变化时，客户端就需要感知并更新连接信息，这极大地增加了系统的复杂性。Service 的引入正是为了解决这个问题，它提供了一个稳定的访问点。<code>kube-proxy</code> 则需要将这个稳定的访问点（Service IP）动态地映射到当前提供服务的、健康的 Pod IP 列表上，并进行负载均衡。早期的 <code>userspace</code> 模式性能较差，后来广泛使用的 <code>iptables</code> 模式虽然功能稳定，但在集群规模（Service 数量、Endpoint 数量）非常大时，会因为 <code>iptables</code> 规则链的线性查找特性而遇到性能瓶颈。</p>
 <h3 id="IPVS-模式：基于内核的-L4-负载均衡"><a href="#IPVS-模式：基于内核的-L4-负载均衡" class="headerlink" title="IPVS 模式：基于内核的 L4 负载均衡"></a>IPVS 模式：基于内核的 L4 负载均衡</h3><p>IPVS（IP Virtual Server）是 Linux 内核的一部分，属于 LVS（Linux Virtual Server）项目。它实现了一个高性能的、工作在 OSI 模型第四层（传输层）的负载均衡器。与 <code>iptables</code> 基于规则链匹配、逐条检查的方式不同，IPVS 使用哈希表（Hash Table）来存储和查找虚拟服务器（Virtual Server）和真实服务器（Real Server）的映射关系。当有数据包到达时，IPVS 可以通过高效的哈希查找（接近 O(1) 复杂度）快速确定目标真实服务器，这使得它在处理大量并发连接和规则时，性能远超 <code>iptables</code>（其复杂度可能接近 O(n)，n 为规则数量）。IPVS 被设计用来处理大规模的服务器负载均衡场景，因此非常适合用在大型 Kubernetes 集群中。</p>
