@@ -229,6 +229,126 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
+        <a href="/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/" target="_self">
+          kubernetes生产化集群管理
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/" target="_self">
+        <div>
+          生产化 Kubernetes 集群管理1. 计算节点相关生产化集群的考量在构建和维护生产级别的 Kubernetes 集群时，计算节点和控制平面都需要仔细考虑以下问题： 计算节点 (Worker Nodes):  操作系统管理: 如何实现操作系统的大规模批量安装和升级？自动化工具（如 Kickstart, Preseed, Packer, Foreman）和镜像管理（如 ostree）是关键。 如
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-24 23:56" pubdate>
+              2025-04-24
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/kubernetes/">#kubernetes</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/22/Ingress/" target="_self">
+          Ingress
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/22/Ingress/" target="_self">
+        <div>
+          Kubernetes 网络负载均衡1. K8s 负载均衡的必要性 问题: Pod IP 是动态分配且 Pod 是短暂的 (ephemeral)。直接访问 Pod IP 不可靠。 需求: 提供稳定的服务访问入口 (IP&#x2F;Port)。 将请求分发到健康的后端 Pod 实例。 自动感知后端 Pod 变化并更新路由。    2. L4 负载均衡: Service 核心对象: Service (K
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-22 22:19" pubdate>
+              2025-04-22
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/kubernetes/">#kubernetes</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/17/docker-backup/" target="_self">
+          docker-backup
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/17/docker-backup/" target="_self">
+        <div>
+          1. 备份容器数据卷（Volumes）查找数据卷： 1docker inspect &lt;container_name_or_id&gt; | grep Mounts -A 10 你可以看到容器挂载的 volume 路径和信息。 备份 Volume 内容：假设 Volume 名为 my_volume： 1docker run --rm -v my_volume:/volume -v $(pwd
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-17 20:16" pubdate>
+              2025-04-17
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/docker/">#docker</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
         <a href="/2025/04/10/kube-proxy/" target="_self">
           kube_proxy
         </a>
@@ -503,131 +623,11 @@
     </article>
   </div>
 
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/18/golang-concurrency/" target="_self">
-          Golang并发编程
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/18/golang-concurrency/" target="_self">
-        <div>
-          GO并发编程（Concurrency）通过通信共享内存（Share by communicating）并发编程是一个广泛的话题，这里只讨论一些与 Go 语言相关的重点。 在许多环境中，并发编程的难点在于如何正确访问共享变量。Go 语言鼓励一种不同的方法： 通过通道（channel）传递共享值，而不是让多个执行线程主动共享内存。 在任何给定时间，只有一个 goroutine 可以访问该值。通过设计，
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-18 22:27" pubdate>
-              2025-03-18
-            </time>
-          </div>
-        
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/golang/">#golang</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/18/golang-error/" target="_self">
-          Golang错误处理
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/18/golang-error/" target="_self">
-        <div>
-          Golang 的错误处理（Error Handling） 1. Errors 包Error 是一个interface，只要实现了Error() string接口的结构体都是一个 Error。 123456789101112131415161718type error interface &#123;	Error() string&#125;// New returns an error that
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-18 22:21" pubdate>
-              2025-03-18
-            </time>
-          </div>
-        
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/golang/">#golang</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/18/kubernetes-controller-manager/" target="_self">
-          kubernetes_controller_manager
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/18/kubernetes-controller-manager/" target="_self">
-        <div>
-          k8s-Controller-ManagerController Manager 是 Kubernetes（K8S）中的一个核心组件，负责管理和运行各种控制器（Controllers）。控制器是 Kubernetes 的自动化机制之一，Controller Manager 通过与 API Server 的交互来获取和更新集群的状态信息。它使用 Kubernetes 的 watch API 来实时监
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-18 21:33" pubdate>
-              2025-03-18
-            </time>
-          </div>
-        
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/k8s/">#k8s</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
 
 
   <nav aria-label="navigation">
     <span class="pagination" id="pagination">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/#board">2</a><a class="extend next" rel="next" href="/page/2/#board"><i class="iconfont icon-arrowright"></i></a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/#board">2</a><a class="page-number" href="/page/3/#board">3</a><a class="extend next" rel="next" href="/page/2/#board"><i class="iconfont icon-arrowright"></i></a>
     </span>
   </nav>
 

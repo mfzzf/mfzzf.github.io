@@ -39,7 +39,7 @@
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/10/kube-proxy/image-20250415104221941.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/10/kube-proxy/image-20250415105305996.png">
 <meta property="article:published_time" content="2025-04-10T02:23:46.000Z">
-<meta property="article:modified_time" content="2025-04-16T03:11:59.316Z">
+<meta property="article:modified_time" content="2025-04-22T14:19:18.171Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="kubernetes">
 <meta name="twitter:card" content="summary_large_image">
@@ -236,7 +236,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          19k 字
+          20k 字
         
       </span>
     
@@ -247,7 +247,7 @@
         
         
         
-          157 分钟
+          171 分钟
         
       </span>
     
@@ -590,10 +590,21 @@
 <li><strong>更丰富的负载均衡算法:</strong> IPVS 内核模块原生支持多种成熟的负载均衡算法，为 Service 流量分发提供了更多选择和优化空间，例如可以根据后端 Pod 的连接数进行负载均衡（Least Connection）。</li>
 <li><strong>连接状态同步优化 (理论上):</strong> IPVS 本身有更完善的连接跟踪机制。在 <code>kube-proxy</code> 更新真实服务器列表时（例如 Pod 扩缩容或滚动更新），IPVS 处理现有连接（特别是长连接）通常比 <code>iptables</code> 更平滑，能更好地避免连接中断，但这具体也取决于 <code>kube-proxy</code> 的实现细节。</li>
 </ul>
-<h2 id="CoreDNS"><a href="#CoreDNS" class="headerlink" title="CoreDNS"></a>CoreDNS</h2><h3 id="Kubernetes-服务发现的挑战"><a href="#Kubernetes-服务发现的挑战" class="headerlink" title="Kubernetes 服务发现的挑战"></a>Kubernetes 服务发现的挑战</h3><p>在 Kubernetes 集群中，Service 提供了一种抽象，允许我们将一组运行相同应用的 Pod 暴露为一个网络服务。Kubernetes 会为类型为 <code>ClusterIP</code> 的 Service 分配一个虚拟 IP 地址（ClusterIP），为 <code>NodePort</code> 类型的 Service 在每个节点上开放一个静态端口，为 <code>LoadBalancer</code> 类型的 Service（在支持的云环境中）分配一个外部负载均衡器的 IP 地址。然而，正如你提到的，这些 IP 地址和端口（除了 NodePort 本身的端口号）本质上是动态的。当你删除并重新创建一个 Service 时，即使 Service 的名称和定义相同，其分配到的 ClusterIP 或 LoadBalancerIP 通常会发生变化。这种动态性使得直接使用 IP 地址作为服务的稳定访问入口变得不可靠，特别是对于服务间通信或者需要对外暴露的稳定端点而言。如果一个应用硬编码了另一个服务的 ClusterIP，那么当目标服务重建后，源应用就会连接失败。</p>
-<h3 id="Kubernetes-DNS-的解决方案"><a href="#Kubernetes-DNS-的解决方案" class="headerlink" title="Kubernetes DNS 的解决方案"></a>Kubernetes DNS 的解决方案</h3><p>为了解决服务 IP 地址动态变化带来的问题，Kubernetes 引入了集群内部的 DNS 服务。这个 DNS 服务与 Kubernetes API Server 集成，能够自动为集群内的 Service 和 Pod 创建 DNS 记录。其核心思想是：<strong>用稳定的、人类可读的 DNS 名称来代替不稳定的 IP 地址</strong>。当一个 Service 被创建时，Kubernetes DNS 服务会为其自动生成一个形如 <code>&lt;service-name&gt;.&lt;namespace-name&gt;.svc.&lt;cluster-domain&gt;</code> 的完全限定域名（FQDN）。例如，一个名为 <code>my-app</code> 的 Service 在 <code>default</code> 命名空间下，其默认的集群域为 <code>cluster.local</code>，那么它的 FQDN 就是 <code>my-app.default.svc.cluster.local</code>。</p>
-<p>这个 DNS 名称是稳定的。只要 Service 的名称 (<code>my-app</code>) 和其所在的命名空间 (<code>default</code>) 不变，即使这个 Service 被删除后重新创建，导致其 ClusterIP 发生变化，它的 DNS 名称始终保持不变。集群内的其他 Pod 可以通过这个 DNS 名称来访问该 Service。Pod 内的 DNS 解析器（通常由 Kubelet 根据 Pod 的 <code>dnsPolicy</code> 配置 <code>/etc/resolv.conf</code> 文件）会将这个 DNS 名称查询请求发送给集群的 DNS 服务，DNS 服务则会查询最新的 Service 信息，并将当前有效的 ClusterIP 返回给请求的 Pod。这样，应用代码中只需要使用服务名（或者 FQDN），就可以透明地连接到目标服务，无需关心其底层 IP 地址的变化。这极大地简化了服务发现和微服务间的通信。</p>
-<h3 id="CoreDNS-是什么？"><a href="#CoreDNS-是什么？" class="headerlink" title="CoreDNS 是什么？"></a>CoreDNS 是什么？</h3><p>CoreDNS 是一个灵活、可扩展、插件化的 DNS 服务器，使用 Go 语言编写。自 Kubernetes v1.11 起，CoreDNS 成为了 Kubernetes 推荐且默认的集群 DNS 服务，逐渐取代了之前的 <code>kube-dns</code>（由 <code>dnsmasq</code>、<code>kube-dns</code> 和 <code>sidecar</code> 三个容器组成）解决方案。CoreDNS 的设计哲学是 “Do one thing and do it well”（通过插件链）。它的核心非常轻量，大部分功能，包括处理 DNS 查询、缓存、转发、监控指标暴露等，都是通过一系列可插拔的插件（Plugins）来实现的。这种架构使得 CoreDNS 非常容易定制和扩展，可以根据特定需求启用、禁用或配置不同的插件。</p>
+<h3 id="如何切换到-IPVS-模式"><a href="#如何切换到-IPVS-模式" class="headerlink" title="如何切换到 IPVS 模式"></a>如何切换到 IPVS 模式</h3><p><code>kubectl edit configmap kube-proxy -n kube-system</code></p>
+<p>将 mode 改为”ipvs”</p>
+<p><code>kubectl delete pod -l k8s-app=kube-proxy -n kube-system</code></p>
+<p><code>sudo ipvsadm -Ln</code></p>
+<h2 id="CoreDNS"><a href="#CoreDNS" class="headerlink" title="CoreDNS"></a>CoreDNS</h2><h3 id="Kubernetes-服务发现的挑战"><a href="#Kubernetes-服务发现的挑战" class="headerlink" title="Kubernetes 服务发现的挑战"></a>Kubernetes 服务发现的挑战</h3><p>在 Kubernetes 集群中，Service 提供了一种抽象，允许我们将一组运行相同应用的 Pod 暴露为一个网络服务。Kubernetes 会为类型为 <code>ClusterIP</code> 的 Service 分配一个虚拟 IP 地址（ClusterIP），为 <code>NodePort</code> 类型的 Service <strong>在每个节点上开放一个静态端口</strong>，为 <code>LoadBalancer</code> 类型的 Service（在支持的云环境中）分配一个外部负载均衡器的 IP 地址。然而，正如你提到的，这些 IP 地址和端口（除了 NodePort 本身的端口号）本质上是动态的。当你删除并重新创建一个 Service 时，即使 Service 的名称和定义相同，其分配到的 ClusterIP 或 LoadBalancerIP 通常会发生变化。这种动态性使得直接使用 IP 地址作为服务的稳定访问入口变得不可靠，特别是对于服务间通信或者需要对外暴露的稳定端点而言。如果一个应用硬编码了另一个服务的 ClusterIP，那么当目标服务重建后，源应用就会连接失败。</p>
+<h3 id="Kubernetes-DNS-的解决方案"><a href="#Kubernetes-DNS-的解决方案" class="headerlink" title="Kubernetes DNS 的解决方案"></a>Kubernetes DNS 的解决方案</h3><p>为了解决服务 IP 地址动态变化带来的问题，Kubernetes 引入了集群内部的 DNS 服务。这个 DNS 服务与 Kubernetes API Server 集成，能够<strong>自动为集群内的 Service 和 Pod 创建 DNS 记录</strong>。</p>
+<p>其核心思想是：<strong>用稳定的、人类可读的 DNS 名称来代替不稳定的 IP 地址</strong>。</p>
+<p>当一个 Service 被创建时，Kubernetes DNS 服务会为其自动生成一个形如 <code>&lt;service-name&gt;.&lt;namespace-name&gt;.svc.&lt;cluster-domain&gt;</code> 的完全限定域名（FQDN）。</p>
+<p>例如，一个名为 <code>my-app</code> 的 Service 在 <code>default</code> 命名空间下，其默认的集群域为 <code>cluster.local</code>，那么它的 FQDN 就是 <code>my-app.default.svc.cluster.local</code>。</p>
+<p>这个 DNS 名称是稳定的。只要 Service 的名称 (<code>my-app</code>) 和其所在的命名空间 (<code>default</code>) 不变，即使这个 Service 被删除后重新创建，导致其 ClusterIP 发生变化，它的 DNS 名称始终保持不变。</p>
+<p>集群内的其他 Pod 可以通过这个 DNS 名称来访问该 Service。Pod 内的 DNS 解析器（通常由 Kubelet 根据 Pod 的 <code>dnsPolicy</code> 配置 <code>/etc/resolv.conf</code> 文件）会将这个 DNS 名称查询请求发送给集群的 DNS 服务，DNS 服务则会查询最新的 Service 信息，并将当前有效的 ClusterIP 返回给请求的 Pod。</p>
+<p>这样，应用代码中只需要使用服务名（或者 FQDN），就可以透明地连接到目标服务，无需关心其底层 IP 地址的变化。这极大地简化了服务发现和微服务间的通信。</p>
+<h3 id="CoreDNS-是什么？"><a href="#CoreDNS-是什么？" class="headerlink" title="CoreDNS 是什么？"></a>CoreDNS 是什么？</h3><p>CoreDNS 是一个灵活、可扩展、插件化的 DNS 服务器，使用 Go 语言编写。</p>
+<p>自 Kubernetes v1.11 起，CoreDNS 成为了 Kubernetes 推荐且默认的集群 DNS 服务，逐渐取代了之前的 <code>kube-dns</code>（由 <code>dnsmasq</code>、<code>kube-dns</code> 和 <code>sidecar</code> 三个容器组成）解决方案。</p>
+<p>CoreDNS 的设计哲学是 “Do one thing and do it well”（通过插件链）。它的核心非常轻量，大部分功能，包括处理 DNS 查询、缓存、转发、监控指标暴露等，都是通过一系列可插拔的插件（Plugins）来实现的。这种架构使得 CoreDNS 非常容易定制和扩展，可以根据特定需求启用、禁用或配置不同的插件。</p>
 <p>在 Kubernetes 中，CoreDNS 通常以 Deployment 的形式运行（例如，在 <code>kube-system</code> 命名空间下），并暴露为一个名为 <code>kube-dns</code> 的 Service（为了兼容性，Service 名称沿用了旧方案的名称）。这个 Service 的 ClusterIP 会被 Kubelet 配置到集群中每个 Pod 的 <code>/etc/resolv.conf</code> 文件中作为 <code>nameserver</code>，使得 Pod 内发起的 DNS 查询默认都流向 CoreDNS。</p>
 <h3 id="CoreDNS-在-Kubernetes-中的工作原理"><a href="#CoreDNS-在-Kubernetes-中的工作原理" class="headerlink" title="CoreDNS 在 Kubernetes 中的工作原理"></a>CoreDNS 在 Kubernetes 中的工作原理</h3><img src="/2025/04/10/kube-proxy/image-20250415105305996.png" srcset="/img/loading.gif" lazyload class="" title="image-20250415105305996">
 
@@ -609,7 +620,7 @@
 </ol>
 <p>对于 Headless Service（定义了 <code>clusterIP: None</code> 的 Service），<code>kubernetes</code> 插件不会返回 ClusterIP，而是会返回该 Service 关联的所有 Ready状态 Pod 的 IP 地址作为多个 A 记录。这对于需要直接与 Pod 通信的场景（如 StatefulSet 的 Pod 间发现）非常有用。</p>
 <p>除了 Service，<code>kubernetes</code> 插件还可以配置为解析 Pod 的 DNS 记录（通常格式为 <code>&lt;pod-ip-address&gt;.&lt;namespace-name&gt;.pod.&lt;cluster-domain&gt;</code>，其中 IP 地址中的点 <code>.</code> 被替换为短横线 <code>-</code>）。</p>
-<p>如果查询的域名不属于集群内部域（例如 <code>www.google.com</code>），<code>kubernetes</code> 插件通常会配置 <code>fallthrough</code> 选项。这意味着它不会处理这个请求，而是让请求流转到插件链中的下一个插件，通常是 <code>forward</code> 插件。<code>forward</code> 插件会将请求转发给上游 DNS 服务器（例如，配置为 CoreDNS Pod 所在节点的 <code>/etc/resolv.conf</code> 中定义的 DNS 服务器，或者直接配置的公共 DNS 服务器如 8.8.8.8）。这样，CoreDNS 不仅能解析集群内部域名，也能代理外部域名的解析。</p>
+<p><strong>如果查询的域名不属于集群内部域</strong>（例如 <code>www.google.com</code>），<code>kubernetes</code> 插件通常会配置 <code>fallthrough</code> 选项。这意味着它不会处理这个请求，而是<strong>让请求流转到插件链中的下一个插件</strong>，通常是 <code>forward</code> 插件。<code>forward</code> 插件会将请求转发给上游 DNS 服务器（例如，配置为 CoreDNS Pod 所在节点的 <code>/etc/resolv.conf</code> 中定义的 DNS 服务器，或者直接配置的公共 DNS 服务器如 8.8.8.8）。这样，CoreDNS 不仅能解析集群内部域名，也能代理外部域名的解析。</p>
 <p>CoreDNS 还通过其他插件提供了重要功能：</p>
 <ul>
 <li><code>cache</code>: 缓存 DNS 记录，减少对 API Server 的查询压力和外部 DNS 查询的延迟。</li>
@@ -664,9 +675,10 @@
 <li><strong>SRV 记录</strong>：如果 Service 定义了端口（Ports），CoreDNS 还会为每个命名端口（Named Port）创建 SRV 记录。格式通常是 <strong><code>_&lt;port-name&gt;._&lt;protocol&gt;.&lt;service-name&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code></strong> (例如 <code>_http._tcp.my-service.default.svc.cluster.local</code>)。SRV 记录包含了端口号、优先级和权重，允许客户端发现服务提供的具体端口信息，而不仅仅是 IP 地址。这对于需要知道特定服务端口的应用（如 gRPC、LDAP）非常有用。</li>
 <li><strong>PTR 记录</strong>：用于反向 DNS 查询，将 ClusterIP 解析回其对应的 FQDN。</li>
 </ul>
-<h4 id="Headless-Service"><a href="#Headless-Service" class="headerlink" title="Headless Service"></a>Headless Service</h4><p>当 Service 的 <code>.spec.clusterIP</code> 字段被显式设置为 <code>None</code> 时，就创建了一个 <strong>Headless Service</strong>。顾名思义，它<strong>没有 ClusterIP</strong>。API Server 不会为其分配虚拟 IP，kube-proxy 也不会处理到这个 Service 的流量。</p>
+<h4 id="Headless-Service"><a href="#Headless-Service" class="headerlink" title="Headless Service"></a>Headless Service</h4><p><strong>直接指向所有 Ready 的 Pod IP</strong>。</p>
+<p>当 Service 的 <code>.spec.clusterIP</code> 字段被显式设置为 <code>None</code> 时，就创建了一个 <strong>Headless Service</strong>。顾名思义，它<strong>没有 ClusterIP</strong>。API Server 不会为其分配虚拟 IP，kube-proxy 也不会处理到这个 Service 的流量。</p>
 <ul>
-<li><strong>A&#x2F;AAAA 记录 (多条)</strong>：对于 Headless Service，当查询其 FQDN <strong><code>&lt;service-name&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code></strong> 时，CoreDNS <strong>不会返回 ClusterIP</strong>（因为它不存在）。相反，它会返回多个 A&#x2F;AAAA 记录，每个记录对应一个**当前就绪（Ready）**状态的、属于该 Service 的 <strong>Pod 的 IP 地址</strong>。这意味着客户端直接解析到后端 Pod 的真实 IP 列表。这对于需要直接连接到特定 Pod 实例的应用（如数据库集群、StatefulSet 管理的有状态应用）或者希望自己实现客户端负载均衡策略的场景非常有用。</li>
+<li><strong>A&#x2F;AAAA 记录 (多条)</strong>：对于 Headless Service，当查询其 FQDN <strong><code>&lt;service-name&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code></strong> 时，CoreDNS <strong>不会返回 ClusterIP</strong>（因为它不存在）。相反，它会返回多个 A&#x2F;AAAA 记录，每个记录对应一个**当前就绪（Ready）**状态的、属于该 Service 的 <strong>Pod 的 IP 地址</strong>。**这意味着客户端直接解析到后端 Pod 的真实 IP 列表。**这对于需要直接连接到特定 Pod 实例的应用（如数据库集群、StatefulSet 管理的有状态应用）或者希望自己实现客户端负载均衡策略的场景非常有用。</li>
 <li><strong>Pod FQDN 记录</strong>：对于与 Headless Service 关联的每个 Pod（特别是那些由 StatefulSet 创建的、具有稳定网络标识符的 Pod），CoreDNS 还会创建一个特定的 FQDN，格式通常是 <strong><code>&lt;pod-hostname&gt;.&lt;service-name&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code></strong> (如果 Service 指定了 <code>subdomain</code> 字段，格式会是 <code>&lt;pod-hostname&gt;.&lt;subdomain&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code>) 或者对于普通 Pod 可能简化为类似 <strong><code>&lt;pod-ip-dashed&gt;.&lt;namespace&gt;.pod.&lt;cluster-domain&gt;</code></strong>。这个记录直接解析为该 <strong>Pod 的 IP 地址</strong>。这允许直接寻址到某个具体的 Pod 实例。</li>
 </ul>
 <h4 id="ExternalName-Service"><a href="#ExternalName-Service" class="headerlink" title="ExternalName Service"></a>ExternalName Service</h4><p>这种类型的 Service 比较特殊，它<strong>不涉及 Pod 选择器或 IP 地址分配</strong>。它的目的是在集群内部为<strong>外部的一个 DNS 域名</strong>创建一个别名。</p>
@@ -697,7 +709,51 @@
 <li><strong>无法反映 Headless Service 的 Pod IP 列表</strong>。</li>
 </ol>
 <p>由于这些限制，<strong>基于 DNS 的服务发现（CoreDNS）是 Kubernetes 中推荐和主流的方式</strong>，它更加动态、灵活和标准。依赖环境变量的方式通常被认为是不推荐的做法。</p>
-<h3 id="DNS-的落地实践：与企业-DNS-集成"><a href="#DNS-的落地实践：与企业-DNS-集成" class="headerlink" title="DNS 的落地实践：与企业 DNS 集成"></a>DNS 的落地实践：与企业 DNS 集成</h3><p>将 Kubernetes 集群的服务发现与企业现有的 DNS 基础架构集成是一个常见的需求，目的是让集群外部的用户或其他系统也能访问 Kubernetes 中部署的服务，并保持服务名称的一致性。</p>
+<h3 id="自定义-DNS-策略-dnsPolicy-None"><a href="#自定义-DNS-策略-dnsPolicy-None" class="headerlink" title="自定义 DNS 策略 (dnsPolicy: None)"></a>自定义 DNS 策略 (<code>dnsPolicy: None</code>)</h3><p>虽然 <code>ClusterFirst</code> 和其他标准策略（如 <code>Default</code>——直接继承 Node 节点的 DNS 配置，<code>ClusterFirstWithHostNet</code>——用于 <code>hostNetwork: true</code> 的 Pod）覆盖了常见场景，但在某些特定情况下，应用开发者或集群管理员可能需要对 Pod 的 DNS 解析行为进行 <strong>更精细、更彻底的控制</strong>。</p>
+<p><strong>解决的问题：</strong> 标准 DNS 策略由 Kubelet 强制管理 Pod 内的 <code>/etc/resolv.conf</code> 文件，限制了用户自定义 DNS 配置的自由度。<code>dnsPolicy: None</code> <strong>解决了需要完全绕过 Kubelet 对 <code>/etc/resolv.conf</code> 的管理，从而允许用户为 Pod 提供完全自定义的 DNS 配置的需求</strong>。</p>
+<p><strong>典型场景：</strong></p>
+<ol>
+<li><strong>特殊网络环境集成：</strong> Pod 需要直接与公司内部特定的、非标准的 DNS 服务器交互，可能包含特殊的搜索域或需要特定的 DNS 选项。</li>
+<li><strong>运行自定义 DNS 解析器：</strong> Pod 自身运行一个 DNS 代理、缓存或特定用途的解析器（例如，用于内部服务网格的 sidecar），需要将所有 DNS 查询指向自身或特定地址。</li>
+<li><strong>避免继承节点配置：</strong> 在某些情况下，Node 节点的 <code>/etc/resolv.conf</code> 配置可能不适合 Pod（例如，包含过多的搜索域导致解析缓慢或冲突），而 <code>ClusterFirst</code> 又不完全满足需求时，需要完全掌控。</li>
+<li><strong>与 <code>dnsConfig</code> 结合进行精细控制：</strong> 这是最常见的用法。用户希望自定义 nameserver、search domain 或 options，但不希望 Kubelet 自动添加集群相关的配置。</li>
+</ol>
+<h3 id="dnsPolicy-None-是什么？"><a href="#dnsPolicy-None-是什么？" class="headerlink" title="dnsPolicy: None 是什么？"></a><code>dnsPolicy: None</code> 是什么？</h3><p><code>dnsPolicy: None</code> 是 Pod 规范 (<code>PodSpec</code>) 中的一个字段设置。当一个 Pod 的 <code>dnsPolicy</code> 被设置为 <code>None</code> 时，它明确地告诉 <strong>Kubelet</strong>：“<strong>请不要为这个 Pod 管理 <code>/etc/resolv.conf</code> 文件</strong>”。</p>
+<p>这意味着 Kubelet 将不会执行以下操作：</p>
+<ul>
+<li>基于集群 DNS 服务地址和 Pod 的命名空间生成 <code>/etc/resolv.conf</code> 内容。</li>
+<li>将生成的 <code>/etc/resolv.conf</code> 文件挂载到 Pod 的 <code>/etc/resolv.conf</code> 路径。</li>
+</ul>
+<p><strong>其结果是，Pod 启动时，其 <code>/etc/resolv.conf</code> 文件将直接继承自容器镜像本身的内容。</strong> 如果镜像中没有这个文件，或者文件为空&#x2F;无效，那么该 Pod 将<strong>无法进行任何 DNS 解析</strong>，除非用户采取了其他措施。</p>
+<h3 id="详细原理：Kubelet、-etc-resolv-conf-与-dnsConfig"><a href="#详细原理：Kubelet、-etc-resolv-conf-与-dnsConfig" class="headerlink" title="详细原理：Kubelet、/etc/resolv.conf 与 dnsConfig"></a>详细原理：Kubelet、<code>/etc/resolv.conf</code> 与 <code>dnsConfig</code></h3><p>在 Linux 系统中，应用程序（通常通过 C 库，如 glibc 或 musl）进行 DNS 解析时，会查找并读取 <code>/etc/resolv.conf</code> 文件。这个文件包含了 DNS 服务器的地址（<code>nameserver</code>）、域名的搜索列表（<code>search</code>）以及其他选项（<code>options</code>）。</p>
+<p><strong>Kubelet 的角色：</strong> 当 Kubelet 启动一个 Pod（且 <code>dnsPolicy</code> 不是 <code>None</code>）时，它会根据集群配置和 Pod 的 <code>dnsPolicy</code> 动态生成一个 <code>/etc/resolv.conf</code> 文件。例如，对于 <code>ClusterFirst</code>，它会包含：</p>
+<ul>
+<li><code>nameserver &lt;cluster-dns-service-ip&gt;</code></li>
+<li><code>search &lt;namespace&gt;.svc.cluster.local svc.cluster.local cluster.local &lt;node-search-domains&gt;</code></li>
+<li><code>options ndots:5</code> (通常)</li>
+</ul>
+<p>然后，Kubelet 会将这个动态生成的文件通过 <strong>volume mount</strong> 的方式挂载到 Pod 内部的 <code>/etc/resolv.conf</code>，覆盖掉容器镜像中原有的文件。</p>
+<p><strong><code>dnsPolicy: None</code> 的影响：</strong> 设置为 <code>None</code> 后，Kubelet 就<strong>跳过了</strong>生成和挂载 <code>/etc/resolv.conf</code> 的步骤。此时，Pod 内 <code>/etc/resolv.conf</code> 的来源就变成了容器镜像。</p>
+<p><strong><code>dnsConfig</code> 的作用：</strong> Kubernetes 预见到了用户在设置 <code>dnsPolicy: None</code> 后仍然需要一种声明式方式来定义 DNS 配置的需求，因此引入了 <code>dnsConfig</code> 字段。<strong><code>dnsConfig</code> 字段允许用户在 Pod 规范中直接指定 <code>nameservers</code>, <code>searches</code>, 和 <code>options</code></strong>。</p>
+<p><strong>关键点：</strong> 当 <code>dnsPolicy</code> 设置为 <code>None</code> 时，Kubelet <strong>仍然会读取 <code>dnsConfig</code> 字段</strong>（如果存在）。此时，Kubelet <strong>会</strong>基于 <code>dnsConfig</code> 的内容来生成 <code>/etc/resolv.conf</code> 文件并挂载到 Pod 中。这提供了一种<strong>完全由用户控制</strong>的、声明式的 DNS 配置方式，同时<strong>绕过了</strong> Kubelet 默认添加的集群特定 DNS 配置（如集群 DNS 服务器 IP 和集群搜索域）。</p>
+<p>换句话说，<code>dnsPolicy: None</code> 配合 <code>dnsConfig</code> 使用，才能达到<strong>完全自定义且可管理的 DNS 配置</strong>的目的。如果不提供 <code>dnsConfig</code>，则完全依赖镜像内的 <code>/etc/resolv.conf</code>，这通常不是期望的行为。</p>
+<h3 id="配置命令示例"><a href="#配置命令示例" class="headerlink" title="配置命令示例"></a>配置命令示例</h3><p>下面是一个使用 <code>dnsPolicy: None</code> 和 <code>dnsConfig</code> 来自定义 Pod DNS 配置的 YAML 示例：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">custom-dns-pod</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">default</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">containers:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">my-app</span><br>    <span class="hljs-attr">image:</span> <span class="hljs-string">nginx:alpine</span><br>    <span class="hljs-attr">ports:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">containerPort:</span> <span class="hljs-number">80</span><br>  <span class="hljs-comment"># 告诉 Kubelet 不要管理 DNS 配置</span><br>  <span class="hljs-attr">dnsPolicy:</span> <span class="hljs-string">&quot;None&quot;</span><br>  <span class="hljs-comment"># 提供完全自定义的 DNS 配置</span><br>  <span class="hljs-attr">dnsConfig:</span><br>    <span class="hljs-comment"># 指定使用的 DNS 服务器地址</span><br>    <span class="hljs-attr">nameservers:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;192.168.1.1&quot;</span>  <span class="hljs-comment"># 公司内部 DNS</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;8.8.8.8&quot;</span>      <span class="hljs-comment"># Google Public DNS 作为备用</span><br>    <span class="hljs-comment"># 指定自定义的搜索域</span><br>    <span class="hljs-attr">searches:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">my.corp.domain</span> <span class="hljs-comment"># 公司内部域</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">default.svc.cluster.local</span> <span class="hljs-comment"># 如果仍需解析默认命名空间的服务</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">svc.cluster.local</span>         <span class="hljs-comment"># 如果仍需解析其他命名空间的服务 (需要写全 FQDN)</span><br>    <span class="hljs-comment"># 指定自定义的 DNS 选项</span><br>    <span class="hljs-attr">options:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">ndots</span><br>        <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;3&quot;</span> <span class="hljs-comment"># 设置 ndots 值</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">timeout</span><br>        <span class="hljs-attr">value:</span> <span class="hljs-string">&quot;1&quot;</span> <span class="hljs-comment"># 设置超时时间</span><br></code></pre></td></tr></table></figure>
+
+<p>在这个例子中：</p>
+<ol>
+<li><p><code>dnsPolicy: &quot;None&quot;</code> 禁用了 Kubelet 的默认 DNS 配置行为。</p>
+</li>
+<li><p><code>dnsConfig</code>部分提供了具体的配置：</p>
+<ul>
+<li>Pod 将首先尝试使用 <code>192.168.1.1</code> 进行解析，如果失败则尝试 <code>8.8.8.8</code>。</li>
+<li>当解析一个不包含点 (<code>.</code>) 的短名称（且点数少于 <code>ndots</code> 值 3）时，系统会依次尝试追加 <code>my.corp.domain</code>、<code>default.svc.cluster.local</code> 和 <code>svc.cluster.local</code> 来构建 FQDN 进行查询。例如，查询 <code>my-service</code> 会依次尝试 <code>my-service.my.corp.domain</code>, <code>my-service.default.svc.cluster.local</code>, <code>my-service.svc.cluster.local</code>。</li>
+<li>设置了 <code>ndots:3</code> 和 <code>timeout:1</code> 选项。</li>
+</ul>
+</li>
+</ol>
+<p><strong>需要注意：</strong> 如果你使用了 <code>dnsPolicy: None</code> 但仍然需要解析集群内部的服务名（例如 <code>my-service.my-namespace</code>），你<strong>必须</strong>在 <code>dnsConfig</code> 的 <code>nameservers</code> 中手动添加集群 DNS 服务的 IP 地址（可以通过 <code>kubectl get svc -n kube-system kube-dns</code> 或类似命令获取），并且在 <code>searches</code> 中添加相应的集群搜索域（如 <code>&lt;namespace&gt;.svc.cluster.local</code>, <code>svc.cluster.local</code>, <code>cluster.local</code>）。否则，Pod 将失去集群内部服务发现的能力。</p>
+<h2 id="DNS-的落地实践：与企业-DNS-集成"><a href="#DNS-的落地实践：与企业-DNS-集成" class="headerlink" title="DNS 的落地实践：与企业 DNS 集成"></a>DNS 的落地实践：与企业 DNS 集成</h2><p>将 Kubernetes 集群的服务发现与企业现有的 DNS 基础架构集成是一个常见的需求，目的是<strong>让集群外部的用户或其他系统也能访问 Kubernetes 中部署的服务，并保持服务名称的一致性。</strong></p>
 <p><strong>挑战与需求</strong>：</p>
 <ul>
 <li>集群内部使用 CoreDNS 解析服务名到 ClusterIP 或 Pod IP。</li>
@@ -722,6 +778,8 @@
 <li><strong>建议</strong>：<strong>按需创建 (On-demand creation)</strong>。通常只为那些需要稳定、可预测的外部访问的 Headless Service Pod（例如，StatefulSet 中的特定实例）创建 DNS 记录，并且可能需要更长的 TTL（Time-To-Live）来减少 DNS 流量。这通常通过在 Pod 或 Service 上添加特定的注解，让 ExternalDNS 知道要发布哪些记录。</li>
 </ul>
 <p><strong>最终目标</strong>：通过 CoreDNS（内部）和 ExternalDNS（外部）的协同工作，实现<strong>服务在集群内外拥有统一的标识</strong>（例如，<code>billing-api.my-company.com</code>）。内部 Pod 查询时，CoreDNS 可能返回 ClusterIP；外部用户查询时，企业 DNS 可能返回 LoadBalancer VIP。应用层使用统一的服务名，底层 DNS 负责解析到正确的、适合访问者位置的 IP 地址。</p>
+<h2 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs bash">//centos pod<br>cadmin@master:~/101$ k get po<br>NAME                                READY   STATUS    RESTARTS   AGE<br>centos-686b8db5c7-krgbb             1/1     Running   0          51m<br>nginx-deployment-7854ff8877-nc8kr   1/1     Running   0          13m<br>cadmin@master:~/101$ k get deploy<br>NAME               READY   UP-TO-DATE   AVAILABLE   AGE<br>centos             1/1     1            1           41h<br>nginx-deployment   1/1     1            1           30m<br>cadmin@master:~/101$ k get svc<br>NAME          TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE<br>kubernetes    ClusterIP   10.96.0.1     &lt;none&gt;        443/TCP        41d<br>nginx-basic   NodePort    10.98.3.144   &lt;none&gt;        80:30457/TCP   28m<br><br>[root@centos-686b8db5c7-krgbb /]# ping nginx-basic.default.svc.cluster.local<br>PING nginx-basic.default.svc.cluster.local (10.98.3.144) 56(84) bytes of data.<br>From nginx-basic.default.svc.cluster.local (10.98.3.144) icmp_seq=1 Destination Port Unreachable<br>From nginx-basic.default.svc.cluster.local (10.98.3.144) icmp_seq=2 Destination Port Unreachable<br>--- nginx-basic.default.svc.cluster.local ping statistics ---<br>2 packets transmitted, 0 received, +2 errors, 100% packet loss, <span class="hljs-keyword">time</span> 1001ms<br><br><br>[root@centos-686b8db5c7-krgbb /]# <span class="hljs-built_in">cat</span> /etc/resolv.conf <br>search default.svc.cluster.local svc.cluster.local cluster.local<br>nameserver 10.96.0.10<br>options ndots:5<br><br></code></pre></td></tr></table></figure>
+
 
                 
               </div>
@@ -790,6 +848,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/04/17/docker-backup/" title="docker-backup">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">docker-backup</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">

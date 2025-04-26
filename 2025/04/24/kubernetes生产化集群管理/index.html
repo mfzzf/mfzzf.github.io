@@ -1,0 +1,1756 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Mzzf">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="生产化 Kubernetes 集群管理1. 计算节点相关生产化集群的考量在构建和维护生产级别的 Kubernetes 集群时，计算节点和控制平面都需要仔细考虑以下问题： 计算节点 (Worker Nodes):  操作系统管理: 如何实现操作系统的大规模批量安装和升级？自动化工具（如 Kickstart, Preseed, Packer, Foreman）和镜像管理（如 ostree）是关键。 如">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes生产化集群管理">
+<meta property="og:url" content="https://mfzzf.github.io/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="Mzzf&#39;s Blog">
+<meta property="og:description" content="生产化 Kubernetes 集群管理1. 计算节点相关生产化集群的考量在构建和维护生产级别的 Kubernetes 集群时，计算节点和控制平面都需要仔细考虑以下问题： 计算节点 (Worker Nodes):  操作系统管理: 如何实现操作系统的大规模批量安装和升级？自动化工具（如 Kickstart, Preseed, Packer, Foreman）和镜像管理（如 ostree）是关键。 如">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mfzzf.github.io/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/image-20250425002033364.png">
+<meta property="article:published_time" content="2025-04-24T15:56:37.000Z">
+<meta property="article:modified_time" content="2025-04-24T16:57:37.557Z">
+<meta property="article:author" content="Mzzf">
+<meta property="article:tag" content="kubernetes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mfzzf.github.io/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/image-20250425002033364.png">
+  
+  
+  
+  <title>kubernetes生产化集群管理 - Mzzf&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"mfzzf.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Mzzf&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="kubernetes生产化集群管理"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-04-24 23:56" pubdate>
+          2025年4月24日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          22k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          185 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">kubernetes生产化集群管理</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="生产化-Kubernetes-集群管理"><a href="#生产化-Kubernetes-集群管理" class="headerlink" title="生产化 Kubernetes 集群管理"></a>生产化 Kubernetes 集群管理</h1><h2 id="1-计算节点相关"><a href="#1-计算节点相关" class="headerlink" title="1. 计算节点相关"></a>1. 计算节点相关</h2><h3 id="生产化集群的考量"><a href="#生产化集群的考量" class="headerlink" title="生产化集群的考量"></a>生产化集群的考量</h3><p>在构建和维护生产级别的 Kubernetes 集群时，计算节点和控制平面都需要仔细考虑以下问题：</p>
+<p><strong>计算节点 (Worker Nodes):</strong></p>
+<ul>
+<li><strong>操作系统管理:</strong><ul>
+<li>如何实现操作系统的大规模批量安装和升级？自动化工具（如 Kickstart, Preseed, Packer, Foreman）和镜像管理（如 ostree）是关键。</li>
+<li>如何统一管理和配置节点的网络信息（IP 地址、DNS、路由等）？配置管理工具（Ansible, SaltStack, Chef, Puppet）或云平台提供的服务可以提供帮助。</li>
+</ul>
+</li>
+<li><strong>节点多样性管理:</strong><ul>
+<li>如何有效管理具有不同硬件配置（CPU, 内存, GPU, 存储类型等）的节点（即不同的 SKU - Stock Keeping Unit）？利用 Kubernetes 的标签（Labels）和污点（Taints）&#x2F;容忍（Tolerations）机制进行分类和调度。</li>
+</ul>
+</li>
+<li><strong>生命周期管理:</strong><ul>
+<li>如何快速、安全地下架出现故障的计算节点？需要结合监控、自动化的故障检测和节点排空（Drain）机制。</li>
+<li>如何根据负载需求快速扩容或缩容集群的计算节点规模？集群自动伸缩器（Cluster Autoscaler）是核心解决方案。</li>
+</ul>
+</li>
+</ul>
+<p><strong>控制平面 (Control Plane):</strong></p>
+<ul>
+<li><strong>组件部署与升级:</strong><ul>
+<li>如何在主节点（Master Nodes）上高效地下载、安装和升级控制平面核心组件（kube-apiserver, etcd, kube-scheduler, kube-controller-manager）及其所需的配置文件？通常使用 kubeadm、k3s、RKE 或云厂商提供的托管服务。</li>
+<li>如何确保集群依赖的其他关键插件（如 CoreDNS 用于服务发现、监控系统如 Prometheus&#x2F;Grafana、日志系统如 EFK&#x2F;Loki）已正确部署并正常运行？使用 Helm Charts 或 Operator 模式进行管理。</li>
+</ul>
+</li>
+<li><strong>安全:</strong><ul>
+<li>如何生成、分发和管理控制平面组件所需的各种安全证书（CA 证书、API Server 证书、kubelet 证书等）？需要建立一套安全的证书管理流程，可以使用 <code>kubeadm</code> 的证书管理功能或专门的工具如 <code>cert-manager</code>。</li>
+</ul>
+</li>
+<li><strong>版本管理:</strong><ul>
+<li>如何实现控制平面组件的快速、可靠升级或在出现问题时进行版本回滚？需要制定详细的升级计划，利用滚动升级、蓝绿部署等策略，并确保有可靠的备份和恢复机制（尤其是 etcd）。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-操作系统选择"><a href="#2-操作系统选择" class="headerlink" title="2. 操作系统选择"></a>2. 操作系统选择</h2><p>为 Kubernetes 计算节点选择合适的操作系统是构建稳定、高效、安全集群的基础。</p>
+<h3 id="操作系统的评估与选择"><a href="#操作系统的评估与选择" class="headerlink" title="操作系统的评估与选择"></a>操作系统的评估与选择</h3><p>主要有两大类操作系统可供选择：</p>
+<ol>
+<li><strong>通用操作系统 (General Purpose OS):</strong><ul>
+<li><strong>代表:</strong> Ubuntu, CentOS, Fedora</li>
+<li><strong>优点:</strong> 生态成熟、社区支持广泛、用户熟悉度高、软件包丰富。</li>
+<li><strong>缺点:</strong> 通常包含较多非必需组件，攻击面相对较大，系统升级可能涉及较多依赖和风险。</li>
+</ul>
+</li>
+<li><strong>专为容器优化的操作系统 (Container-Optimized OS):</strong><ul>
+<li><strong>代表:</strong> CoreOS (已被 Red Hat 收购并演化), Red Hat Atomic Host, Snappy Ubuntu Core, RancherOS, Flatcar Container Linux (CoreOS 分支), Bottlerocket (AWS)</li>
+<li><strong>特点:</strong><ul>
+<li><strong>最小化:</strong> 只包含运行容器和管理节点所必需的组件，减少资源占用和攻击面。</li>
+<li><strong>原子化升级&#x2F;回滚:</strong> 通常采用基于镜像或文件系统快照的方式进行升级，保证操作的原子性，易于回滚。</li>
+<li><strong>不可变性 (Immutability):</strong> 核心系统文件通常是只读的，提高了安全性，符合云原生理念。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p><strong>评估和选型的标准:</strong></p>
+<ul>
+<li><strong>生态系统:</strong> 是否有活跃的社区、商业支持、丰富的文档和工具链？</li>
+<li><strong>成熟度:</strong> 该操作系统在生产环境中的应用历史和稳定性表现如何？</li>
+<li><strong>内核版本:</strong> 内核版本是否足够新，以支持 Kubernetes 所需的特性（如 Cgroups v2, eBPF 等）？内核的稳定性和安全补丁更新频率如何？</li>
+<li><strong>容器运行时支持:</strong> 对 Docker, containerd, CRI-O 等主流容器运行时的兼容性和支持程度如何？</li>
+<li><strong>初始化系统 (Init System):</strong> 通常是 systemd，需要考虑其管理服务的便利性和稳定性。</li>
+<li><strong>包管理和系统升级:</strong> 包管理工具是否易用？系统升级机制是否可靠、安全（如原子化升级）？</li>
+<li><strong>安全:</strong> 是否提供强化的安全特性？补丁更新是否及时？社区或厂商的安全响应能力如何？</li>
+</ul>
+<h3 id="生态系统与成熟度"><a href="#生态系统与成熟度" class="headerlink" title="生态系统与成熟度"></a>生态系统与成熟度</h3><p><strong>容器优化操作系统的优势:</strong></p>
+<ul>
+<li><strong>小 (Small Footprint):</strong> 系统镜像体积小，启动速度快，资源消耗低。</li>
+<li><strong>原子级升级和回退 (Atomic Updates &amp; Rollbacks):</strong> 升级过程要么完全成功，要么完全回退到之前的状态，降低了升级风险。</li>
+<li><strong>更高的安全性 (Enhanced Security):</strong> 最小化的组件和只读根文件系统减少了潜在的攻击面。</li>
+</ul>
+<p><strong>不同容器优化</strong> OS 的成熟度比较 <strong>(基于原始 PDF 内容):</strong></p>
+<table>
+<thead>
+<tr>
+<th>操作系统</th>
+<th>类型</th>
+<th>成熟度与特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CentOS &#x2F; Ubuntu</td>
+<td>通用操作系统</td>
+<td>成熟，生态庞大，用户基数大</td>
+</tr>
+<tr>
+<td>CoreOS</td>
+<td>容器优化</td>
+<td>最早的容器优化 OS 之一，理念先进，但原公司已被收购，现在更多以 Flatcar 或 Red Hat CoreOS 形式存在。</td>
+</tr>
+<tr>
+<td>Atomic*</td>
+<td>容器优化</td>
+<td>Red Hat 出品，基于 RPM 生态，品质有保证，与 RHEL&#x2F;CentOS 结合紧密。</td>
+</tr>
+<tr>
+<td>Snappy</td>
+<td>容器优化</td>
+<td>Canonical (Ubuntu) 出品，最初为移动和 IoT 设备设计，采用 Snap 包格式。</td>
+</tr>
+<tr>
+<td>RancherOS</td>
+<td>容器优化</td>
+<td>理念独特，系统中几乎所有服务（包括 systemd&#x2F;udev）都作为 Docker 容器运行，相对较新，现在是 SUSE 的一部分。</td>
+</tr>
+</tbody></table>
+<p>*<em>注：Atomic Host 项目已不再积极开发，其理念和技术被整合到 RHEL CoreOS (RHCOS) 中，用于 OpenShift 集群。</em></p>
+<h3 id="云原生的原则：不可变基础设施"><a href="#云原生的原则：不可变基础设施" class="headerlink" title="云原生的原则：不可变基础设施"></a>云原生的原则：不可变基础设施</h3><p><strong>可变基础设施 (Mutable Infrastructure) 的风险:</strong></p>
+<ul>
+<li><strong>配置漂移 (Configuration Drift):</strong> 在服务运行过程中，持续的手动修改或自动化脚本修改服务器配置，可能导致服务器状态与预期配置不一致，难以追踪和复现。</li>
+<li><strong>重建困难:</strong> 当发生灾难需要重建服务时，由于缺乏精确的操作记录和自动化流程，很难精确地恢复到之前的运行状态。</li>
+<li><strong>状态不一致:</strong> 持续的修改引入了中间状态，可能导致不可预知的问题，类似于程序中可变变量在并发环境下引入的风险。</li>
+</ul>
+<p><strong>不可变基础设施 (Immutable Infrastructure):</strong></p>
+<ul>
+<li><strong>核心理念:</strong> 一旦部署，基础设施（服务器、容器等）就不再被修改。如果需要更新或修复，则用新的实例替换旧的实例。</li>
+<li><strong>实践:</strong><ul>
+<li><strong>不可变的容器镜像 (Immutable Container Images):</strong> Dockerfile 定义了镜像的构建过程，一旦构建完成，镜像内容不再改变。更新应用需要构建新镜像并重新部署。</li>
+<li><strong>不可变的主机操作系统 (Immutable Host OS):</strong> 采用容器优化 OS，操作系统本身是只读的，升级通过替换整个系统镜像或文件系统层来实现。</li>
+</ul>
+</li>
+</ul>
+<p><strong>优势:</strong></p>
+<ul>
+<li><strong>一致性:</strong> 保证了环境的一致性，简化了测试和部署。</li>
+<li><strong>可靠性:</strong> 减少了配置漂移和手动操作引入的错误。</li>
+<li><strong>可预测性:</strong> 部署和升级过程更加可预测和可重复。</li>
+<li><strong>安全性:</strong> 减少了攻击面，更易于管理安全补丁。</li>
+</ul>
+<h3 id="Atomic-操作系统"><a href="#Atomic-操作系统" class="headerlink" title="Atomic 操作系统"></a>Atomic 操作系统</h3><ul>
+<li><strong>背景:</strong> 由 Red Hat 支持的，旨在提供面向容器优化的、不可变的基础设施。有基于 Fedora, CentOS, RHEL 的不同版本。 (注意：如前所述，此项目已演进)</li>
+<li><strong>核心优势:</strong><ul>
+<li><strong>不可变性:</strong> 操作系统核心部分是只读的（通常只有 <code>/etc</code> 和 <code>/var</code> 可写），提高了安全性和稳定性。</li>
+<li><strong>面向容器优化:</strong> 最小化安装，集成了容器运行时和相关工具。</li>
+<li><strong>灵活性与安全性:</strong> 结合了传统 Linux 的灵活性和不可变基础设施的安全性。</li>
+</ul>
+</li>
+<li><strong>关键技术: rpm-ostree:</strong><ul>
+<li><strong>定义:</strong> 一个开源项目，结合了 RPM 包管理和 OSTree（类似 Git 的文件系统版本管理）技术。</li>
+<li><strong>功能:</strong><ul>
+<li>允许以原子方式管理系统包，构建可启动的操作系统镜像。</li>
+<li>支持操作系统的原子升级和回滚。可以轻松切换到不同的系统版本（commit）。</li>
+<li>使得在生产环境中构建和管理操作系统镜像更加简单和可靠。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="最小化主机操作系统"><a href="#最小化主机操作系统" class="headerlink" title="最小化主机操作系统"></a>最小化主机操作系统</h3><ul>
+<li><strong>原则:</strong><ul>
+<li>只安装运行 Kubernetes 节点（kubelet, 容器运行时等）和基本系统维护所<strong>绝对必需</strong>的工具。</li>
+<li>任何临时的调试工具（如 <code>tcpdump</code>, <code>strace</code>, <code>perf</code> 等性能或网络排查工具）都应在需要时以容器的形式运行（例如，通过 <code>kubectl debug</code> 或部署特权调试 Pod）。</li>
+</ul>
+</li>
+<li><strong>意义:</strong><ul>
+<li><strong>性能:</strong> 更少的后台进程和服务意味着更低的资源消耗（CPU, 内存），为业务容器提供更多资源。</li>
+<li><strong>稳定性:</strong> 更少的组件意味着更少的潜在故障点和软件冲突。</li>
+<li><strong>安全保障:</strong> 最小化的攻击面，减少了被利用的风险。补丁管理也更简单。</li>
+</ul>
+</li>
+</ul>
+<h3 id="操作系统构建流程"><a href="#操作系统构建流程" class="headerlink" title="操作系统构建流程"></a>操作系统构建流程</h3><img src="/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/image-20250425002033364.png" srcset="/img/loading.gif" lazyload class="" title="image-20250425002033364">
+
+<ul>
+<li><strong>流程概述:</strong><ol>
+<li><strong>基础 RPM 包:</strong> 从上游 (Upstream Patch) 或内部 Mirror 获取基础的 RPM 包。</li>
+<li><strong>RPM 构建 (rpm builder):</strong> 可能用于构建自定义的 RPM 包。</li>
+<li><strong>RPM 快照 (Snapshot):</strong> 将选定的 RPM 包集合形成一个快照。</li>
+<li><strong>ostree 构建 (rpm-ostree):</strong> 使用 <code>rpm-ostree</code> 工具，基于 RPM 快照和可能的 Docker 镜像 (通过 <code>buildah</code> 处理)，构建成 ostree commit (版本化的文件系统树)。</li>
+<li><strong>ostree</strong> 仓库 <strong>(ostree httpd):</strong> 将构建好的 ostree commit 存储在可通过 HTTP 访问的仓库中。</li>
+<li><strong>镜像构建 (Packer Builder):</strong> 使用 Packer 等工具，从 ostree 仓库拉取指定的 commit，并结合 Glance (OpenStack 镜像服务) 或其他机制，构建成虚拟机镜像 (如 qcow2, vhd) 或物理机部署所需的文件。</li>
+<li><strong>部署:</strong><ul>
+<li><strong>虚拟机:</strong> 通过 OpenStack 或其他虚拟化平台部署镜像。</li>
+<li><strong>物理机:</strong> 通过 Foreman 等 PXE 引导工具，加载 Kickstart&#x2F;Preseed 文件，该文件指示系统从 ostree 仓库部署操作系统。</li>
+</ul>
+</li>
+<li><strong>节点运行 (K8s Nodes):</strong> 部署好的节点加入 Kubernetes 集群。</li>
+<li><strong>更新 (OS Updater):</strong> 节点上的 OS Updater (可能是 <code>rpm-ostree</code> 自身或自定义脚本) 定期检查 ostree 仓库是否有新版本，并执行原子化升级。</li>
+</ol>
+</li>
+</ul>
+<h3 id="ostree-详解"><a href="#ostree-详解" class="headerlink" title="ostree 详解"></a>ostree 详解</h3><ul>
+<li><strong>核心库:</strong> 提供 <code>libostree</code> 共享库和一系列命令行工具。</li>
+<li><strong>类 Git 操作:</strong> 提供类似 Git 的命令行体验 (<code>ostree commit</code>, <code>ostree pull</code>, <code>ostree checkout</code> 等)，用于提交、下载和管理完整的、可启动的文件系统树的版本。每个版本是一个 commit hash。</li>
+<li><strong>启动加载器集成:</strong> 提供将 ostree 管理的文件系统版本部署到 Bootloader (如 GRUB) 的机制，允许在启动时选择不同的系统版本。<ul>
+<li><strong>示例 (Dracut 模块):</strong> <code>ostree-prepare-root</code> 服务在 initramfs 阶段运行，准备挂载 ostree 管理的根文件系统。</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 示例 Dracut 模块安装脚本片段</span><br><span class="hljs-comment"># (来自 https://github.com/ostreedev/ostree/blob/main/src/boot/dracut/module-setup.sh)</span><br><br><span class="hljs-function"><span class="hljs-title">install</span></span>() &#123;<br>    <span class="hljs-comment"># 安装 ostree 准备根文件系统的工具</span><br>    dracut_install /usr/lib/ostree/ostree-prepare-root<br>    <span class="hljs-comment"># 安装 systemd 服务单元</span><br>    inst_simple <span class="hljs-string">&quot;<span class="hljs-variable">$&#123;systemdsystemunitdir&#125;</span>/ostree-prepare-root.service&quot;</span><br>    <span class="hljs-comment"># 创建必要的目录结构</span><br>    <span class="hljs-built_in">mkdir</span> -p <span class="hljs-string">&quot;<span class="hljs-variable">$&#123;initdir&#125;</span><span class="hljs-variable">$&#123;systemdsystemconfdir&#125;</span>/initrd-root-fs.target.wants&quot;</span><br>    <span class="hljs-comment"># 创建服务链接，使其在 initrd 启动时运行</span><br>    ln_r <span class="hljs-string">&quot;<span class="hljs-variable">$&#123;systemdsystemunitdir&#125;</span>/ostree-prepare-root.service&quot;</span> \<br>         <span class="hljs-string">&quot;<span class="hljs-variable">$&#123;systemdsystemconfdir&#125;</span>/initrd-root-fs.target.wants/ostree-prepare-root.service&quot;</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="构建-ostree"><a href="#构建-ostree" class="headerlink" title="构建 ostree"></a>构建 ostree</h3><ul>
+<li><strong>工具:</strong> <code>rpm-ostree</code></li>
+<li><strong>功能:</strong><ul>
+<li>基于 <code>treefile</code> (JSON 格式的配置文件) 将指定的 RPM 包构建成 ostree commit。</li>
+<li>管理 ostree 仓库和节点的 Bootloader 配置。</li>
+</ul>
+</li>
+<li><strong>treefile (配置文件示例):</strong> 定义了构建 ostree commit 所需的元数据和包列表。</li>
+</ul>
+<figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli">&#123;<br>  <span class="hljs-string">//</span> 定义操作系统名称<br>  <span class="hljs-string">&quot;osname&quot;</span>: <span class="hljs-string">&quot;centos-atomic-host&quot;</span>,<br>  <span class="hljs-string">//</span> 定义 ostree 引用 <span class="hljs-params">(ref)</span>，类似 Git 分支 <span class="hljs-params">(名称/版本/架构/类型)</span><br>  <span class="hljs-string">&quot;ref&quot;</span>: <span class="hljs-string">&quot;centos-atomic-host/8/x86_64/standard&quot;</span>,<br>  <span class="hljs-string">//</span> 指定使用的 RPM 仓库<br>  <span class="hljs-string">&quot;repos&quot;</span>: [<br>    <span class="hljs-string">&quot;base&quot;</span>,<br>    <span class="hljs-string">&quot;appstream&quot;</span>,<br>    <span class="hljs-string">&quot;epel&quot;</span>,<br>    <span class="hljs-string">&quot;docker-ce&quot;</span>, <span class="hljs-string">//</span> 示例：包含 Docker CE 仓库<br>    <span class="hljs-string">&quot;ceph&quot;</span>,      <span class="hljs-string">//</span> 示例：包含 Ceph 仓库<br>    <span class="hljs-string">&quot;salt&quot;</span>,      <span class="hljs-string">//</span> 示例：包含 SaltStack 仓库<br>    <span class="hljs-string">&quot;other&quot;</span>,<br>    <span class="hljs-string">&quot;kernel-al&quot;</span>,<br>    <span class="hljs-string">&quot;ovs&quot;</span>,<br>    <span class="hljs-string">&quot;zts&quot;</span><br>  ],<br>  <span class="hljs-string">//</span> 是否启用 SELinux<br>  <span class="hljs-string">&quot;selinux&quot;</span>: <span class="hljs-literal">true</span>,<br>  <span class="hljs-string">//</span> 安装的语言包<br>  <span class="hljs-string">&quot;install-langs&quot;</span>: [<span class="hljs-string">&quot;en_US&quot;</span>],<br>  <span class="hljs-string">//</span> 是否包含文档<br>  <span class="hljs-string">&quot;documentation&quot;</span>: <span class="hljs-literal">false</span>,<br>  <span class="hljs-string">//</span> initramfs 参数<br>  <span class="hljs-string">&quot;initramfs-args&quot;</span>: [<span class="hljs-string">&quot;--no-hostonly&quot;</span>],<br>  <span class="hljs-string">//</span> 构建后处理脚本<br>  <span class="hljs-string">&quot;postprocess-script&quot;</span>: <span class="hljs-string">&quot;customize.sh&quot;</span>,<br>  <span class="hljs-string">//</span> 添加用户到指定组<br>  <span class="hljs-string">&quot;etc-group-members&quot;</span>: [<span class="hljs-string">&quot;wheel&quot;</span>, <span class="hljs-string">&quot;docker&quot;</span>],<br>  <span class="hljs-string">//</span> 忽略的用户/组 <span class="hljs-params">(用于保持 /etc 下文件的干净)</span><br>  <span class="hljs-string">&quot;ignore-removed-users&quot;</span>: [<span class="hljs-string">&quot;root&quot;</span>],<br>  <span class="hljs-string">&quot;ignore-removed-groups&quot;</span>: [<span class="hljs-string">&quot;root&quot;</span>],<br>  <span class="hljs-string">//</span> 检查 passwd/group 文件<br>  <span class="hljs-string">&quot;check-passwd&quot;</span>: &#123; <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;file&quot;</span>, <span class="hljs-string">&quot;filename&quot;</span>: <span class="hljs-string">&quot;passwd&quot;</span> &#125;,<br>  <span class="hljs-string">&quot;check-group&quot;</span>: &#123; <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;file&quot;</span>, <span class="hljs-string">&quot;filename&quot;</span>: <span class="hljs-string">&quot;group&quot;</span> &#125;,<br>  <span class="hljs-string">//</span> 需要安装的核心 RPM 包列表<br>  <span class="hljs-string">&quot;packages&quot;</span>: [<br>    <span class="hljs-string">&quot;authconfig&quot;</span>,<br>    <span class="hljs-string">&quot;ceph-common&quot;</span>,<br>    <span class="hljs-string">&quot;ceph-fuse&quot;</span>,<br>    <span class="hljs-string">&quot;chrony&quot;</span>,<br>    <span class="hljs-string">&quot;cronie&quot;</span>,<br>    <span class="hljs-string">&quot;cloud-init&quot;</span>, <span class="hljs-string">//</span> 用于云环境初始化<br>    <span class="hljs-string">&quot;cloud-utils-growpart&quot;</span>, <span class="hljs-string">//</span> 用于分区扩展<br>    <span class="hljs-string">&quot;coreutils&quot;</span>,<br>    <span class="hljs-string">&quot;conntrack-tools&quot;</span>,<br>    <span class="hljs-string">&quot;docker-ce&quot;</span>, <span class="hljs-string">//</span> 安装 Docker 运行时<br>    <span class="hljs-string">//</span> <span class="hljs-string">...</span> 其他必要的包<br>  ]<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>构建命令:</strong></li>
+</ul>
+<figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli"><span class="hljs-comment"># 使用 rpm-ostree 根据 treefile 构建 ostree commit</span><br>rpm-ostree compose tree <span class="hljs-params">--unified-core</span> <span class="hljs-params">--cachedir=cache</span> <span class="hljs-params">--repo=</span><span class="hljs-string">./build-repo</span> <span class="hljs-string">/path/to/treefile.json</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="加载-ostree"><a href="#加载-ostree" class="headerlink" title="加载 ostree"></a>加载 ostree</h3><ul>
+<li><p><strong>节点初始化:</strong></p>
+<ol>
+<li><p><strong>初始化 OS:</strong> 在目标节点上，初始化 ostree 管理环境。</p>
+<figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs gherkin">ostree admin os-init <span class="hljs-variable">&lt;osname&gt;</span><br><span class="hljs-comment"># 例如: ostree admin os-init centos-atomic-host</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>添加远程仓库:</strong> 添加存储 ostree commit 的 HTTP 仓库地址。</p>
+<figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs gherkin">ostree remote add <span class="hljs-variable">&lt;remote_name&gt;</span> <span class="hljs-variable">&lt;repo_url&gt;</span><br><span class="hljs-comment"># 例如: ostree remote add atomic http://ostree.svr/ostree</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>拉取 Commit:</strong> 从远程仓库拉取指定的 ostree commit (版本)。</p>
+<figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs gherkin">ostree pull <span class="hljs-variable">&lt;remote_name&gt;</span> <span class="hljs-variable">&lt;ref&gt;</span><br><span class="hljs-comment"># 例如: ostree pull atomic centos-atomic-host/8/x86_64/standard</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>部署 OS:</strong> 将拉取的 commit 部署为可启动的系统，并配置内核启动参数 (kargs)。</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs routeros">ostree admin deploy <span class="hljs-attribute">--os</span>=&lt;osname&gt; &lt;ref&gt; <span class="hljs-attribute">--karg</span>=<span class="hljs-string">&#x27;&lt;kernel_argument&gt;&#x27;</span><br><span class="hljs-comment"># 例如: ostree admin deploy --os=centos-atomic-host centos-atomic-host/8/x86_64/standard --karg=&#x27;root=/dev/mapper/atomicos-root&#x27;</span><br></code></pre></td></tr></table></figure></li>
+</ol>
+</li>
+<li><p><strong>ostree 仓库结构 (示例):</strong> [Image 2: ostree 仓库目录结构示例]</p>
+<ul>
+<li><code>objects/</code>: 存储所有文件内容的去重块 (类似 Git 的 objects)。</li>
+<li><code>refs/heads/</code>: 存储分支引用 (ref)，指向具体的 commit hash。</li>
+<li><code>repo/config</code>: 仓库配置文件。</li>
+</ul>
+</li>
+</ul>
+<h3 id="操作系统加载方式"><a href="#操作系统加载方式" class="headerlink" title="操作系统加载方式"></a>操作系统加载方式</h3><ul>
+<li><strong>物理机 (Bare Metal):</strong><ul>
+<li>通常使用网络引导 (PXE Boot) 结合自动化部署工具，如 <strong>Foreman</strong>。</li>
+<li>PXE 服务器提供引导程序，加载 <strong>Kickstart</strong> (Red Hat&#x2F;CentOS&#x2F;Fedora) 或 <strong>Preseed</strong> (Debian&#x2F;Ubuntu) 自动化安装脚本。</li>
+<li>Kickstart&#x2F;Preseed 脚本中包含执行 <code>ostree admin deploy</code> 的命令，从 ostree 仓库完成操作系统的部署。</li>
+</ul>
+</li>
+<li><strong>虚拟机 (Virtual Machine):</strong><ul>
+<li>需要使用镜像构建工具 (如 <strong>Packer</strong>) 将 ostree commit 打包成特定虚拟化平台支持的镜像格式 (如 QCOW2 for KVM&#x2F;OpenStack, VHD for Hyper-V, VMDK for VMware, RAW)。</li>
+<li>然后通过虚拟化管理平台 (如 OpenStack Glance, vCenter) 上传和部署这些镜像。</li>
+</ul>
+</li>
+</ul>
+<h3 id="生产环境陷阱与定制化参数"><a href="#生产环境陷阱与定制化参数" class="headerlink" title="生产环境陷阱与定制化参数"></a>生产环境陷阱与定制化参数</h3><p>在生产环境中使用特定操作系统或配置时，可能会遇到各种问题：</p>
+<p><strong>遇到的陷阱示例:</strong></p>
+<ul>
+<li><strong>cloud-init Bug (0.7.7):</strong> 在某些版本中，cloud-init 可能无法正确应用静态网络配置，导致节点初始化失败或网络不通。</li>
+<li><strong>Docker</strong> Bug <strong>(1.9.1):</strong> 旧版本 Docker 在处理快速输出的大量日志时可能存在内存泄漏问题。</li>
+<li><strong>Kernel</strong> Panic (4.4.6): 特定内核版本在 Cgroup 创建和销毁操作频繁时可能触发内核崩溃 (Kernel Panic)。</li>
+<li><strong>rootfs 分区过小:</strong><ul>
+<li>根分区 (<code>/</code>) 空间不足会导致各种问题，例如 Docker 守护进程无法启动、无法写入日志、无法创建新容器等。</li>
+<li><strong>导致占满的原因:</strong><ul>
+<li>CI&#x2F;CD 过程中的构建工具（如 Maven）可能将大量依赖下载到临时目录 (<code>/tmp</code>)，如果 <code>/tmp</code> 在根分区，可能耗尽空间。</li>
+<li>容器日志增长过快，超出了日志轮转 (log rotation) 的处理能力，导致单个日志文件或日志总量撑爆磁盘。 <strong>解决方案:</strong> 合理配置容器日志驱动（如 <code>json-file</code> 的 <code>max-size</code>, <code>max-file</code>），或使用集中的日志收集方案。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>需要定制化的操作系统参数:</strong></p>
+<ul>
+<li><strong>背景:</strong> 某些应用（如 Elasticsearch, Ceph）对操作系统的默认参数有特定要求。</li>
+<li><strong>示例:</strong> Elasticsearch 要求 <code>vm.max_map_count</code> 内核参数至少为 <code>262144</code>，而大多数 Linux 发行版默认值可能只有 <code>65530</code>。</li>
+<li><strong>解决方案:</strong> 需要在操作系统镜像构建阶段或节点初始化阶段（如通过 cloud-init, Ignition, 或配置管理工具）就将这些必要的参数配置好，确保节点启动后即满足应用需求。</li>
+</ul>
+<h2 id="3-节点资源管理"><a href="#3-节点资源管理" class="headerlink" title="3. 节点资源管理"></a>3. 节点资源管理</h2><p>在 Kubernetes 集群中，<strong>节点 (Node)</strong> 是运行工作负载 (Pod) 的基本单元。对节点的资源进行有效管理是确保集群稳定性、性能和资源利用率的关键。生产环境中的节点资源管理需要考虑多个维度，包括节点自身的健康状态、为系统组件预留资源、防止资源耗尽的机制以及如何精确地为容器分配和限制资源。本章将深入探讨这些方面。</p>
+<h3 id="NUMA-Node-Non-Uniform-Memory-Access"><a href="#NUMA-Node-Non-Uniform-Memory-Access" class="headerlink" title="NUMA Node (Non-Uniform Memory Access)"></a>NUMA Node (Non-Uniform Memory Access)</h3><p>在现代多处理器服务器架构中，<strong>NUMA (Non-Uniform Memory Access)</strong> 是一个重要的内存设计。其核心思想是，处理器访问本地内存（直接连接到该处理器的内存）的速度要快于访问远程内存（连接到其他处理器的内存）。如下图所示，一个系统可能包含多个 NUMA Node，每个 Node 包含若干 CPU 核心和本地内存。</p>
+<ul>
+<li><strong>意义</strong>: 当一个 Pod 内的进程运行时，如果其使用的 CPU 核心和内存分布在不同的 NUMA Node 上，就会发生跨 NUMA Node 的内存访问，导致性能下降。对于需要高性能、低延迟的应用（如数据库、DPDK 应用、高性能计算），NUMA 亲和性至关重要。</li>
+<li><strong>Kubernetes 处理</strong>: Kubernetes <strong>Kubelet</strong> 默认情况下并不保证 Pod 内的 CPU 和内存分配在同一个 NUMA Node 上。然而，通过 <strong>Topology Manager</strong>（Kubelet 的一个特性门控功能），可以实现更精细的资源拓扑感知调度。当设置为 <code>single-numa-node</code> 策略时，对于 <strong>Guaranteed QoS</strong> 的 Pod，Kubelet 会尝试将所有分配的 CPU 核心和内存都限制在同一个 NUMA Node 内，从而提升性能。这通常需要与 <strong>CPU Manager</strong> (<code>static</code> 策略) 和 <strong>Memory Manager</strong> (<code>static</code> 策略，较新版本支持) 配合使用。</li>
+</ul>
+<h3 id="状态上报-Status-Reporting"><a href="#状态上报-Status-Reporting" class="headerlink" title="状态上报 (Status Reporting)"></a>状态上报 (Status Reporting)</h3><p><strong>Kubelet</strong> 作为运行在每个节点上的代理，承担着监控节点状态并将信息汇报给 <strong>API Server</strong> 的核心职责。这些信息对于集群的调度决策和健康状况判断至关重要。</p>
+<ul>
+<li><strong>汇报内容</strong>:<ul>
+<li><strong>节点基础信息</strong>: 包括节点的 IP 地址、主机名、操作系统类型与版本、Linux 内核版本、容器运行时（Docker&#x2F;Containerd）版本、Kubelet 版本、Kube-proxy 版本等。</li>
+<li><strong>节点资源信息</strong>: 包括 <strong>CPU 总量</strong>、<strong>内存总量</strong>、<strong>HugePages 大页内存</strong>、<strong>临时存储 (Ephemeral Storage)</strong>、可用的 <strong>GPU</strong> 等硬件设备信息，以及这些资源中可以分配给 Pod 使用的部分 (Allocatable Resources)。</li>
+<li><strong>节点状态 (Conditions)</strong>: Kubelet 会定期更新一系列反映节点当前状况的状态条件。这些 Conditions 是调度器（kube-scheduler）和控制器（如 Node Controller）判断节点是否可用、是否处于压力状态的关键依据。</li>
+</ul>
+</li>
+<li><strong>常见的节点 Conditions 及其意义</strong>:<table>
+<thead>
+<tr>
+<th align="left">状态 (Condition Type)</th>
+<th align="left">状态的意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Ready</strong></td>
+<td align="left">节点是否健康并准备好接受 Pod 调度。<code>True</code> 表示健康，<code>False</code> 表示不健康，<code>Unknown</code> 表示节点控制器在一段时间内未收到 Kubelet 的心跳。</td>
+</tr>
+<tr>
+<td align="left"><strong>MemoryPressure</strong></td>
+<td align="left">节点是否存在内存资源压力。<code>True</code> 表示内存紧张。</td>
+</tr>
+<tr>
+<td align="left"><strong>PIDPressure</strong></td>
+<td align="left">节点上是否存在进程 ID (PID) 资源压力，即进程数量过多。<code>True</code> 表示 PID 紧张。</td>
+</tr>
+<tr>
+<td align="left"><strong>DiskPressure</strong></td>
+<td align="left">节点是否存在磁盘空间压力（通常指 Kubelet 使用的根分区或镜像分区）。<code>True</code> 表示磁盘空间紧张。</td>
+</tr>
+<tr>
+<td align="left"><strong>NetworkUnavailable</strong></td>
+<td align="left">节点的网络配置是否尚未正确设置或存在问题。<code>True</code> 表示网络不可用。</td>
+</tr>
+</tbody></table>
+</li>
+<li><strong>调度决策</strong>: <strong>kube-scheduler</strong> 在为 Pod 选择目标节点时，会过滤掉 <code>Ready</code> 状态不为 <code>True</code> 的节点。同时，如果节点存在 <code>MemoryPressure</code>、<code>DiskPressure</code> 或 <code>PIDPressure</code> 状态，调度器默认会给节点添加相应的 <strong>Taint (污点)</strong>，阻止新的 Pod（除非 Pod 能容忍这些 Taint）被调度到该节点上，这是一种保护机制，避免节点资源进一步耗尽。</li>
+</ul>
+<h3 id="Lease-对象-Lease-Objects"><a href="#Lease-对象-Lease-Objects" class="headerlink" title="Lease 对象 (Lease Objects)"></a>Lease 对象 (Lease Objects)</h3><p>在早期 Kubernetes 版本中，Kubelet 通过频繁更新其对应的 <strong>Node 对象</strong> 来向 API Server 汇报心跳，表明自身存活。然而，Node 对象通常很大，包含了大量的静态信息和状态，频繁更新会对 API Server 和 etcd 造成显著压力，尤其是在大规模集群中。<br>为了解决这个问题，Kubernetes 引入了 <strong>Lease 对象</strong> (位于 <code>coordination.k8s.io</code> API 组)。</p>
+<ul>
+<li><strong>作用</strong>: Lease 对象是一种轻量级的资源，专门用于节点心跳。每个节点在 <code>kube-node-lease</code> 命名空间下维护一个对应的 Lease 对象。Kubelet 会定期更新这个 Lease 对象的 <code>renewTime</code> 字段。</li>
+<li><strong>机制</strong>: <strong>Node Controller</strong> 会监控 Lease 对象。如果一个 Lease 对象在 <code>nodeLeaseDurationSeconds</code>（默认 40 秒）内没有被更新，Node Controller 就会认为该节点失联，并将节点的 <code>Ready</code> Condition 更新为 <code>Unknown</code>。这大大降低了心跳机制对 API Server 和 etcd 的负载。</li>
+<li><strong>配置示例 (Lease Object YAML)</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">coordination.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Lease</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">creationTimestamp:</span> <span class="hljs-string">&quot;2021-08-19T02:50:09Z&quot;</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">k8snode</span> <span class="hljs-comment"># 通常是节点名</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">kube-node-lease</span><br>  <span class="hljs-attr">ownerReferences:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br>    <span class="hljs-attr">kind:</span> <span class="hljs-string">Node</span><br>    <span class="hljs-attr">name:</span> <span class="hljs-string">k8snode</span><br>    <span class="hljs-attr">uid:</span> <span class="hljs-number">58679942</span><span class="hljs-string">-e2dd-4ead-aada-385f099d5f56</span><br>  <span class="hljs-attr">resourceVersion:</span> <span class="hljs-string">&quot;1293702&quot;</span><br>  <span class="hljs-attr">uid:</span> <span class="hljs-string">1bf51951-b832-49da-8708-4b224b1ec3ed</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">holderIdentity:</span> <span class="hljs-string">k8snode</span> <span class="hljs-comment"># 持有者标识，通常是节点名</span><br>  <span class="hljs-attr">leaseDurationSeconds:</span> <span class="hljs-number">40</span> <span class="hljs-comment"># 租约持续时间</span><br>  <span class="hljs-attr">renewTime:</span> <span class="hljs-string">&quot;2021-09-08T01:34:16.489589Z&quot;</span> <span class="hljs-comment"># 上次续约时间</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="资源预留-Resource-Reservation"><a href="#资源预留-Resource-Reservation" class="headerlink" title="资源预留 (Resource Reservation)"></a>资源预留 (Resource Reservation)</h3><p>Kubernetes 节点上除了运行用户的 Pod 外，还必须运行许多支撑系统运行的基础服务。这些服务包括 <strong>操作系统本身的守护进程</strong> (如 systemd, journald, sshd)，<strong>容器运行时</strong> (如 dockerd, containerd)，以及 <strong>Kubernetes 自身的组件</strong> (如 kubelet, kube-proxy)。</p>
+<ul>
+<li><strong>问题</strong>: 如果不为这些系统关键进程预留资源，当用户 Pod 消耗过多资源时，可能导致系统进程因资源不足而运行缓慢甚至崩溃，进而影响整个节点的稳定性和功能。</li>
+<li><strong>解决方案</strong>: Kubelet 提供了参数来为这些非 Pod 进程预留一部分节点资源。这些资源将从节点总资源中扣除，不会被计入可供 Pod 分配的资源 (Allocatable)。<ul>
+<li><code>--kube-reserved=[cpu=100m,memory=256Mi,ephemeral-storage=1Gi,pid=1000]</code>: 为 Kubernetes 系统组件 (kubelet, kube-proxy, 容器运行时等) 预留资源。</li>
+<li><code>--system-reserved=[cpu=100m,memory=256Mi,ephemeral-storage=1Gi,pid=1000]</code>: 为操作系统级别的系统守护进程 (systemd, journald, sshd 等) 预留资源。</li>
+<li><code>--reserved-cpus=0,1</code>: （CPU Manager static 策略下）显式保留某些物理 CPU 核心，不用于 Pod 分配，专门给系统或 Kubelet 进程使用。</li>
+</ul>
+</li>
+<li><strong>配置</strong>: 这些参数通常在 Kubelet 的启动配置文件 (如 <code>/etc/kubernetes/kubelet.conf</code> 或 systemd service unit 文件) 中设置。合理的预留值需要根据节点的实际负载和运行的系统服务来确定，通常需要进行测试和调整。</li>
+</ul>
+<h3 id="Capacity-与-Allocatable"><a href="#Capacity-与-Allocatable" class="headerlink" title="Capacity 与 Allocatable"></a>Capacity 与 Allocatable</h3><p>理解节点的 <strong>Capacity (总容量)</strong> 和 <strong>Allocatable (可分配容量)</strong> 对于资源管理和调度至关重要。</p>
+<ul>
+<li><strong>Capacity</strong>: 指 Kubelet 检测到的节点硬件资源总量。<ul>
+<li><strong>CPU</strong>: 通常来源于 Linux <code>/proc/cpuinfo</code> 文件，表示逻辑 CPU 核心数。</li>
+<li><strong>Memory</strong>: 通常来源于 Linux <code>/proc/meminfo</code> 文件，表示节点总物理内存。</li>
+<li><strong>Ephemeral Storage</strong>: 指节点根分区 (<code>/</code>) 或者 Kubelet 配置的用于存储 Pod 日志、<code>emptyDir</code> 卷等的临时存储分区的总大小。</li>
+</ul>
+</li>
+<li><strong>Allocatable</strong>: 指节点上实际可供用户 Pod 申请和使用的资源量。它是通过从 <strong>Capacity</strong> 中减去为系统预留的资源以及 Kubelet 驱逐阈值所保留的资源得到的。<br><strong><code>Allocatable = Capacity - KubeReserved - SystemReserved - Eviction Thresholds</code></strong></li>
+<li><strong>调度依据</strong>: <strong>kube-scheduler 只关心节点的 Allocatable 资源</strong>。当调度 Pod 时，它会检查节点的 Allocatable 资源是否满足 Pod 的 <code>requests</code>。</li>
+<li><strong>查看</strong>: 可以通过 <code>kubectl describe node &lt;node-name&gt;</code> 命令查看节点的 Capacity 和 Allocatable 信息。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 示例输出片段</span><br>Capacity:<br>  cpu:                24<br>  ephemeral-storage:  205838Mi<br>  hugepages-1Gi:      0<br>  hugepages-2Mi:      0<br>  memory:             179504088Ki <span class="hljs-comment"># 约 171 GiB</span><br>  pods:               110<br>Allocatable:<br>  cpu:                24<br>  ephemeral-storage:  205838Mi <span class="hljs-comment"># 示例中未配置预留或驱逐阈值</span><br>  hugepages-1Gi:      0<br>  hugepages-2Mi:      0<br>  memory:             177304536Ki <span class="hljs-comment"># 约 169 GiB (Capacity - 预留/驱逐)</span><br>  pods:               110<br></code></pre></td></tr></table></figure></li>
+<li><strong>图示</strong>:<br>!<br>(上图显示了总容量 Capacity 中，减去 <code>kube-reserved</code>, <code>system-reserved</code>, <code>eviction-threshold</code> 后，剩余的部分即为 <code>Allocatable</code>)</li>
+</ul>
+<h3 id="节点磁盘管理-Node-Disk-Management"><a href="#节点磁盘管理-Node-Disk-Management" class="headerlink" title="节点磁盘管理 (Node Disk Management)"></a>节点磁盘管理 (Node Disk Management)</h3><p>Kubelet 会监控节点上与 Pod 运行相关的两个主要文件系统（如果存在的话），以防止磁盘耗尽导致的问题。</p>
+<ul>
+<li><strong><code>nodefs</code></strong>: 通常指包含 Kubelet 工作目录（默认为 <code>/var/lib/kubelet</code>）的文件系统，也可能是节点的根文件系统 (<code>/</code>)。这个分区用于存储 Pod 的 <strong><code>emptyDir</code> 卷</strong>、<strong>容器日志</strong>、<strong>镜像层（如果 <code>imagefs</code> 不独立）</strong>、以及 Kubelet 自身的一些数据。</li>
+<li><strong><code>imagefs</code></strong>: （可选）指容器运行时（如 Docker, Containerd）专门用于存储<strong>容器镜像</strong>和<strong>容器可写层 (writable layers)</strong> 的文件系统。如果配置了独立的 <code>imagefs</code>，它可以减轻 <code>nodefs</code> 的压力。如果未配置，镜像和可写层通常会存储在 <code>nodefs</code> 上（例如 Docker 默认的 <code>/var/lib/docker</code> 可能与 <code>/var/lib/kubelet</code> 在同一分区）。<br>Kubelet 会监控这两个文件系统的可用空间和 inode 数量，并在资源紧张时触发 <strong>DiskPressure</strong> 状态和可能的驱逐操作。</li>
+</ul>
+<h3 id="驱逐管理-Eviction-Management"><a href="#驱逐管理-Eviction-Management" class="headerlink" title="驱逐管理 (Eviction Management)"></a>驱逐管理 (Eviction Management)</h3><p><strong>驱逐 (Eviction)</strong> 是 Kubelet 在节点资源不足时，为了保证节点稳定性而主动停止（驱逐）一个或多个 Pod 的过程。这是 Kubernetes <strong>自愈能力</strong> 的体现，防止节点因资源耗尽而完全崩溃。</p>
+<ul>
+<li><strong>触发</strong>: 当节点的可用内存、磁盘空间、可用 inode 或可用 PID 低于 Kubelet 配置的<strong>驱逐阈值 (Eviction Thresholds)</strong> 时，驱逐机制会被触发。</li>
+<li><strong>行为</strong>:<ul>
+<li>Kubelet <strong>不会直接删除 Pod 对象</strong>。它会终止 Pod 内的容器进程。</li>
+<li>被驱逐的 Pod 的 <code>status.phase</code> 会被标记为 <strong><code>Failed</code></strong>。</li>
+<li>Pod 的 <code>status.reason</code> 会被设置为 <strong><code>Evicted</code></strong>。</li>
+<li>Pod 的 <code>status.message</code> 会记录被驱逐的具体原因（例如 “Node tenia disk pressure: …”）。</li>
+</ul>
+</li>
+<li><strong>重要性</strong>: 驱逐是一种 <strong>防御机制</strong>，旨在牺牲部分 Pod 以保证节点及其上运行的其他关键 Pod 和系统服务的存活。</li>
+</ul>
+<h3 id="资源可用额监控-Available-Resource-Monitoring"><a href="#资源可用额监控-Available-Resource-Monitoring" class="headerlink" title="资源可用额监控 (Available Resource Monitoring)"></a>资源可用额监控 (Available Resource Monitoring)</h3><p>Kubelet 需要持续监控节点的可用资源，以便及时发现资源压力并做出响应（如设置 Condition 或触发驱逐）。</p>
+<ul>
+<li><strong>数据来源</strong>: Kubelet 内部集成了 <strong>cAdvisor (Container Advisor)</strong> 组件，用于收集节点和容器的资源使用情况。</li>
+<li><strong>监控指标</strong>: Kubelet 主要关注<strong>不可压缩资源 (Incompressible Resources)</strong> 的可用量，因为这些资源的耗尽会直接导致系统或应用失败。CPU 是可压缩资源，CPU 繁忙通常只会导致性能下降，一般不直接触发驱逐（除非配置了特定策略）。<ul>
+<li><strong><code>memory.available</code></strong>: 节点当前可用的内存量 (通常基于 <code>/proc/meminfo</code> 中的 <code>MemAvailable</code>)。</li>
+<li><strong><code>nodefs.available</code></strong>: <code>nodefs</code> 文件系统的可用磁盘空间。</li>
+<li><strong><code>nodefs.inodesFree</code></strong>: <code>nodefs</code> 文件系统的可用 inode 数量。</li>
+<li><strong><code>imagefs.available</code></strong>: （如果存在）<code>imagefs</code> 文件系统的可用磁盘空间。</li>
+<li><strong><code>imagefs.inodesFree</code></strong>: （如果存在）<code>imagefs</code> 文件系统的可用 inode 数量。</li>
+</ul>
+</li>
+<li><strong>检查周期</strong>: Kubelet 会定期（默认 10 秒）检查这些指标。</li>
+</ul>
+<h3 id="驱逐策略-Eviction-Policy"><a href="#驱逐策略-Eviction-Policy" class="headerlink" title="驱逐策略 (Eviction Policy)"></a>驱逐策略 (Eviction Policy)</h3><p>Kubelet 根据预先配置的驱逐策略来决定何时以及如何驱逐 Pod。</p>
+<ul>
+<li><strong>驱逐阈值 (Eviction Thresholds)</strong>: 定义了触发驱逐的资源条件。阈值可以是绝对值（如 <code>memory.available&lt;100Mi</code>）或百分比（如 <code>nodefs.available&lt;10%</code>）。<ul>
+<li><strong>硬驱逐 (Hard Eviction)</strong>: 当资源可用量低于硬驱逐阈值时，Kubelet <strong>立即</strong> 开始驱逐 Pod，<strong>没有宽限期 (Grace Period)</strong>。这是为了尽快回收资源，防止节点崩溃。<ul>
+<li>配置示例: <code>--eviction-hard=memory.available&lt;100Mi,nodefs.available&lt;5%,nodefs.inodesFree&lt;5%</code></li>
+</ul>
+</li>
+<li><strong>软驱逐 (Soft Eviction)</strong>: 当资源可用量低于软驱逐阈值，并且持续时间超过了指定的<strong>宽限期 (Grace Period)</strong> 后，Kubelet 才开始驱逐 Pod。这提供了一个缓冲期，让系统或 Pod 有机会自行恢复或被优雅地移除。<ul>
+<li>配置示例: <code>--eviction-soft=memory.available&lt;200Mi,nodefs.available&lt;10%</code></li>
+<li>宽限期配置: <code>--eviction-soft-grace-period=memory.available=1m30s,nodefs.available=5m</code> (指定特定信号的宽限期)</li>
+<li>Pod 终止宽限期: 软驱逐还会考虑 Pod 自身的 <code>terminationGracePeriodSeconds</code>，取两者中的较小值。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>最小回收量 (<code>evictionMinimumReclaim</code>)</strong>: 可以配置 Kubelet 在每次驱逐操作后尝试回收的最小资源量，以避免因阈值波动导致过于频繁的小规模驱逐。<ul>
+<li>配置示例: <code>--eviction-minimum-reclaim=memory.available=0Mi,nodefs.available=500Mi,imagefs.available=2Gi</code></li>
+</ul>
+</li>
+<li><strong>驱逐策略表</strong>:<table>
+<thead>
+<tr>
+<th align="left">Kubelet 参数</th>
+<th align="left">分类</th>
+<th align="left">驱逐方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>evictionSoft</code></td>
+<td align="left">软驱逐</td>
+<td align="left">当检测到当前资源达到软驱逐的阈值时，并不会立即启动驱逐操作，而是要等待一个 <strong>宽限期 (Grace Period)</strong>。这个宽限期选取 <code>evictionSoftGracePeriod</code> 和 Pod 指定的 <code>terminationGracePeriodSeconds</code> 中较小的值。</td>
+</tr>
+<tr>
+<td align="left"><code>evictionHard</code></td>
+<td align="left">硬驱逐</td>
+<td align="left"><strong>没有宽限期</strong>，一旦检测到满足硬驱逐的条件，就直接中止 Pod 来释放资源。</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h3 id="基于内存压力的驱逐-Eviction-based-on-Memory-Pressure"><a href="#基于内存压力的驱逐-Eviction-based-on-Memory-Pressure" class="headerlink" title="基于内存压力的驱逐 (Eviction based on Memory Pressure)"></a>基于内存压力的驱逐 (Eviction based on Memory Pressure)</h3><p>当 <code>memory.available</code> 低于设定的驱逐阈值（默认硬驱逐是 <code>memory.available&lt;100Mi</code>）时：</p>
+<ol>
+<li><strong>设置 Condition</strong>: Kubelet 会将节点的 <code>MemoryPressure</code> Condition 设置为 <code>True</code>。</li>
+<li><strong>调度器反应</strong>: 调度器会避免向该节点调度新的 BestEffort Pod（通过 Taint）。</li>
+<li><strong>启动驱逐</strong>: Kubelet 开始驱逐 Pod 以回收内存。</li>
+<li><strong>驱逐顺序</strong>:<ul>
+<li><strong>(候选)</strong>: 首先判断 Pod 的<strong>内存使用量是否超出了其 <code>requests</code></strong>。超出请求的 Pod 成为主要的驱逐候选目标。如果所有 Pod 都在其请求范围内，那么所有 Pod 都可能被驱逐。</li>
+<li><strong>(优先级)</strong>: 按照 Pod 的 <strong>服务质量 (QoS) 等级</strong> 和 <strong>运行时优先级 (Priority)</strong> 进行排序。优先级最低的先被驱逐：<ol>
+<li><strong>BestEffort</strong> QoS 的 Pod (没有设置 requests 和 limits)。</li>
+<li><strong>Burstable</strong> QoS 的 Pod，且内存使用量超出了其 <code>requests</code>。</li>
+<li><strong>Guaranteed</strong> QoS 的 Pod，以及内存使用量未超出 <code>requests</code> 的 Burstable Pod（理论上不应发生，除非系统预留不足或计算错误，但在极端情况下可能被驱逐）。</li>
+</ol>
+</li>
+<li><strong>(内存使用量)</strong>: 在相同优先级&#x2F;QoS 等级内，<strong>当前内存使用量超出其 <code>requests</code> 值最多的 Pod</strong> 会被优先驱逐。</li>
+</ul>
+</li>
+</ol>
+<h3 id="基于磁盘压力的驱逐-Eviction-based-on-Disk-Pressure"><a href="#基于磁盘压力的驱逐-Eviction-based-on-Disk-Pressure" class="headerlink" title="基于磁盘压力的驱逐 (Eviction based on Disk Pressure)"></a>基于磁盘压力的驱逐 (Eviction based on Disk Pressure)</h3><p>当 <code>nodefs</code> 或 <code>imagefs</code> 的可用空间或 inode 低于设定的驱逐阈值时：</p>
+<ol>
+<li><strong>设置 Condition</strong>: Kubelet 会将节点的 <code>DiskPressure</code> Condition 设置为 <code>True</code>。</li>
+<li><strong>调度器反应</strong>: 调度器会避免向该节点调度新的 Pod（通过 Taint）。</li>
+<li><strong>启动驱逐&#x2F;清理</strong>: Kubelet 开始回收磁盘空间。</li>
+<li><strong>回收行为</strong>:<ul>
+<li><strong>第一阶段：清理容器和镜像 (如果适用)</strong><ul>
+<li><strong>有独立 <code>imagefs</code> 分区</strong>:<ul>
+<li>Kubelet 首先删除<strong>已退出 (dead) 的容器</strong> (清理 <code>nodefs</code> 上的日志和可写层残留)。</li>
+<li>然后 Kubelet 删除<strong>未被使用的镜像</strong> (清理 <code>imagefs</code>)。</li>
+</ul>
+</li>
+<li><strong>无独立 <code>imagefs</code> 分区 (共享 <code>nodefs</code>)</strong>:<ul>
+<li>Kubelet 同时删除<strong>已退出的容器</strong>和<strong>未被使用的镜像</strong>。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>第二阶段：驱逐运行中的 Pod (如果第一阶段后仍满足驱逐条件)</strong><ul>
+<li><strong>(候选)</strong>: 判断 Pod 的<strong>本地临时存储 (ephemeral-storage) 使用量是否超出了其 <code>requests</code></strong>。超出请求的 Pod 成为主要驱逐候选目标。</li>
+<li><strong>(优先级)</strong>: 同样按照 Pod 的 QoS 等级和运行时优先级排序（BestEffort -&gt; Burstable -&gt; Guaranteed）。</li>
+<li><strong>(磁盘使用量)</strong>: 在相同优先级&#x2F;QoS 等级内，<strong>当前本地临时存储使用量超出其 <code>requests</code> 值最多的 Pod</strong> 会被优先驱逐。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="容器和资源配置-Cgroup"><a href="#容器和资源配置-Cgroup" class="headerlink" title="容器和资源配置 (Cgroup)"></a>容器和资源配置 (Cgroup)</h3><p>Kubernetes 使用 <strong>Linux Cgroups (Control Groups)</strong> 来限制和隔离 Pod 及容器的资源使用。Kubelet 会根据 Pod 的 <strong>QoS (Quality of Service) Class</strong> 将 Pod 组织在不同的 Cgroup 层级下。</p>
+<ul>
+<li><strong>QoS Classes</strong>:<ul>
+<li><strong>Guaranteed</strong>: Pod 中所有容器都必须同时设置了 CPU 和 Memory 的 <code>requests</code> 和 <code>limits</code>，并且 <code>requests</code> 值必须等于 <code>limits</code> 值。</li>
+<li><strong>Burstable</strong>: Pod 中至少有一个容器设置了 CPU 或 Memory 的 <code>requests</code>，但不满足 Guaranteed 的条件（例如 <code>requests</code> &lt; <code>limits</code>，或只有部分容器设置了资源）。</li>
+<li><strong>BestEffort</strong>: Pod 中所有容器都没有设置 CPU 或 Memory 的 <code>requests</code> 和 <code>limits</code>。</li>
+</ul>
+</li>
+<li><strong>Cgroup Hierarchy (示例 for CPU)</strong>: Kubelet 通常会在 <code>/sys/fs/cgroup/cpu/kubepods.slice/</code> (或其他配置的 Cgroup Root 下) 创建层级结构：<ul>
+<li><code>kubepods-besteffort.slice</code>: 用于 BestEffort Pod。</li>
+<li><code>kubepods-burstable.slice</code>: 用于 Burstable Pod。</li>
+<li><code>kubepods-pod&lt;PodUID&gt;.slice</code>: 每个 Guaranteed 和 Burstable Pod 拥有自己的 Cgroup Slice。</li>
+<li><code>docker-&lt;ContainerID&gt;.scope</code> (或 <code>crio-...</code>): 每个容器在 Pod 的 Slice 下有自己的 Cgroup Scope。</li>
+</ul>
+<figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli"><span class="hljs-string">/sys/fs/cgroup/cpu</span><br>└── kubepods.slice<br>    ├── kubepods-besteffort.slice<br>    │   └── kubepods-pod&lt;PodUID_A&gt;<span class="hljs-string">.slice</span><br>    │       ├── docker-&lt;ContainerID_A1&gt;<span class="hljs-string">.scope</span><br>    │       └── docker-&lt;ContainerID_A2&gt;<span class="hljs-string">.scope</span><br>    ├── kubepods-burstable.slice<br>    │   └── kubepods-pod&lt;PodUID_B&gt;<span class="hljs-string">.slice</span><br>    │       ├── docker-&lt;ContainerID_B1&gt;<span class="hljs-string">.scope</span><br>    │       └── docker-&lt;ContainerID_B2&gt;<span class="hljs-string">.scope</span><br>    └── kubepods-pod&lt;PodUID_C&gt;<span class="hljs-string">.slice</span>  <span class="hljs-comment"># Guaranteed Pod directly under kubepods</span><br>        ├── docker-&lt;ContainerID_C1&gt;<span class="hljs-string">.scope</span><br>        └── docker-&lt;ContainerID_C2&gt;<span class="hljs-string">.scope</span><br></code></pre></td></tr></table></figure>
+<p><em>(注意: 实际层级可能因 Kubelet Cgroup driver (systemd&#x2F;cgroupfs) 和版本略有不同，上图为简化示意)</em></p>
+</li>
+<li><strong>Cgroup Hierarchy (示例 for Memory)</strong>: 内存 Cgroup 结构类似。<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs stylus">/sys/fs/cgroup/memory<br>└── kubepods<span class="hljs-selector-class">.slice</span><br>    ├── kubepods-besteffort<span class="hljs-selector-class">.slice</span><br>    │   └── kubepods-pod&lt;PodUID_A&gt;<span class="hljs-selector-class">.slice</span><br>    │       ├── docker-&lt;ContainerID_A1&gt;<span class="hljs-selector-class">.scope</span><br>    │       └── docker-&lt;ContainerID_A2&gt;<span class="hljs-selector-class">.scope</span><br>    ├── kubepods-burstable<span class="hljs-selector-class">.slice</span><br>    │   └── kubepods-pod&lt;PodUID_B&gt;<span class="hljs-selector-class">.slice</span><br>    │       ├── docker-&lt;ContainerID_B1&gt;<span class="hljs-selector-class">.scope</span><br>    │       └── docker-&lt;ContainerID_B2&gt;<span class="hljs-selector-class">.scope</span><br>    └── kubepods-pod&lt;PodUID_C&gt;<span class="hljs-selector-class">.slice</span><br>        ├── docker-&lt;ContainerID_C1&gt;<span class="hljs-selector-class">.scope</span><br>        └── docker-&lt;ContainerID_C2&gt;.scope<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="CPU-CGroup-配置"><a href="#CPU-CGroup-配置" class="headerlink" title="CPU CGroup 配置"></a>CPU CGroup 配置</h3><p>Kubelet 会将 Pod Spec 中定义的 CPU <code>requests</code> 和 <code>limits</code> 转换为对应的 Cgroup 参数。</p>
+<table>
+<thead>
+<tr>
+<th align="left">CGroup 类型</th>
+<th align="left">参数</th>
+<th align="left">QoS 类型</th>
+<th align="left">值 (示例)</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>容器的 CGroup</strong></td>
+<td align="left"><strong><code>cpu.shares</code></strong></td>
+<td align="left">BestEffort</td>
+<td align="left"><code>2</code></td>
+<td align="left">权重最低，在 CPU 资源竞争时获得最少时间片。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Burstable</td>
+<td align="left"><code>requests.cpu * 1024</code> (转换为 millicores * 1.024，近似等比)</td>
+<td align="left">权重根据 <code>requests</code> 按比例分配。<code>requests</code> 越高，权重越大。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Guaranteed</td>
+<td align="left"><code>requests.cpu * 1024</code></td>
+<td align="left">同 Burstable，权重根据 <code>requests</code> (等于 <code>limits</code>) 分配。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"><strong><code>cpu.cfs_quota_us</code></strong></td>
+<td align="left">BestEffort</td>
+<td align="left"><code>-1</code></td>
+<td align="left"><code>-1</code> 表示无限制，容器可以使用节点空闲的 CPU 资源，但权重最低。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Burstable</td>
+<td align="left"><code>limits.cpu * 100000</code> (假定 period&#x3D;100ms)</td>
+<td align="left">在每个调度周期 (cfs_period_us, 通常 100ms) 内，最多使用 <code>limits.cpu</code> 对应的 CPU 时间。如果未设置 limit，则为 <code>-1</code> (无限制)。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Guaranteed</td>
+<td align="left"><code>limits.cpu * 100000</code></td>
+<td align="left">同 Burstable，严格限制 CPU 使用不超过 <code>limits.cpu</code>。</td>
+</tr>
+<tr>
+<td align="left"><strong>Pod 的 CGroup</strong></td>
+<td align="left"><strong><code>cpu.shares</code></strong></td>
+<td align="left">BestEffort</td>
+<td align="left"><code>2</code></td>
+<td align="left">Pod 整体权重最低。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Burstable</td>
+<td align="left">Pod 所有容器 <code>(requests.cpu * 1024)</code> 之和</td>
+<td align="left">Pod 整体权重是其下所有容器 <code>requests</code> 对应权重之和。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Guaranteed</td>
+<td align="left">Pod 所有容器 <code>(requests.cpu * 1024)</code> 之和</td>
+<td align="left">同 Burstable。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"><strong><code>cpu.cfs_quota_us</code></strong></td>
+<td align="left">BestEffort</td>
+<td align="left"><code>-1</code></td>
+<td align="left">Pod 整体无 CPU 硬限制。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Burstable</td>
+<td align="left">Pod 所有容器 <code>(limits.cpu * 100000)</code> 之和 (如果容器设置了 limit)</td>
+<td align="left">Pod 整体的 CPU 硬限制是其下所有设置了 <code>limits</code> 的容器的 CPU limit 之和。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Guaranteed</td>
+<td align="left">Pod 所有容器 <code>(limits.cpu * 100000)</code> 之和</td>
+<td align="left">Pod 整体严格限制 CPU 使用，等于其下所有容器的 limit 之和。</td>
+</tr>
+</tbody></table>
+<h3 id="内存-CGroup-配置"><a href="#内存-CGroup-配置" class="headerlink" title="内存 CGroup 配置"></a>内存 CGroup 配置</h3><p>Kubelet 会将 Pod Spec 中定义的 Memory <code>limits</code> 转换为内存 Cgroup 的 <code>memory.limit_in_bytes</code> 参数。Memory <code>requests</code> 主要用于调度和计算 <code>oom_score_adj</code>，不直接设置 Cgroup 参数（但 Memory Manager 静态策略下会利用 request）。</p>
+<table>
+<thead>
+<tr>
+<th align="left">CGroup 类型</th>
+<th align="left">参数</th>
+<th align="left">QoS 类型</th>
+<th align="left">值 (示例)</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>容器的 CGroup</strong></td>
+<td align="left"><strong><code>memory.limit_in_bytes</code></strong></td>
+<td align="left">BestEffort</td>
+<td align="left"><code>9223372036854771712</code> (非常大的值, 约等于无限制)</td>
+<td align="left">BestEffort 容器没有内存硬限制，但内存压力大时最先被 OOM Kill。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Burstable</td>
+<td align="left"><code>limits.memory</code> (转换为 bytes)</td>
+<td align="left">如果设置了 <code>limits.memory</code>，则容器内存使用不能超过此值。如果未设置，则同 BestEffort。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Guaranteed</td>
+<td align="left"><code>limits.memory</code> (转换为 bytes)</td>
+<td align="left">严格限制内存使用不超过 <code>limits.memory</code> (等于 <code>requests.memory</code>)。</td>
+</tr>
+<tr>
+<td align="left"><strong>Pod 的 CGroup</strong></td>
+<td align="left"><strong><code>memory.limit_in_bytes</code></strong></td>
+<td align="left">BestEffort</td>
+<td align="left"><code>9223372036854771712</code></td>
+<td align="left">Pod 整体没有内存硬限制。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Burstable</td>
+<td align="left">所有设置了 <code>limits.memory</code> 的容器的 <code>limits.memory</code> (转换为 bytes) 之和</td>
+<td align="left">Pod 整体的内存硬限制是其下所有设置了 <code>limits</code> 的容器的 limit 之和。</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Guaranteed</td>
+<td align="left">所有容器的 <code>limits.memory</code> (转换为 bytes) 之和</td>
+<td align="left">Pod 整体严格限制内存使用，等于其下所有容器的 limit 之和。</td>
+</tr>
+</tbody></table>
+<h3 id="OOM-Killer-行为-Out-Of-Memory-Killer"><a href="#OOM-Killer-行为-Out-Of-Memory-Killer" class="headerlink" title="OOM Killer 行为 (Out Of Memory Killer)"></a>OOM Killer 行为 (Out Of Memory Killer)</h3><p>当节点内存严重不足时，<strong>Linux 内核的 OOM Killer</strong> 会介入，选择一个或多个进程杀死以释放内存。Kubernetes 通过设置 Cgroup 和调整进程的 <code>oom_score_adj</code> 值来影响 OOM Killer 的决策，以保护更重要的 Pod。</p>
+<ul>
+<li><strong><code>oom_score</code></strong>: 内核为每个进程计算一个 <code>oom_score</code> (0-1000)。分数越高，越容易被 OOM Killer 选中。分数主要基于进程使用的物理内存占系统总内存的百分比。</li>
+<li><strong><code>oom_score_adj</code></strong>: Kubelet 可以为容器内的进程设置 <code>oom_score_adj</code> 值 (-1000 到 1000)。这个值会调整内核计算出的 <code>oom_score</code>。<ul>
+<li><code>-1000</code>: 完全禁止 OOM Killer 杀死该进程。</li>
+<li><code>1000</code>: 使进程非常容易被 OOM Killer 杀死。</li>
+</ul>
+</li>
+<li><strong>计算逻辑</strong>: 进程的最终 OOM 评分大致为 <code>(内存使用百分比 * 10) + oom_score_adj</code> (简化)。</li>
+<li><strong>Kubernetes QoS 与 <code>oom_score_adj</code></strong>: Kubelet 根据 Pod 的 QoS 类型和内存 <code>requests</code> 来设置容器进程的 <code>oom_score_adj</code>：<table>
+<thead>
+<tr>
+<th align="left">Pod QoS 类型</th>
+<th align="left"><code>oom_score_adj</code></th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Guaranteed</strong></td>
+<td align="left"><code>-998</code></td>
+<td align="left">非常不容易被 OOM Kill，受到最高保护。Kubelet 自身和其他关键系统进程通常有更低的 <code>oom_score_adj</code> (如 -999)。</td>
+</tr>
+<tr>
+<td align="left"><strong>BestEffort</strong></td>
+<td align="left"><code>1000</code></td>
+<td align="left">最容易被 OOM Kill，在内存不足时最先被牺牲。</td>
+</tr>
+<tr>
+<td align="left"><strong>Burstable</strong></td>
+<td align="left"><code>min(max(2, 1000 - (1000 * memoryRequestBytes) / machineMemoryCapacityBytes), 999)</code></td>
+<td align="left">动态计算，介于 2 和 999 之间。内存 <code>requests</code> 越接近节点总内存，<code>oom_score_adj</code> 越低，保护程度越高；<code>requests</code> 越小，越容易被 OOM Kill。</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h3 id="日志管理-Log-Management"><a href="#日志管理-Log-Management" class="headerlink" title="日志管理 (Log Management)"></a>日志管理 (Log Management)</h3><p>节点上系统服务和容器产生的大量日志如果不加管理，会迅速耗尽磁盘空间，触发 DiskPressure 甚至导致节点不可用。</p>
+<ul>
+<li><strong>系统日志</strong>: 节点操作系统层面的日志（如 systemd journal, &#x2F;var&#x2F;log&#x2F;<em>），需要配置 <strong><code>logrotate</code></strong> 或类似的工具进行*<em>定期轮转 (rotate)</em></em> 和 <strong>清理 (clean)</strong>。<ul>
+<li><strong>配置</strong>: 编辑 <code>/etc/logrotate.conf</code> 或 <code>/etc/logrotate.d/</code> 下的配置文件，设置轮转周期（daily, weekly）、保留文件数 (<code>rotate N</code>)、大小限制 (<code>size M</code>)、压缩 (<code>compress</code>) 等。</li>
+<li><strong>注意</strong>: <code>logrotate</code> 的执行周期（通常是 cron 任务）不能过长，否则可能在周期到来前磁盘就被写满；也不能过短，以免过于频繁地操作影响性能。需要合理配置触发条件（如大小和时间结合）。</li>
+</ul>
+</li>
+<li><strong>容器日志</strong>:<ul>
+<li><strong>Docker&#x2F;Containerd</strong>: 容器运行时本身通常提供日志驱动 (logging driver)，如 <code>json-file</code>，可以配置每个容器日志文件的<strong>最大大小 (<code>max-size</code>)</strong> 和 <strong>最大文件数 (<code>max-file</code>)</strong>。容器运行时会在写入前检查大小并执行轮转。这是推荐的方式。<ul>
+<li><strong>Docker 配置示例</strong> (<code>/etc/docker/daemon.json</code>):<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;log-driver&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;json-file&quot;</span><span class="hljs-punctuation">,</span><br>  <span class="hljs-attr">&quot;log-opts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><br>    <span class="hljs-attr">&quot;max-size&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;100m&quot;</span><span class="hljs-punctuation">,</span><br>    <span class="hljs-attr">&quot;max-file&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;3&quot;</span><br>  <span class="hljs-punctuation">&#125;</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><strong>Kubelet</strong>: Kubelet 也可以管理容器日志（主要是通过定期运行 <code>du</code> 检查大小）。可以通过 Kubelet 参数 <code>--container-log-max-size</code> 和 <code>--container-log-max-files</code> 来设置全局默认值（但优先级低于运行时自身的配置）。</li>
+</ul>
+</li>
+</ul>
+<h3 id="Docker-卷管理-Docker-Volume-Management-Legacy-Context"><a href="#Docker-卷管理-Docker-Volume-Management-Legacy-Context" class="headerlink" title="Docker 卷管理 (Docker Volume Management - Legacy Context)"></a>Docker 卷管理 (Docker Volume Management - Legacy Context)</h3><ul>
+<li><strong>Dockerfile <code>VOLUME</code> 指令</strong>: 在 Dockerfile 中使用 <code>VOLUME</code> 指令会创建一个由 Docker 管理的卷。在 Kubernetes 环境中，这种卷的管理和生命周期与 Kubernetes 的 Volume 机制不兼容，<strong>强烈建议不要在用于 Kubernetes 的镜像的 Dockerfile 中使用 <code>VOLUME</code> 指令</strong>。应使用 Kubernetes 的 Volume 类型（如 <code>emptyDir</code>, <code>hostPath</code>, <code>persistentVolumeClaim</code>）来管理数据。</li>
+<li><strong>容器可写层与 <code>emptyDir</code></strong>: 如果容器向其<strong>可写层 (writable layer)</strong> 或<strong>挂载的 <code>emptyDir</code> 卷</strong>大量写入数据，会消耗节点上的临时存储 (<code>nodefs</code>)。这可能导致磁盘 I&#x2F;O 过高，影响节点上其他 Pod 和系统进程的性能，并可能触发 <code>DiskPressure</code> 和驱逐。</li>
+<li><strong>I&#x2F;O 限制</strong>: Docker 和 Containerd 运行时都基于 <strong>Cgroup v1</strong> (在许多环境中仍然是主流) 对块设备 I&#x2F;O 的限制支持有限，特别是对<strong>缓冲 I&#x2F;O (Buffered I&#x2F;O)</strong> 的支持不佳。虽然可以限制<strong>直接 I&#x2F;O (Direct I&#x2F;O)</strong>，但大多数应用使用缓冲 I&#x2F;O。这意味着很难精确地限制 Pod 的磁盘 I&#x2F;O 速率。<strong>Cgroup v2</strong> 提供了更好的 I&#x2F;O 控制能力，但需要操作系统和 Kubelet 配置 Cgroup v2 支持。对于有特殊 I&#x2F;O 性能或隔离需求的场景，建议使用<strong>独立的物理卷或网络存储卷 (PersistentVolume)</strong>，而不是依赖共享的节点临时存储。</li>
+</ul>
+<h3 id="网络资源-Network-Resources"><a href="#网络资源-Network-Resources" class="headerlink" title="网络资源 (Network Resources)"></a>网络资源 (Network Resources)</h3><p>默认情况下，Kubernetes 不对 Pod 的网络带宽进行限制。但是，可以通过 <strong>CNI (Container Network Interface) 插件</strong> 来实现带宽控制。</p>
+<ul>
+<li><strong>机制</strong>: 支持带宽限制的 CNI 插件（如 Calico, Cilium, 或社区的 <code>bandwidth</code> 插件）通常利用 <strong>Linux Traffic Control (TC)</strong> 子系统来实现。TC 允许在网络接口上配置<strong>队列规则 (qdisc)</strong> 和 <strong>过滤器 (filter)</strong> 来整形 (shape) 或管制 (police) 流量。</li>
+<li><strong>配置</strong>: 可以通过在 Pod 的 <strong>annotations (注解)</strong> 中添加特定字段来声明期望的带宽限制。社区 <code>bandwidth</code> 插件使用的注解是：<ul>
+<li><code>kubernetes.io/ingress-bandwidth</code>: Pod 的入向带宽限制。</li>
+<li><code>kubernetes.io/egress-bandwidth</code>: Pod 的出向带宽限制。</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">nginx-bw-limited</span><br>  <span class="hljs-attr">annotations:</span><br>    <span class="hljs-attr">kubernetes.io/ingress-bandwidth:</span> <span class="hljs-string">10M</span> <span class="hljs-comment"># 限制入向带宽为 10 Mbps</span><br>    <span class="hljs-attr">kubernetes.io/egress-bandwidth:</span> <span class="hljs-string">20M</span> <span class="hljs-comment"># 限制出向带宽为 20 Mbps</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">containers:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span><br>    <span class="hljs-attr">image:</span> <span class="hljs-string">nginx</span><br></code></pre></td></tr></table></figure></li>
+<li><strong>注意</strong>: 具体的注解和支持情况取决于所使用的 CNI 插件。需要查阅 CNI 插件的文档。</li>
+</ul>
+<h3 id="进程数-Process-Count-PIDs"><a href="#进程数-Process-Count-PIDs" class="headerlink" title="进程数 (Process Count &#x2F; PIDs)"></a>进程数 (Process Count &#x2F; PIDs)</h3><p>节点上的可用 <strong>PID (Process ID)</strong> 数量是有限的（由内核参数 <code>kernel.pid_max</code> 决定，通常在 <code>/proc/sys/kernel/pid_max</code> 查看）。如果节点上的总进程数（包括系统进程和所有 Pod 内的进程）过多，耗尽了 PID 资源，将无法创建新的进程，导致节点功能异常。</p>
+<ul>
+<li><strong>限制</strong>:<ul>
+<li><strong>Kubelet 默认不限制</strong>单个 Pod 可以创建的子进程数量。</li>
+<li>可以通过 Kubelet 启动参数 <code>--pod-max-pids</code> 来<strong>限制每个 Pod 内可以运行的总 PID 数量</strong>。这是一个重要的稳定性保障措施，防止 “PID 泄漏” 或 “fork bomb” 类型的应用耗尽节点 PID 资源。</li>
+<li>可以通过 Kubelet 参数 <code>--system-reserved-pids</code> 和 <code>--kube-reserved-pids</code> （如果支持）为系统和 Kubernetes 组件<strong>预留一部分 PID</strong>，确保它们在 PID 紧张时仍能正常工作。</li>
+</ul>
+</li>
+<li><strong>监控与压力</strong>:<ul>
+<li>Kubelet 会<strong>周期性地检查</strong>节点当前的 PID 使用量。</li>
+<li>如果<strong>可用 PID 数量少于设定的阈值</strong>（通过 <code>--eviction-hard</code> 或 <code>--eviction-soft</code> 配置，例如 <code>pid.available&lt;1k</code>），Kubelet 会将节点的 <strong><code>PIDPressure</code> Condition</strong> 标记为 <code>True</code>。</li>
+<li><strong>kube-scheduler</strong> 会避免将新的 Pod 调度到处于 <code>PIDPressure</code> 状态的节点上（通过 Taint）。</li>
+<li>如果达到硬驱逐阈值，Kubelet 会根据驱逐策略开始<strong>驱逐 Pod</strong> 以回收 PID 资源（通常优先驱逐 BestEffort 和 Burstable Pod）。<br>通过对 NUMA、状态上报、资源预留、Capacity&#x2F;Allocatable、磁盘、内存、CPU、网络和 PID 等多方面的精细管理，可以显著提升 Kubernetes 生产集群的稳定性、性能和资源利用效率。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4-节点异常检测"><a href="#4-节点异常检测" class="headerlink" title="4. 节点异常检测"></a>4. 节点异常检测</h2><p>在 Kubernetes 集群的日常运维中，<strong>节点（Node）的健康状态是保障整个集群稳定运行和应用高可用的基石</strong>。一个节点可能因为硬件故障、内核问题、资源耗尽（内存、磁盘、PID）、网络配置错误或 Kubelet 自身异常等原因而变得不可用或状态不佳。Kubernetes 需要一套机制来及时发现这些异常节点，并根据情况采取相应的处理措施（如驱逐 Pod），这就是节点异常检测的核心目标。</p>
+<h3 id="Kubelet：节点状态的守卫者"><a href="#Kubelet：节点状态的守卫者" class="headerlink" title="Kubelet：节点状态的守卫者"></a>Kubelet：节点状态的守卫者</h3><p>每个 Kubernetes 工作节点上都运行着一个关键的代理进程：<strong>Kubelet</strong>。Kubelet 不仅负责管理本机上的 Pod 生命周期（如启动、停止容器），还承担着<strong>监控节点自身健康状况并将状态汇报给 Kubernetes API Server 的重要职责</strong>。</p>
+<p>Kubelet 会定期收集节点的各种指标，例如 CPU 使用率、内存使用量、磁盘空间、网络连通性等。它通过与底层的 Linux 内核交互来获取这些信息，例如：</p>
+<ul>
+<li><strong>内存使用和压力</strong>：Kubelet 会检查 <code>/proc/meminfo</code> 文件以及 cgroups 提供的内存统计信息，来判断节点当前的内存使用情况以及是否存在内存压力。内核的 OOM Killer (Out Of Memory Killer) 日志也是判断内存问题的重要依据。</li>
+<li><strong>磁盘使用和压力</strong>：Kubelet 会监控其管理的关键文件系统（通常是根分区 <code>/</code> 和 Docker&#x2F;containerd 使用的数据存储分区，如 <code>/var/lib/docker</code> 或 <code>/var/lib/containerd</code>）的磁盘使用率和 inode 使用率。通过 <code>statfs</code> 系统调用获取这些信息。当可用空间低于预设的阈值时，会标记磁盘压力。</li>
+<li><strong>PID 压力</strong>：Linux 内核对进程 ID（PID）的数量是有限制的（可通过 <code>/proc/sys/kernel/pid_max</code> 查看）。如果节点上运行了过多的进程，耗尽了可用的 PID，将导致无法创建新的进程。Kubelet 会监控当前 PID 的使用情况，并与内核限制进行比较，判断是否存在 PID 压力。cgroups v1 和 v2 也提供了 PIDs 控制器来限制一个 cgroup 内可以创建的进程数。</li>
+<li><strong>网络可用性</strong>：Kubelet 会检查节点网络是否按预期配置完成。这通常依赖于 CNI (Container Network Interface) 插件是否成功初始化并配置了节点的网络，确保 Pod 可以获得 IP 地址并进行通信。如果 CNI 插件报告失败或网络路由、设备出现问题，Kubelet 会标记网络不可用。</li>
+</ul>
+<p>Kubelet 将收集到的状态信息，特别是下面将要详述的 <strong>Node Conditions</strong>，定期（由 Kubelet 的启动参数 <code>--node-status-update-frequency</code> 控制，默认为 10 秒）通过 <strong>NodeStatus</strong> 对象上报给 API Server。</p>
+<h3 id="Node-Conditions：节点健康状态的快照"><a href="#Node-Conditions：节点健康状态的快照" class="headerlink" title="Node Conditions：节点健康状态的快照"></a>Node Conditions：节点健康状态的快照</h3><p><code>NodeStatus</code> 中最重要的部分是 <strong>Conditions</strong> 字段，它是一个列表，包含了描述节点当前状态的关键布尔型标志。这些 Conditions 是 Kubernetes 判断节点健康与否的主要依据。核心的 Node Conditions 包括：</p>
+<ul>
+<li><p><strong><code>Ready</code></strong>：这是最核心的条件。</p>
+<ul>
+<li><strong>状态意义</strong>：表示节点是否健康并且<strong>准备好接收、运行新的 Pod</strong>。如果 <code>Ready</code> 为 <code>True</code>，表示 Kubelet 正常运行，网络插件正常工作，节点可以承担工作负载。如果为 <code>False</code> 或 <code>Unknown</code>，则表示节点存在问题，Scheduler 不会将新的 Pod 调度到该节点，并且控制平面（Node Controller）可能会在宽限期后驱逐该节点上的 Pod。</li>
+<li><strong>检测原理</strong>：Kubelet 综合评估自身健康、容器运行时状态以及网络插件状态来决定 <code>Ready</code> 条件。任何导致 Kubelet 无法正常工作或无法与容器运行时&#x2F;CNI 插件通信的问题都可能导致 <code>Ready</code> 变为 <code>False</code>。</li>
+</ul>
+</li>
+<li><p><strong><code>MemoryPressure</code></strong>：</p>
+<ul>
+<li><strong>状态意义</strong>：表示节点是否存在<strong>内存资源压力</strong>。如果为 <code>True</code>，意味着节点可用内存不足，可能会影响现有 Pod 的运行，甚至触发内核的 OOM Killer。</li>
+<li><strong>检测原理</strong>：Kubelet 根据配置的**驱逐阈值（Eviction Thresholds）**来判断。例如，通过 Kubelet 启动参数 <code>--eviction-hard=memory.available&lt;1Gi</code> 设置硬驱逐阈值，当可用内存低于 1Gi 时，Kubelet 会将 <code>MemoryPressure</code> 标记为 <code>True</code>，并开始尝试驱逐 Pod 以回收内存。还有软驱逐阈值 (<code>--eviction-soft</code> 和 <code>--eviction-soft-grace-period</code>) 提供更灵活的驱逐策略。Kubelet 通过读取 cgroups V1 的 <code>memory.usage_in_bytes</code> 和 <code>memory.limit_in_bytes</code>，或者 cgroups V2 的 <code>memory.current</code> 和 <code>memory.max</code>，结合 <code>/proc/meminfo</code> 来计算可用内存。</li>
+</ul>
+</li>
+<li><p><strong><code>PIDPressure</code></strong>：</p>
+<ul>
+<li><strong>状态意义</strong>：表示节点是否存在 <strong>PID 资源压力</strong>。如果为 <code>True</code>，意味着节点上可用 PID 数量紧张，可能无法创建新的进程，影响 Pod 甚至节点自身的稳定性。</li>
+<li><strong>检测原理</strong>：同样基于 Kubelet 配置的驱逐阈值，如 <code>--eviction-hard=pid.available&lt;1k</code>。Kubelet 会检查当前已分配的 PID 数量与系统或 cgroup 限制的差值。内核参数 <code>kernel.pid_max</code> 定义了系统全局的 PID 上限，而 cgroups PIDs 控制器可以限制特定 cgroup（如 Kubelet 或 Pod）的 PID 数量。</li>
+</ul>
+</li>
+<li><p><strong><code>DiskPressure</code></strong>：</p>
+<ul>
+<li><strong>状态意义</strong>：表示节点是否存在<strong>磁盘空间压力</strong>。如果为 <code>True</code>，意味着 Kubelet 管理的关键磁盘分区（通常是 <code>nodefs</code> - 节点根文件系统，和 <code>imagefs</code> - 容器镜像和可写层存储文件系统）的可用空间不足。这可能导致无法写入日志、无法创建新的容器镜像层、甚至无法调度新的 Pod（如果需要写数据到这些分区）。</li>
+<li><strong>检测原理</strong>：基于 Kubelet 配置的驱逐阈值，如 <code>--eviction-hard=nodefs.available&lt;10%</code>, <code>--eviction-hard=imagefs.available&lt;15%</code>。Kubelet 使用 <code>statfs</code> 系统调用检查对应文件系统的可用块和总块数，以及可用 inode 和总 inode 数，来判断是否达到压力阈值。</li>
+</ul>
+</li>
+<li><p><strong><code>NetworkUnavailable</code></strong>：</p>
+<ul>
+<li><strong>状态意义</strong>：表示节点的<strong>网络配置是否不正确或未就绪</strong>。如果为 <code>True</code>，意味着该节点的网络尚未被正确配置（通常由 CNI 插件负责），Pod 可能无法获得 IP 地址或与其他 Pod&#x2F;服务通信。</li>
+<li><strong>检测原理</strong>：这个条件的设置通常由<strong>网络插件</strong>自己决定。Kubelet 会提供一个接口（例如，通过特定的文件或配置状态）让网络插件告知其配置状态。如果 Kubelet 未收到网络插件已就绪的信号，或者插件明确报告了错误，Kubelet 会将此条件设置为 <code>True</code>。这<strong>通常只在特定的云提供商环境或网络配置场景下使用</strong>，并且需要 Kubelet 配置了相应的 cloud provider。对于大多数标准的 CNI 部署，<code>Ready</code> 条件已经隐含了网络的基本可用性。</li>
+</ul>
+</li>
+</ul>
+<p>你可以通过以下命令查看一个节点的详细状态，包括它的 Conditions：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl describe node &lt;node-name&gt;<br></code></pre></td></tr></table></figure>
+
+<p>输出中会有一个 <code>Conditions</code> 的部分，清晰地展示了每个条件的状态 (<code>True</code>, <code>False</code>, <code>Unknown</code>)、最后一次探测到状态的时间 (<code>lastProbeTime</code>) 以及最后一次状态转变的时间 (<code>lastTransitionTime</code>) 和原因 (<code>reason</code>)、消息 (<code>message</code>)。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># kubectl describe node my-node 的部分输出示例</span><br><span class="hljs-string">...</span><br><span class="hljs-attr">Conditions:</span><br>  <span class="hljs-string">Type</span>             <span class="hljs-string">Status</span>  <span class="hljs-string">LastHeartbeatTime</span>                 <span class="hljs-string">LastTransitionTime</span>                <span class="hljs-string">Reason</span>                       <span class="hljs-string">Message</span><br>  <span class="hljs-string">----</span>             <span class="hljs-string">------</span>  <span class="hljs-string">-----------------</span>                 <span class="hljs-string">------------------</span>                <span class="hljs-string">------</span>                       <span class="hljs-string">-------</span><br>  <span class="hljs-string">MemoryPressure</span>   <span class="hljs-literal">False</span>   <span class="hljs-string">Wed,</span> <span class="hljs-number">20</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 10:30:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">Mon,</span> <span class="hljs-number">18</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 09:00:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">KubeletHasSufficientMemory</span>   <span class="hljs-string">kubelet</span> <span class="hljs-string">has</span> <span class="hljs-string">sufficient</span> <span class="hljs-string">memory</span> <span class="hljs-string">available</span><br>  <span class="hljs-string">DiskPressure</span>     <span class="hljs-literal">False</span>   <span class="hljs-string">Wed,</span> <span class="hljs-number">20</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 10:30:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">Mon,</span> <span class="hljs-number">18</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 09:00:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">KubeletHasNoDiskPressure</span>     <span class="hljs-string">kubelet</span> <span class="hljs-string">has</span> <span class="hljs-literal">no</span> <span class="hljs-string">disk</span> <span class="hljs-string">pressure</span><br>  <span class="hljs-string">PIDPressure</span>      <span class="hljs-literal">False</span>   <span class="hljs-string">Wed,</span> <span class="hljs-number">20</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 10:30:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">Mon,</span> <span class="hljs-number">18</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 09:00:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">KubeletHasSufficientPID</span>      <span class="hljs-string">kubelet</span> <span class="hljs-string">has</span> <span class="hljs-string">sufficient</span> <span class="hljs-string">PID</span> <span class="hljs-string">available</span><br>  <span class="hljs-string">Ready</span>            <span class="hljs-literal">True</span>    <span class="hljs-string">Wed,</span> <span class="hljs-number">20</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 10:30:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">Mon,</span> <span class="hljs-number">18</span> <span class="hljs-string">Nov</span> <span class="hljs-number">2024 09:05:00</span> <span class="hljs-string">+0800</span>   <span class="hljs-string">KubeletReady</span>                 <span class="hljs-string">kubelet</span> <span class="hljs-string">is</span> <span class="hljs-string">posting</span> <span class="hljs-string">ready</span> <span class="hljs-string">status</span><br><span class="hljs-string">...</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="Node-Controller：异常节点的处理者"><a href="#Node-Controller：异常节点的处理者" class="headerlink" title="Node Controller：异常节点的处理者"></a>Node Controller：异常节点的处理者</h3><p>Kubernetes 控制平面中有一个重要的组件叫做 <strong>Node Controller</strong>（作为 <code>kube-controller-manager</code> 的一部分运行）。它的职责之一就是监控所有节点的状态，特别是它们的 <code>Ready</code> Condition 和心跳。</p>
+<ul>
+<li><p><strong>心跳检测</strong>：Kubelet 会定期向 API Server 发送“心跳”来表明自己还活着并且能够通信。在早期版本中，这主要是通过更新 NodeStatus 实现。为了减少 API Server 的负载，Kubernetes 引入了 <strong>Lease 对象</strong>（位于 <code>kube-node-lease</code> 命名空间）。每个节点都有一个对应的 Lease 对象，Kubelet 会以更高的频率（由 Kubelet 参数 <code>--node-lease-duration-seconds</code> 控制，默认为 40 秒，更新频率约为其 1&#x2F;4）更新这个 Lease 对象。Node Controller 会同时监视 NodeStatus 和 Lease 对象。</p>
+</li>
+<li><p><strong>标记节点状态</strong>：Node Controller 会根据心跳情况更新节点的 <code>Ready</code> Condition 状态为 <code>Unknown</code>。它使用 <code>--node-monitor-period</code>（默认为 5s）检查节点状态，如果在一个时间窗口（由 <code>--node-monitor-grace-period</code> 控制，默认为 40s）内没有收到 Kubelet 的心跳（无论是 NodeStatus 更新还是 Lease 更新），Node Controller 会将该节点的 <code>Ready</code> Condition 标记为 <code>Unknown</code>。</p>
+</li>
+<li><p><strong>污点与驱逐</strong>：当 Node Controller 检测到节点状态变为 <code>NotReady</code>（<code>Ready</code> 条件为 <code>False</code>）或 <code>Unreachable</code>（<code>Ready</code> 条件为 <code>Unknown</code> 超过一定时间）时，它会自动给这个节点添加相应的<strong>污点（Taints）</strong>：</p>
+<ul>
+<li><code>node.kubernetes.io/not-ready</code>: Node condition <code>Ready</code> is <code>False</code>.</li>
+<li><code>node.kubernetes.io/unreachable</code>: Node condition <code>Ready</code> is <code>Unknown</code>.<br>这些污点会阻止新的 Pod（除非 Pod 有相应的容忍度 Toleration）被调度到该节点。更重要的是，Node Controller 在添加这些污点后，会等待一个<strong>驱逐宽限期</strong>（由 <code>kube-controller-manager</code> 的参数 <code>--pod-eviction-timeout</code> 控制，默认为 5 分钟）。如果节点在此期间恢复正常（<code>Ready</code> 变为 <code>True</code>），污点会被移除。如果超时后节点状态仍未恢复，Node Controller 将会<strong>触发节点上所有 Pod 的驱逐（Eviction）流程</strong>，将它们从异常节点上删除，以便 Deployment、StatefulSet 等控制器可以在健康的节点上重新创建这些 Pod，实现应用的自愈。</li>
+</ul>
+</li>
+</ul>
+<h3 id="Node-Problem-Detector-NPD-：更主动、更细粒度的检测"><a href="#Node-Problem-Detector-NPD-：更主动、更细粒度的检测" class="headerlink" title="Node Problem Detector (NPD)：更主动、更细粒度的检测"></a>Node Problem Detector (NPD)：更主动、更细粒度的检测</h3><p>虽然 Kubelet 能够检测到一些基本的节点问题（如资源压力），但对于更深层次或特定于环境的问题（如内核死锁、硬件故障、文件系统只读、网络黑洞等），Kubelet 可能无法直接感知。为了弥补这一不足，社区开发了 <strong>Node Problem Detector (NPD)</strong>。</p>
+<ul>
+<li><p><strong>解决了什么问题</strong>：NPD 旨在<strong>主动发现并报告 Kubelet 可能忽略的节点级别问题</strong>。它将这些问题转化为标准的 Kubernetes API 对象（Node Conditions 或 Events），使得集群管理员和自动化系统能够更容易地监控和响应这些问题。</p>
+</li>
+<li><p><strong>是什么</strong>：NPD 通常以 <strong>DaemonSet</strong> 的形式部署在集群的每个（或部分）节点上。它是一个独立于 Kubelet 的程序。</p>
+</li>
+<li><p><strong>工作原理</strong>：NPD 通过监控各种系统信号源来发现问题：</p>
+<ul>
+<li><strong>系统日志</strong>：监控 <code>journald</code>、<code>kern.log</code>、<code>dmesg</code> 等系统日志，通过预定义的正则表达式匹配错误或异常模式（例如，EXT4 文件系统错误、NMI watchdog 超时、硬件错误信息 MCE）。</li>
+<li><strong>系统状态文件</strong>：检查特定的系统文件或 <code>/proc</code>, <code>/sys</code> 下的状态信息。</li>
+<li><strong>自定义插件&#x2F;脚本</strong>：可以扩展 NPD，运行自定义的健康检查脚本来检测特定应用或硬件相关的问题。<br>当 NPD 检测到问题时，它会与 API Server 通信，执行以下操作之一：</li>
+<li><strong>更新节点的 Condition</strong>：它可以添加<strong>自定义的 Node Condition</strong>（例如 <code>KernelDeadlock=True</code>, <code>FilesystemReadOnly=True</code>）到节点的 <code>status.conditions</code> 字段。这些自定义 Condition 可以被监控系统捕获，或者被自定义的控制器用来触发特定操作。</li>
+<li><strong>创建 Event</strong>：为节点生成一个 Kubernetes Event，详细描述发现的问题。这对于事后分析和告警非常有用。</li>
+</ul>
+</li>
+<li><p><strong>配置示例</strong>：NPD 的行为通过 ConfigMap 进行配置，定义了要监控的日志源、匹配规则以及发现问题时要报告的 Condition 或 Event 模板。例如，一个规则可能配置为：当在内核日志中检测到 “kernel BUG at” 字符串时，将节点的 <code>KernelOops</code> Condition 设置为 <code>True</code>。</p>
+</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># NPD ConfigMap (简化示例)</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">ConfigMap</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">node-problem-detector-config</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">kube-system</span><br><span class="hljs-attr">data:</span><br>  <span class="hljs-attr">kernel-monitor.json:</span> <span class="hljs-string">|</span><br><span class="hljs-string">    &#123;</span><br><span class="hljs-string">      &quot;plugin&quot;: &quot;journald&quot;,</span><br><span class="hljs-string">      &quot;logPath&quot;: &quot;/run/log/journal&quot;, // 或 /var/log/journal</span><br><span class="hljs-string">      &quot;lookback&quot;: &quot;5m&quot;,</span><br><span class="hljs-string">      &quot;rules&quot;: [</span><br><span class="hljs-string">        &#123;</span><br><span class="hljs-string">          &quot;type&quot;: &quot;temporary&quot;,</span><br><span class="hljs-string">          &quot;reason&quot;: &quot;KernelOops&quot;,</span><br><span class="hljs-string">          &quot;pattern&quot;: &quot;kernel BUG at&quot;</span><br><span class="hljs-string">        &#125;,</span><br><span class="hljs-string">        &#123;</span><br><span class="hljs-string">          &quot;type&quot;: &quot;temporary&quot;,</span><br><span class="hljs-string">          &quot;condition&quot;: &quot;ReadonlyFilesystem&quot;,</span><br><span class="hljs-string">          &quot;reason&quot;: &quot;FilesystemIsReadOnly&quot;,</span><br><span class="hljs-string">          &quot;pattern&quot;: &quot;Remounting filesystem read-only&quot;</span><br><span class="hljs-string">        &#125;</span><br><span class="hljs-string">      ]</span><br><span class="hljs-string">    &#125;</span><br><span class="hljs-string"></span>  <span class="hljs-comment"># 可以有其他配置文件，如 systemd-monitor.json, custom-plugin-monitor.json 等</span><br></code></pre></td></tr></table></figure>
+
+<p>通过部署和配置 NPD，运维团队可以获得比 Kubelet 默认检查更广泛、更深入的节点健康视图，从而能够更早地发现并处理潜在的节点故障，进一步提升集群的稳定性和可靠性。</p>
+<h2 id="5-常⽤节点问题排查⼿段"><a href="#5-常⽤节点问题排查⼿段" class="headerlink" title="5. 常⽤节点问题排查⼿段"></a>5. 常⽤节点问题排查⼿段</h2><p>当 Kubernetes 集群中的某个节点出现异常（例如状态变为 <code>NotReady</code> 或 <code>Unknown</code>，或者节点上的 Pod 持续失败）时，快速有效地定位并解决问题至关重要。这需要结合 Kubernetes 提供的工具和深入节点内部进行排查。</p>
+<h3 id="从-Kubernetes-控制平面视角检查"><a href="#从-Kubernetes-控制平面视角检查" class="headerlink" title="从 Kubernetes 控制平面视角检查"></a>从 Kubernetes 控制平面视角检查</h3><p>首先，我们应该从 Kubernetes 控制平面的视角来了解节点的宏观状态。</p>
+<ul>
+<li><strong>查看节点状态和 Conditions</strong>：使用 <code>kubectl get node &lt;node-name&gt; -o wide</code> 可以快速查看节点的基本状态、IP 地址、运行的 Kubelet 和 Kube-proxy 版本等。更详细的信息需要 <code>kubectl describe node &lt;node-name&gt;</code>。<strong>仔细检查 <code>Conditions</code> 部分</strong>，确认哪个条件（<code>Ready</code>, <code>MemoryPressure</code>, <code>DiskPressure</code>, <code>PIDPressure</code>, <code>NetworkUnavailable</code>）处于异常状态 (<code>False</code> 或 <code>Unknown</code>)，并关注 <code>LastTransitionTime</code>, <code>Reason</code>, <code>Message</code> 字段，它们通常会给出问题的初步线索。同时，检查节点的<strong>污点（Taints）</strong>，确认是否有 <code>node.kubernetes.io/not-ready</code> 或 <code>node.kubernetes.io/unreachable</code> 等自动添加的污点。</li>
+<li><strong>检查节点事件</strong>：<code>kubectl describe node &lt;node-name&gt;</code> 的输出底部会包含与该节点相关的<strong>事件（Events）</strong>。这些事件记录了 Kubelet 的关键活动（如启动、注册失败）、资源压力的触发、驱逐决策、以及 Node Problem Detector (如果部署) 报告的问题等。通过 <code>kubectl get events --field-selector involvedObject.kind=Node,involvedObject.name=&lt;node-name&gt; --sort-by=&#39;.lastTimestamp&#39;</code> 可以按时间顺序查看更完整的节点事件列表。</li>
+<li><strong>检查节点资源使用情况 (K8s 视角)</strong>：使用 <code>kubectl top node &lt;node-name&gt;</code> 可以快速查看节点当前的 CPU 和内存使用量以及请求&#x2F;限制的总和。这有助于判断是否存在整体资源不足。</li>
+</ul>
+<h3 id="深入节点内部进行诊断"><a href="#深入节点内部进行诊断" class="headerlink" title="深入节点内部进行诊断"></a>深入节点内部进行诊断</h3><p>如果控制平面的信息不足以定位问题，或者需要验证节点内部的实际情况，就需要登录到问题节点（通常通过 SSH）进行更深入的排查。</p>
+<ul>
+<li><p><strong>检查核心系统资源</strong>：</p>
+<ul>
+<li><strong>CPU</strong>：使用 <code>top</code>, <code>htop</code>, <code>vmstat 1</code> 或 <code>mpstat -P ALL 1</code> 检查 CPU 使用率。关注 <code>%us</code> (用户空间), <code>%sy</code> (内核空间), <code>%wa</code> (IO 等待), <code>%si</code> (软中断)。<strong>高 <code>%wa</code> 可能指向磁盘或网络 I&#x2F;O 瓶颈</strong>，高 <code>%si</code> 可能与网络流量处理有关。查看<strong>负载平均值 (Load Average)</strong> (<code>uptime</code> 或 <code>top</code>)，持续高于 CPU 核心数可能表示系统过载。</li>
+<li><strong>内存</strong>：使用 <code>free -h</code> 查看总内存、已用内存、可用内存 (<code>available</code>)。<strong>重点关注 <code>available</code> 内存</strong>，它比 <code>free</code>更能反映实际可供应用程序使用的内存。检查 Swap 使用情况（<code>free -h</code> 或 <code>swapon -s</code>），过多的 Swap 使用通常表示内存严重不足。使用 <code>top</code> 或 <code>htop</code> 按内存使用排序进程。检查内核 OOM (Out Of Memory) Killer 日志：<code>sudo dmesg | grep -i oom-killer</code>。</li>
+<li><strong>磁盘</strong>：使用 <code>df -h</code> 检查<strong>文件系统空间使用率</strong>，特别是根分区 (<code>/</code>) 和容器存储分区（如 <code>/var/lib/docker</code> 或 <code>/var/lib/containerd</code>）。使用 <code>df -i</code> 检查<strong>inode 使用率</strong>，inode 耗尽也会导致无法创建新文件。如果怀疑 I&#x2F;O 性能问题，使用 <code>iostat -xz 1</code> 查看磁盘的读写速率、<code>await</code> 时间、<code>%util</code> 等指标。<strong>高 <code>await</code> 和高 <code>%util</code> 表明磁盘 I&#x2F;O 存在瓶颈</strong>。检查内核日志中是否有文件系统错误：<code>sudo dmesg | grep -iE &quot;error|failed|corrupt|ext4|xfs&quot;</code>。</li>
+<li><strong>PID</strong>：使用 <code>ps aux | wc -l</code> 粗略估计当前进程数，并与系统 PID 上限比较：<code>cat /proc/sys/kernel/pid_max</code>。如果使用了 cgroups PID 控制器，需要检查相应 cgroup 的 PID 限制和当前使用情况。</li>
+</ul>
+</li>
+<li><p><strong>检查 Kubelet 服务</strong>：</p>
+<ul>
+<li><strong>状态</strong>：<code>systemctl status kubelet</code> 查看服务是否正在运行，是否有错误日志片段。</li>
+<li><strong>日志</strong>：<strong>Kubelet 日志是排查节点问题的核心</strong>。通常使用 <code>journalctl -u kubelet -f</code> 实时跟踪日志，或 <code>journalctl -u kubelet --since &quot;10 minutes ago&quot;</code> 查看近期日志。关注错误信息，例如：<ul>
+<li>无法连接 API Server (<code>Failed to list *v1.Node: Get &quot;https://&lt;apiserver-ip&gt;:6443/api/v1/nodes?...&quot;</code>)。</li>
+<li>PLEG (Pod Lifecycle Event Generator) 问题 (<code>PLEG is not healthy</code>)，通常表明 Kubelet 与容器运行时通信或获取 Pod 状态时遇到困难。</li>
+<li>同步 Pod 状态错误 (<code>syncPod failed</code>)。</li>
+<li>Volume 挂载&#x2F;卸载失败。</li>
+<li>CNI 网络插件调用失败。</li>
+<li>资源驱逐相关的日志 (<code>eviction manager: attempting to reclaim...</code>)。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>检查容器运行时 (Docker&#x2F;Containerd)</strong>：</p>
+<ul>
+<li><strong>状态</strong>：<code>systemctl status docker</code> 或 <code>systemctl status containerd</code>。</li>
+<li><strong>日志</strong>：<code>journalctl -u docker</code> 或 <code>journalctl -u containerd</code>。关注镜像拉取失败、存储驱动错误、创建 sandbox (网络命名空间) 失败、启动容器失败等信息。</li>
+<li><strong>列出容器</strong>：使用 <code>crictl ps -a</code> (推荐，与 CRI 接口交互) 或 <code>docker ps -a</code> 查看节点上所有容器（包括已停止的）的状态。<code>crictl pods</code> 查看 Pod sandbox。</li>
+<li><strong>检查特定容器日志</strong>：<code>crictl logs &lt;container-id&gt;</code> 或 <code>docker logs &lt;container-id&gt;</code>。</li>
+</ul>
+</li>
+<li><p><strong>检查网络连通性和配置</strong>：</p>
+<ul>
+<li><strong>基础连通性</strong>：<code>ping &lt;apiserver-ip&gt;</code>, <code>ping &lt;other-node-ip&gt;</code>, <code>ping &lt;cluster-gateway&gt;</code>。使用 <code>traceroute</code> 或 <code>mtr</code> 诊断网络路径问题。</li>
+<li><strong>DNS 解析</strong>：在节点上尝试解析集群内部服务名 (<code>nslookup &lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local &lt;coredns-ip&gt;</code>) 和外部域名 (<code>nslookup google.com</code>)。检查 <code>/etc/resolv.conf</code> 配置是否正确。</li>
+<li><strong>网络接口和路由</strong>：<code>ip addr show</code> 查看网络接口状态和 IP 配置。<code>ip link show</code> 查看接口 link 状态。<code>ip route show</code> 查看内核路由表。检查 CNI 创建的虚拟接口（如 <code>veth</code>, <code>cali</code>, <code>cilium_host</code> 等）是否存在且状态正常。</li>
+<li><strong>防火墙&#x2F;网络策略</strong>：检查 <code>iptables</code> 规则 (<code>iptables-save</code>) 或 <code>nftables</code> 规则 (<code>nft list ruleset</code>) 是否阻止了必要的通信（例如，Kubelet 与 API Server，节点间通信，Pod 访问 Service）。如果是 IPVS 模式，检查 <code>ipvsadm -Ln</code> 的输出。</li>
+<li><strong>CNI 插件日志</strong>：查找 CNI 插件（如 Calico, Cilium, Flannel）自身的日志，位置可能在 <code>/var/log/calico</code>, <code>/var/log/cilium</code> 或由 Kubelet 日志引导。</li>
+<li><strong>网络抓包</strong>：在极端情况下，使用 <code>tcpdump</code> 在节点上抓取特定端口或 IP 的网络包进行分析，例如 <code>tcpdump -i any host &lt;apiserver-ip&gt; and port 6443 -nn -vv</code>。</li>
+</ul>
+</li>
+<li><p><strong>检查内核日志</strong>：<code>sudo dmesg -T</code> 查看完整的内核环形缓冲区日志。<strong>内核日志是诊断硬件问题、驱动程序故障、文件系统损坏、严重内存问题或内核 Bug 的最终信息来源</strong>。关注错误（Error）、失败（Fail）、警告（Warning）、崩溃（Oops）、死锁（Hung task）等关键字。</p>
+</li>
+<li><p><strong>检查 Node Problem Detector (如果部署)</strong>：如果集群部署了 NPD，检查其 Pod 日志 (<code>kubectl logs -n kube-system -l k8s-app=node-problem-detector -f</code>) 看它是否检测到了特定问题。同时，<code>kubectl describe node &lt;node-name&gt;</code> 检查是否有 NPD 添加的自定义 Condition。</p>
+</li>
+</ul>
+<p>通过系统性地执行上述检查，通常可以定位到导致节点异常的根本原因，无论是资源耗尽、组件故障、网络问题还是底层系统问题。</p>
+<h2 id="6-基-于-extendedresource-扩-展-节-点-资-源"><a href="#6-基-于-extendedresource-扩-展-节-点-资-源" class="headerlink" title="6. 基 于 extendedresource 扩 展 节 点 资 源"></a>6. 基 于 extendedresource 扩 展 节 点 资 源</h2><p>Kubernetes 原生支持对 CPU、内存和临时存储（Ephemeral Storage）这些基本资源的调度和管理。然而，现代计算节点常常配备各种<strong>专用硬件</strong>，例如 <strong>GPU (图形处理单元)、FPGA (现场可编程门阵列)、高性能网络接口卡 (如 SR-IOV VF)、硬件加速器 (如 QAT)</strong> 等。Kubernetes 需要一种机制来发现、上报、调度和分配这些非原生、特定于硬件的资源，这就是 <strong>Extended Resources (扩展资源)</strong> 和 <strong>Device Plugins (设备插件)</strong> 机制要解决的问题。</p>
+<h3 id="解决了什么问题？"><a href="#解决了什么问题？" class="headerlink" title="解决了什么问题？"></a>解决了什么问题？</h3><p><strong>Extended Resources 机制使得 Kubernetes 能够感知并管理节点上的特殊硬件资源</strong>，就像管理 CPU 和内存一样。它解决了以下关键问题：</p>
+<ol>
+<li><strong>资源发现与广告</strong>：如何让 Kubernetes 集群知道某个节点拥有多少个特定类型的硬件设备（例如，2 个 NVIDIA GPU）？</li>
+<li><strong>资源请求与调度</strong>：如何让用户在 Pod 定义中请求这些特殊硬件资源（例如，我需要 1 个 GPU）？如何让 Kubernetes 调度器将这样的 Pod 只调度到拥有足够可用资源的节点上？</li>
+<li><strong>资源分配与隔离</strong>：当 Pod 被调度到节点后，如何确保它能够独占或共享地访问到被分配的硬件设备，并且与其他 Pod 使用的设备隔离？</li>
+</ol>
+<h3 id="是什么？"><a href="#是什么？" class="headerlink" title="是什么？"></a>是什么？</h3><p><strong>Extended Resources</strong> 是一种命名约定和 API 字段，允许节点报告其拥有的、非 Kubernetes 原生定义的资源。这些资源的名称通常采用 <code>vendor-domain/resource-type</code> 的格式，例如 <code>nvidia.com/gpu</code>、<code>intel.com/fpga</code>、<code>amd.com/gpu</code>。资源数量必须是<strong>整数</strong>。</p>
+<p><strong>Device Plugin</strong> 是实现 Extended Resources 管理的核心机制。它是一种<strong>运行在节点上的、独立于 Kubelet 的 gRPC 服务（通常部署为 DaemonSet）</strong>，负责：</p>
+<ul>
+<li><strong>发现</strong>节点上的特定硬件设备。</li>
+<li>向 Kubelet <strong>注册</strong>自身，并<strong>报告</strong>其管理的设备数量和类型（即 Extended Resources）。</li>
+<li><strong>监控</strong>设备健康状态。</li>
+<li>在 Kubelet 请求时，为 Pod <strong>分配</strong>具体的设备，并提供访问设备所需的信息（如设备文件路径、环境变量）。</li>
+</ul>
+<h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><ol>
+<li><p><strong>发现与注册</strong>：</p>
+<ul>
+<li>Device Plugin 启动后，扫描节点以发现其管理的硬件设备（例如，通过查询 NVIDIA 驱动获取 GPU 列表）。</li>
+<li>它通过连接 Kubelet 暴露的 Unix Domain Socket (<code>/var/lib/kubelet/device-plugins/kubelet.sock</code>)，调用 Kubelet 的 <code>Registration</code> gRPC 服务来注册自己，并告知 Kubelet 它能提供哪些 Extended Resource 以及对应的设备 ID 列表。</li>
+<li><strong>Kubelet 作为设备插件的注册中心</strong>。</li>
+</ul>
+</li>
+<li><p><strong>资源上报</strong>：</p>
+<ul>
+<li>Kubelet 收到 Device Plugin 的注册信息后，会将这些 Extended Resources 更新到该 <strong>Node 对象的 <code>status.capacity</code> 和 <code>status.allocatable</code> 字段</strong>中。例如，<code>status.allocatable</code> 中会增加一项 <code>nvidia.com/gpu: 2</code>。</li>
+<li>API Server 存储这些信息，使得整个集群可见。</li>
+</ul>
+</li>
+<li><p><strong>资源请求</strong>：</p>
+<ul>
+<li>用户在 Pod 的容器规约 (<code>spec.containers[].resources</code>) 中，通过 <code>limits</code> 字段来请求 Extended Resources。<strong>对于 Extended Resources，<code>requests</code> 字段会被忽略，并且 <code>limits</code> 必须指定，且必须为整数</strong>。</li>
+<li>例如，请求一个 GPU：<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">cuda-vector-add</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">containers:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">cuda-vector-add</span><br>      <span class="hljs-attr">image:</span> <span class="hljs-string">&quot;nvidia/cuda:11.0.3-base-ubuntu20.04&quot;</span><br>      <span class="hljs-attr">resources:</span><br>        <span class="hljs-attr">limits:</span><br>          <span class="hljs-comment"># 请求一个类型为 nvidia.com/gpu 的资源</span><br>          <span class="hljs-attr">nvidia.com/gpu:</span> <span class="hljs-number">1</span><br>      <span class="hljs-attr">command:</span> [ <span class="hljs-string">&quot;/bin/bash&quot;</span>, <span class="hljs-string">&quot;-c&quot;</span>, <span class="hljs-string">&quot;--&quot;</span> ]<br>      <span class="hljs-attr">args:</span> [ <span class="hljs-string">&quot;while true; do sleep 1; done;&quot;</span> ]<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>调度</strong>：</p>
+<ul>
+<li>Kubernetes <strong>Scheduler</strong> 在调度 Pod 时，会检查 Pod 请求的 Extended Resources。</li>
+<li>它会<strong>过滤掉 <code>status.allocatable</code> 中没有足够可用 Extended Resources 的节点</strong>。只有当节点拥有足够数量的、未被其他 Pod 占用的特定 Extended Resource 时，该 Pod 才可能被调度到这个节点。</li>
+</ul>
+</li>
+<li><p><strong>分配</strong>：</p>
+<ul>
+<li>当 Pod 被调度到某个节点后，<strong>Kubelet 在启动该 Pod 的容器之前</strong>，会调用相应 Device Plugin 的 <code>Allocate</code> gRPC 方法。</li>
+<li>Kubelet 告诉 Device Plugin 需要为这个容器分配多少个（以及哪些，如果插件支持）设备。</li>
+<li>Device Plugin 执行实际的分配逻辑（例如，选择一个空闲的 GPU），并<strong>返回给 Kubelet 需要注入到容器环境的信息</strong>。这通常包括：<ul>
+<li><strong>需要挂载的设备文件</strong> (e.g., <code>/dev/nvidia0</code>, <code>/dev/nvidiactl</code>, <code>/dev/nvidia-uvm</code>)。</li>
+<li><strong>需要挂载的驱动库&#x2F;二进制文件目录</strong> (e.g., NVIDIA driver libraries)。</li>
+<li><strong>需要设置的环境变量</strong> (e.g., <code>NVIDIA_VISIBLE_DEVICES=0</code>，告知容器内的 CUDA 应用使用哪个 GPU)。</li>
+</ul>
+</li>
+<li>Kubelet 使用这些信息来配置容器的运行时环境（通过 CRI 接口传递给 Docker&#x2F;Containerd），确保容器能够正确地访问和使用分配给它的硬件设备。</li>
+</ul>
+</li>
+</ol>
+<h3 id="关键组件和配置"><a href="#关键组件和配置" class="headerlink" title="关键组件和配置"></a>关键组件和配置</h3><ul>
+<li><strong>Device Plugin 实现</strong>：通常由硬件供应商提供（如 NVIDIA Device Plugin, Intel Device Plugin Suite）或由社区&#x2F;用户根据 <code>k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1</code> Go 包中定义的 gRPC API 自行开发。它们一般以 <strong>DaemonSet</strong> 的形式部署，确保在需要管理硬件的节点上运行。</li>
+<li><strong>Kubelet 配置</strong>：需要确保 Kubelet 启动时能够找到 Device Plugin 注册的 Socket。默认路径是 <code>/var/lib/kubelet/device-plugins/</code>。Device Plugin 功能门控 (<code>DevicePlugins</code>) 在现代 Kubernetes 版本中通常是默认启用的。</li>
+<li><strong>Node Status 查看</strong>：可以通过 <code>kubectl get node &lt;node-name&gt; -o yaml</code> 查看节点的 <code>status.capacity</code> 和 <code>status.allocatable</code> 部分，确认 Extended Resources 是否已正确上报。</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># kubectl get node my-gpu-node -o yaml (部分输出)</span><br><span class="hljs-string">...</span><br><span class="hljs-attr">status:</span><br>  <span class="hljs-attr">allocatable:</span><br>    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;8&quot;</span><br>    <span class="hljs-attr">ephemeral-storage:</span> <span class="hljs-string">100Gi</span><br>    <span class="hljs-attr">memory:</span> <span class="hljs-string">32Gi</span><br>    <span class="hljs-comment"># 这里显示了节点可分配的扩展资源</span><br>    <span class="hljs-attr">nvidia.com/gpu:</span> <span class="hljs-string">&quot;2&quot;</span><br>    <span class="hljs-attr">pods:</span> <span class="hljs-string">&quot;110&quot;</span><br>  <span class="hljs-attr">capacity:</span><br>    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;8&quot;</span><br>    <span class="hljs-attr">ephemeral-storage:</span> <span class="hljs-string">100Gi</span><br>    <span class="hljs-attr">memory:</span> <span class="hljs-string">32Gi</span><br>    <span class="hljs-comment"># 这里显示了节点的总扩展资源容量</span><br>    <span class="hljs-attr">nvidia.com/gpu:</span> <span class="hljs-string">&quot;2&quot;</span><br>    <span class="hljs-attr">pods:</span> <span class="hljs-string">&quot;110&quot;</span><br><span class="hljs-string">...</span><br></code></pre></td></tr></table></figure>
+
+<p>通过这种机制，Kubernetes 实现了对异构硬件资源的管理和调度，使得需要特殊硬件加速的应用（如机器学习训练&#x2F;推理、视频处理、高性能计算）能够无缝地部署和运行在 Kubernetes 集群中，充分利用节点的硬件能力。</p>
+<h2 id="7-构建和管理高可用（HA）集群"><a href="#7-构建和管理高可用（HA）集群" class="headerlink" title="7. 构建和管理高可用（HA）集群"></a>7. 构建和管理高可用（HA）集群</h2><p>在生产环境中，单个组件的故障可能导致整个服务中断，造成不可估量的损失。因此，构建和管理 <strong>高可用（High Availability, HA）</strong> 的 Kubernetes 集群是至关重要的。HA 的核心目标是 <strong>消除单点故障（Single Point of Failure, SPOF）</strong>，确保集群在部分组件失效时仍能继续提供服务。</p>
+<h3 id="控制平面高可用"><a href="#控制平面高可用" class="headerlink" title="控制平面高可用"></a>控制平面高可用</h3><p>Kubernetes 的控制平面由多个关键组件构成，包括 <code>etcd</code>、<code>kube-apiserver</code>、<code>kube-controller-manager</code> 和 <code>kube-scheduler</code>。实现控制平面高可用主要围绕这些组件的冗余部署和故障切换。</p>
+<ul>
+<li><p><strong>etcd 集群化部署</strong>:</p>
+<ul>
+<li><strong>解决了什么问题</strong>: <code>etcd</code> 是 Kubernetes 集群的分布式键值存储，保存着集群的所有状态数据（如 Pods, Services, Secrets 等的配置和状态）。单点 <code>etcd</code> 意味着一旦该节点故障，整个集群将瘫痪，无法读取状态，也无法进行任何变更操作。</li>
+<li><strong>是什么</strong>: 通过部署多个 <code>etcd</code> 实例组成一个集群，利用 <strong>Raft 一致性算法</strong> 来保证数据的一致性和容错性。</li>
+<li><strong>原理</strong>: Raft 算法确保了只要集群中超过半数（Quorum）的节点存活并能够通信，<code>etcd</code> 集群就能正常工作并处理读写请求。例如，一个 3 节点的 <code>etcd</code> 集群可以容忍 1 个节点故障；一个 5 节点的集群可以容忍 2 个节点故障。写入请求需要得到多数节点的确认，读取请求可以直接从 Leader 节点获取（或者通过 Quorum Read 保证线性一致性）。</li>
+<li><strong>部署模式</strong>:<ul>
+<li><strong>Stacked etcd</strong>: <code>etcd</code> 实例与控制平面组件（API Server 等）部署在相同的节点上。管理相对简单。</li>
+<li><strong>External etcd</strong>: <code>etcd</code> 集群部署在独立的专用节点上。提供了更好的隔离性和资源保障，但管理复杂度稍高。</li>
+</ul>
+</li>
+<li><strong>关键配置</strong>: 在启动 <code>etcd</code> 时，需要配置 <code>--initial-cluster</code> 参数指定所有成员的地址和端口，<code>--initial-cluster-state</code>（<code>new</code> 或 <code>existing</code>），以及相应的 TLS 证书以保证通信安全。同时，<strong>定期的 etcd 备份</strong> 是灾难恢复的最后防线，至关重要。</li>
+</ul>
+</li>
+<li><p><strong>kube-apiserver 冗余部署</strong>:</p>
+<ul>
+<li><strong>解决了什么问题</strong>: <code>kube-apiserver</code> 是 Kubernetes API 的入口，所有用户请求（如 <code>kubectl</code>）、控制器以及 <code>kubelet</code> 都需要与它交互。单点 <code>apiserver</code> 故障将导致无法管理集群，新 Pod 无法调度，已有应用状态无法更新。</li>
+<li><strong>是什么</strong>: 部署多个 <code>kube-apiserver</code> 实例。</li>
+<li><strong>原理</strong>: <code>kube-apiserver</code> 本身设计为 <strong>无状态 (Stateless)</strong> 或 <strong>近乎无状态</strong>，其状态主要存储在 <code>etcd</code> 中。因此，可以水平扩展多个实例。在这些实例前放置一个 <strong>负载均衡器（Load Balancer）</strong>，例如 Nginx、HAProxy，或者云厂商提供的 LB 服务。所有客户端（<code>kubectl</code>, <code>kubelet</code>, controllers）都配置为访问该负载均衡器的 <strong>虚拟 IP (VIP)</strong>。当某个 <code>apiserver</code> 实例故障时，负载均衡器会自动将其从后端池中移除，将流量转发到健康的实例上，实现无缝切换。</li>
+<li><strong>配置示例 (概念性)</strong>: 假设 VIP 为 <code>192.168.1.100:6443</code>，负载均衡器将流量分发到后端的 <code>apiserver</code> 实例（如 <code>10.0.0.1:6443</code>, <code>10.0.0.2:6443</code>, <code>10.0.0.3:6443</code>）。<code>kubelet</code> 和 <code>kubeconfig</code> 文件中的 <code>server</code> 地址应指向 <code>https://192.168.1.100:6443</code>。</li>
+</ul>
+</li>
+<li><p><strong>kube-controller-manager 和 kube-scheduler 高可用</strong>:</p>
+<ul>
+<li><strong>解决了什么问题</strong>: <code>controller-manager</code> 负责运行各种控制器（如 Node Controller, Replication Controller 等）来维护集群状态。<code>scheduler</code> 负责将新创建的 Pod 调度到合适的 Node 上。单点故障会导致集群无法自动修复、副本数量无法维持、新 Pod 无法被调度。</li>
+<li><strong>是什么</strong>: 同时运行多个 <code>controller-manager</code> 和 <code>scheduler</code> 实例。</li>
+<li><strong>原理</strong>: 这两个组件内部实现了 <strong>领导者选举（Leader Election）</strong> 机制。虽然可以运行多个实例，但在同一时刻，只有一个实例是 <strong>Active (Leader)</strong>，负责执行实际的控制和调度逻辑。其他实例处于 <strong>Standby</strong> 状态，随时准备在 Leader 实例故障时接管。它们通过 Kubernetes API（通常是更新 Endpoints 或 Leases 资源对象上的特定 annotation）来竞争 Leader 身份并维持心跳。一旦当前 Leader 失联，某个 Standby 实例会成功获取 Leader 锁并成为新的 Leader。</li>
+<li><strong>关键配置</strong>: 启动 <code>kube-controller-manager</code> 和 <code>kube-scheduler</code> 时，需要启用领导者选举，通常通过传递 <code>--leader-elect=true</code> 命令行参数（或在组件配置文件中设置）。它们需要配置相同的 <code>--leader-elect-resource-name</code> 和 <code>--leader-elect-resource-namespace</code>（通常在 <code>kube-system</code> 命名空间下）。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 示例：kube-controller-manager 启动参数片段</span><br>kube-controller-manager --leader-elect=<span class="hljs-literal">true</span> --leader-elect-resource-name=kube-controller-manager --leader-elect-resource-namespace=kube-system ...<br><br><span class="hljs-comment"># 示例：kube-scheduler 启动参数片段</span><br>kube-scheduler --leader-elect=<span class="hljs-literal">true</span> --leader-elect-resource-name=kube-scheduler --leader-elect-resource-namespace=kube-system ...<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h3 id="工作节点与应用高可用"><a href="#工作节点与应用高可用" class="headerlink" title="工作节点与应用高可用"></a>工作节点与应用高可用</h3><p>虽然控制平面的 HA 是基础，但最终用户的应用运行在工作节点上。工作节点的 HA 主要依赖于以下几点：</p>
+<ul>
+<li><strong>足够数量的节点</strong>: 确保有足够的计算资源，并且节点分布在不同的 <strong>故障域（Failure Domains）</strong>，如不同的物理机架、数据中心可用区（Availability Zones）。</li>
+<li><strong>应用副本</strong>: 使用 <code>Deployment</code> 或 <code>StatefulSet</code> 等控制器运行应用的多个副本（Pods）。</li>
+<li><strong>反亲和性（Anti-Affinity）</strong>: 配置 Pod 反亲和性规则，强制要求同一应用的多个副本分散到不同的节点或故障域上，避免单节点故障导致所有副本同时失效。</li>
+<li><strong>Pod Disruption Budgets (PDBs)</strong>: PDBs 限制了在自愿性中断（如节点维护、升级）期间，一个应用同时可以有多少个 Pod 不可用，确保服务维持最低可用水平。</li>
+<li><strong>健康检查（Probes）</strong>: 正确配置 <code>livenessProbe</code>（探测容器是否存活，不健康则重启）、<code>readinessProbe</code>（探测容器是否准备好接收流量，未就绪则从 Service Endpoints 中移除）和 <code>startupProbe</code>（用于启动时间较长的容器），确保 Kubernetes 能够准确判断 Pod 的健康状态并进行相应处理。</li>
+</ul>
+<h3 id="网络高可用"><a href="#网络高可用" class="headerlink" title="网络高可用"></a>网络高可用</h3><p>集群网络的 HA 也很重要，包括：</p>
+<ul>
+<li><strong>冗余网络路径</strong>: 物理网络层面应有冗余链路和设备。</li>
+<li><strong>高可用 CNI</strong>: 选择支持高可用部署的 CNI 插件。</li>
+<li><strong>高可用 Service 暴露</strong>: 如果使用 <code>LoadBalancer</code> 类型的 Service，依赖云厂商 LB 的 HA 能力。如果使用 Ingress，确保 Ingress Controller 有多个副本并配置反亲和性。对于裸金属环境，可以使用 MetalLB 等工具配合 BGP 实现 VIP 的高可用。</li>
+</ul>
+<h2 id="8-Cluster-Autoscaler-CA"><a href="#8-Cluster-Autoscaler-CA" class="headerlink" title="8. Cluster Autoscaler (CA)"></a>8. Cluster Autoscaler (CA)</h2><p><strong>Cluster Autoscaler (CA)</strong> 是 Kubernetes 中用于 <strong>自动调整集群节点数量</strong> 的核心组件。</p>
+<ul>
+<li><p><strong>解决了什么问题</strong>:</p>
+<ul>
+<li><strong>资源浪费</strong>: 静态配置的集群规模如果过大，在负载较低时会造成大量节点资源闲置，增加成本。</li>
+<li><strong>资源不足</strong>: 如果集群规模过小，当应用负载突增或部署新应用时，可能因资源不足导致 Pod 处于 <code>Pending</code> 状态无法调度，影响业务。</li>
+<li><strong>手动调整效率低且易错</strong>: 手动监控集群负载并增删节点费时费力，且响应不及时。</li>
+</ul>
+</li>
+<li><p><strong>是什么</strong>: 一个运行在集群内的独立程序（通常是一个 Deployment），它监控集群状态，并根据需要与 <strong>云提供商（Cloud Provider）</strong> 的 API（如 AWS Auto Scaling Groups, GCP Managed Instance Groups, Azure Virtual Machine Scale Sets）交互，自动增加或减少集群中的工作节点数量。</p>
+</li>
+<li><p><strong>原理</strong>:</p>
+<ul>
+<li><strong>监控</strong>: CA 定期（通过 <code>--scan-interval</code> 参数配置，默认 10 秒）扫描集群中处于 <code>Pending</code> 状态的 Pod。它检查这些 Pod 无法被调度的原因是否是 <strong>资源不足</strong>（CPU、内存、GPU 或其他自定义资源）。同时，它也监控 <strong>节点利用率</strong>。</li>
+<li><strong>Scale-Up (扩容)</strong>: 如果发现有 Pod 因资源不足而 <code>Pending</code>，并且 CA <strong>模拟</strong> 发现如果增加一个来自某个 <strong>节点组（Node Group）</strong> 的新节点就能让这些 Pod 成功调度，CA 就会向关联的云提供商发出请求，要求增加该节点组的实例数量（通常是增加 1 个）。CA 会选择能够满足最多 <code>Pending</code> Pod 需求的节点组进行扩容。</li>
+<li><strong>Scale-Down (缩容)</strong>: CA 会检查哪些节点 <strong>持续一段时间</strong>（通过 <code>--scale-down-delay-after-add</code>, <code>--scale-down-unneeded-time</code> 等参数配置）处于 <strong>低利用率</strong> 状态（CPU 和内存请求低于某个阈值，通过 <code>--scale-down-utilization-threshold</code> 配置，默认 0.5 即 50%）。对于满足缩容条件的节点，CA 会 <strong>模拟</strong> 如果将该节点上的所有 Pod（除了系统关键 Pod 和配置了不能驱逐的 Pod）<strong>重新调度</strong> 到其他节点上是否可行。这个模拟过程会严格遵守 <strong>PodDisruptionBudgets (PDBs)</strong>、<strong>亲和性&#x2F;反亲和性规则</strong>、<strong>节点选择器 (Node Selectors)</strong>、<strong>污点和容忍 (Taints and Tolerations)</strong> 等调度约束。如果模拟成功，CA 会首先 <strong>驱逐 (Drain)</strong> 该节点上的 Pod（将 Pod 安全地迁移到其他节点），然后向云提供商发出请求，要求 <strong>终止 (Terminate)</strong> 该节点实例并将其从节点组中移除。</li>
+<li><strong>节点组 (Node Groups)</strong>: CA 的操作是基于节点组的。你需要为 CA 配置集群中可自动伸缩的节点组，通常对应云提供商的 Auto Scaling Group 或 VM Scale Set。每个节点组需要定义 <strong>最小节点数 (<code>minSize</code>)</strong> 和 <strong>最大节点数 (<code>maxSize</code>)</strong>。CA 的伸缩活动会被限制在这个范围内。</li>
+</ul>
+</li>
+<li><p><strong>关键配置</strong>:</p>
+<ul>
+<li><strong>部署</strong>: 通常以 Deployment 方式部署在 <code>kube-system</code> 命名空间。</li>
+<li><strong>云提供商集成</strong>: 需要为 CA Pod 配置访问云提供商 API 的权限（例如通过 IAM Role for Service Accounts on AWS, Workload Identity on GCP）。</li>
+<li><strong>启动参数</strong>: 通过 ConfigMap 或命令行参数配置，关键参数包括：<ul>
+<li><code>--cloud-provider</code>: 指定云提供商 (e.g., <code>aws</code>, <code>gce</code>, <code>azure</code>)。</li>
+<li><code>--nodes=&lt;min&gt;:&lt;max&gt;:&lt;asg_name&gt;</code>: 定义节点组及其规模限制 (可指定多个)。</li>
+<li><code>--scan-interval</code>: 扫描周期。</li>
+<li><code>--scale-down-enabled</code>: 是否启用缩容 (默认 <code>true</code>)。</li>
+<li><code>--scale-down-utilization-threshold</code>: 节点利用率低于此阈值才可能被缩容。</li>
+<li><code>--scale-down-unneeded-time</code>: 节点需要持续低于阈值多长时间才会被考虑缩容。</li>
+<li><code>--skip-nodes-with-local-storage</code>: 不缩容包含本地存储 Pod 的节点 (防止数据丢失)。</li>
+<li><code>--skip-nodes-with-system-pods</code>: 不缩容包含 <code>kube-system</code> 命名空间下非 DaemonSet Pod 的节点。</li>
+</ul>
+</li>
+<li><strong>示例 (概念性启动命令)</strong>:<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash">./cluster-autoscaler \<br>  --v=4 \<br>  --stderrthreshold=info \<br>  --cloud-provider=aws \<br>  --skip-nodes-with-local-storage=<span class="hljs-literal">false</span> \<br>  --expander=least-waste \<br>  --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/my-cluster-name \<br>  --balance-similar-node-groups \<br>  --skip-nodes-with-system-pods=<span class="hljs-literal">false</span> \<br>  --scale-down-utilization-threshold=0.5 \<br>  --scale-down-unneeded-time=10m \<br>  --scale-down-delay-after-add=10m<br></code></pre></td></tr></table></figure>
+<ul>
+<li><code>--node-group-auto-discovery</code>: 使用 AWS Tag 自动发现 ASG。</li>
+<li><code>--expander</code>: 选择扩容策略（如 <code>least-waste</code> 优先选择浪费资源最少的节点组）。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>Golang 源码视角</strong>: Cluster Autoscaler 的核心逻辑在 <code>cluster-autoscaler/core</code> 包中。<code>static_autoscaler.go</code> 文件中的 <code>RunOnce</code> 函数是主循环，它调用 <code>ScaleUp</code> 和 <code>ScaleDown</code> 函数。<code>ScaleUp</code> 会检查 <code>unschedulablePods</code>，并使用 <code>provisioning_simulator.go</code> 中的逻辑来模拟节点添加。<code>ScaleDown</code> 则会识别 <code>candidates</code> (可能被缩容的节点)，并通过 <code>drain.go</code> 中的函数来执行驱逐，最后与具体的 <code>cloudprovider</code> 接口交互来删除节点。它大量使用了 Kubernetes <code>client-go</code> 库来与 API Server 交互，获取 Pods、Nodes 等资源的状态，并依赖 <code>informers</code> 来高效地监听资源变化。</p>
+</li>
+</ul>
+<h2 id="9-集群管理实践案例分析"><a href="#9-集群管理实践案例分析" class="headerlink" title="9. 集群管理实践案例分析"></a>9. 集群管理实践案例分析</h2><p>从提供的 PDF 片段（如 CI&#x2F;CD 流程图、SaltStack 相关图示、CRD 示例 <code>Cluster</code>, <code>ComputeNode</code>, <code>ClusterDeployment</code>）来看，这描绘了一个 <strong>自动化、声明式的集群生命周期管理</strong> 实践方案。这种方案通常结合了 <strong>GitOps</strong>、<strong>Operator Pattern</strong> 和 <strong>配置管理工具</strong>。</p>
+<ul>
+<li><strong>解决了什么问题</strong>: 手动创建、升级和管理 Kubernetes 集群（尤其是大规模集群）既复杂又容易出错。需要一个标准化、可重复、可审计的流程来管理从集群创建、节点配置、版本升级到最终退役的整个生命周期。</li>
+<li><strong>是什么</strong>: 这是一套集成的工具链和工作流，旨在实现 Kubernetes 集群的自动化管理。</li>
+<li><strong>核心组件与流程</strong>:<ol>
+<li><strong>Git Repository (Source of Truth)</strong>: 所有集群的 <strong>期望状态 (Desired State)</strong>，包括集群配置（版本、网络、区域等）、节点配置、控制平面参数、附加组件（如 CNI, CoreDNS, Ingress Controller）等，都以声明式文件（如 YAML）的形式存储在 Git 仓库中。</li>
+<li><strong>CI&#x2F;CD Pipeline</strong>:<ul>
+<li>当 Git 仓库中的配置发生变更（如 Pull Request 合并）时，触发 CI&#x2F;CD 流水线。</li>
+<li><strong>CI (Continuous Integration)</strong>: 阶段包括代码风格检查、YAML 语法验证、配置策略检查（如使用 OPA Gatekeeper）、单元&#x2F;集成测试（如果涉及自定义代码）。可能会构建自定义的 Kubernetes 组件镜像或 Operator 镜像。</li>
+<li><strong>CD (Continuous Deployment&#x2F;Delivery)</strong>: 负责将验证过的配置变更应用到目标环境。这通常不是直接调用 <code>kubectl apply</code> 或配置管理工具，而是更新代表集群状态的 <strong>Custom Resource (CR)</strong> 对象。</li>
+</ul>
+</li>
+<li><strong>Kubernetes Operator &#x2F; Custom Controller</strong>:<ul>
+<li>集群中运行着一个（或多个）自定义的 <strong>Operator</strong>。这个 Operator 负责 <strong>监听 (Watch)</strong> 特定类型的 CRD（如示例中的 <code>Cluster</code>, <code>ComputeNode</code>, <code>ClusterDeployment</code>）。</li>
+<li><strong>Reconciliation Loop</strong>: 当 Operator 检测到其管理的 CR 对象发生变化（创建、更新、删除）时，会触发 <strong>调和循环 (Reconciliation Loop)</strong>。</li>
+<li><strong>执行操作</strong>: 在调和循环中，Operator 读取 CR 中定义的期望状态，并与集群的 <strong>实际状态 (Actual State)</strong> 进行比较。如果两者不一致，Operator 会执行必要的操作来使实际状态趋向于期望状态。这些操作可能包括：<ul>
+<li>调用 <strong>云提供商 API</strong> 来创建&#x2F;删除虚拟机、负载均衡器、网络等基础设施资源。</li>
+<li>使用 <strong>配置管理工具 (如 SaltStack、Ansible)</strong> (如 <code>salt highstate</code> 命令所示) 来配置节点操作系统、安装 Docker&#x2F;Containerd、Kubelet、Kube-proxy 等。<code>salt-master</code> &#x2F; <code>salt-minion</code> 的架构表明使用 SaltStack 进行节点级别的配置管理。</li>
+<li>执行 <code>kubeadm</code> 命令或调用 Kubernetes API 来初始化控制平面、加入节点、执行版本升级。</li>
+<li>部署或更新集群附加组件。</li>
+</ul>
+</li>
+<li><strong>CRD 定义</strong>:<ul>
+<li><code>Cluster</code>: 可能定义了集群的元数据（名称、区域）、Kubernetes 版本、网络配置（CNI 类型、Pod&#x2F;Service CIDR）等。</li>
+<li><code>ComputeNode</code>: 定义了单个工作节点或控制平面节点的规格（实例类型&#x2F;flavor、操作系统镜像、磁盘大小等）。</li>
+<li><code>ClusterDeployment</code>: 可能用于管理 <strong>集群升级</strong> 过程，定义了目标版本、升级策略（如滚动升级的批次大小和百分比 <code>strategy: &quot;10,30,30,30&quot;</code> 表示分四批，分别升级 10%, 30%, 30%, 30% 的节点）、SaltStack 或其他部署工具所需资源的 URL (<code>saltTarUrl</code>, <code>serverTarUrl</code>) 等。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>管理工具</strong>:<ul>
+<li><code>kubectl</code>: 标准的 Kubernetes 命令行工具，用于与 API Server 交互，查看 CR 状态、Pod 日志等。</li>
+<li><code>tm-cli</code> (推测): 一个 <strong>自定义的命令行工具</strong>，可能封装了对上述 CRD 的操作（创建、获取、更新、删除 Cluster&#x2F;Node&#x2F;Deployment 等），提供更友好的用户接口，或者执行一些 Operator 无法覆盖的特定管理任务。</li>
+<li><code>kube-up</code> &#x2F; <code>kube-down</code> (推测): 可能是用于集群 <strong>初始引导 (Bootstrap)</strong> 或 <strong>销毁 (Teardown)</strong> 的脚本或工具，在 Operator 接管之前或之后使用。</li>
+</ul>
+</li>
+<li><strong>运维界面 (Operator Interface)</strong>: 可能提供了一个 Web UI 或 API，用于可视化集群状态、监控调和过程、触发特定操作等。</li>
+</ol>
+</li>
+<li><strong>优势</strong>:<ul>
+<li><strong>自动化</strong>: 大幅减少手动操作，提高效率，降低人为错误。</li>
+<li><strong>声明式</strong>: 只需定义期望状态，具体实现由 Operator 负责，易于理解和管理。</li>
+<li><strong>版本控制与审计</strong>: 所有变更记录在 Git 中，可追溯、可回滚。</li>
+<li><strong>一致性</strong>: 确保所有集群都按照相同的标准和流程进行管理。</li>
+<li><strong>可扩展性</strong>: 可以通过增加新的 CRD 和 Controller 来扩展管理能力。</li>
+</ul>
+</li>
+<li><strong>Linux&#x2F;Golang 关联</strong>: Operator 通常使用 <strong>Go 语言</strong> 编写，利用 <strong><code>client-go</code></strong> 库与 Kubernetes API 交互，并使用 <strong><code>controller-runtime</code></strong> 框架来简化 Operator 的开发。配置管理工具（如 SaltStack 的 Minion）运行在 <strong>Linux 节点</strong> 上，执行系统级的配置命令。整个流程涉及 Linux 系统管理、网络配置、容器运行时（Docker&#x2F;Containerd）管理等底层操作。</li>
+</ul>
+<h2 id="10-多租户（Multi-Tenancy）集群管理"><a href="#10-多租户（Multi-Tenancy）集群管理" class="headerlink" title="10. 多租户（Multi-Tenancy）集群管理"></a>10. 多租户（Multi-Tenancy）集群管理</h2><p>在许多场景下，需要让多个不同的用户、团队或客户（即 <strong>租户 Tenants</strong>）共享同一个 Kubernetes 集群资源。<strong>多租户</strong> 的目标是在共享基础设施的同时，提供足够的 <strong>隔离性 (Isolation)</strong>、<strong>安全性 (Security)</strong> 和 <strong>资源公平性 (Fairness)</strong>。</p>
+<ul>
+<li><p><strong>解决了什么问题</strong>:</p>
+<ul>
+<li><strong>资源利用率</strong>: 共享集群通常比为每个租户单独部署集群更节省成本和资源。</li>
+<li><strong>管理开销</strong>: 集中管理一个（或少量）大型集群比管理大量小型集群更高效。</li>
+<li><strong>快速环境提供</strong>: 可以快速为新团队或项目分配隔离的环境。</li>
+</ul>
+</li>
+<li><p><strong>是什么</strong>: 在单个 Kubernetes 集群内部署和运行属于不同租户的应用程序，同时确保它们之间互不干扰、资源使用受控、访问权限严格分离。</p>
+</li>
+<li><p><strong>核心机制与实践</strong>: Kubernetes 本身提供了一些构建块来实现（通常是 <strong>软性 Soft</strong>）多租户：</p>
+<ul>
+<li><p><strong>Namespaces</strong>:</p>
+<ul>
+<li><strong>提供逻辑隔离</strong>: Namespace 是 Kubernetes 中资源（如 Pods, Services, Deployments, Secrets）的基本作用域。不同 Namespace 中的资源名称可以重复。这是实现多租户的 <strong>第一道屏障</strong>。</li>
+<li><strong>不提供安全隔离</strong>: <strong>关键点：Namespace 本身并不阻止跨 Namespace 的网络访问，也不限制资源使用</strong>。默认情况下，一个 Namespace 中的 Pod 可以访问其他 Namespace 中的 Service (如果知道其 DNS 名称或 IP)。</li>
+<li><strong>配置示例</strong>:<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 创建两个租户的 Namespace</span><br>kubectl create namespace tenant-a<br>kubectl create namespace tenant-b<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>RBAC (Role-Based Access Control)</strong>:</p>
+<ul>
+<li><strong>提供访问权限控制</strong>: RBAC 用于精细化地控制 <strong>谁 (Subject: User, Group, ServiceAccount)</strong> 可以对 <strong>什么资源 (Resource: Pods, Services, Nodes)</strong> 执行 <strong>什么操作 (Verb: get, list, watch, create, update, patch, delete)</strong>。</li>
+<li><strong>Namespace 作用域</strong>: 可以创建 <code>Role</code> 和 <code>RoleBinding</code>，其权限仅限于特定的 Namespace。这是限制租户用户只能管理自己 Namespace 资源的关键。</li>
+<li><strong>Cluster 作用域</strong>: <code>ClusterRole</code> 和 <code>ClusterRoleBinding</code> 具有集群范围的权限，通常用于集群管理员或需要访问集群级别资源（如 Nodes, Namespaces）的组件。</li>
+<li><strong>配置示例</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># role-tenant-a-admin.yaml: 定义租户 A 管理员角色</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin</span><br><span class="hljs-attr">rules:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">apiGroups:</span> [<span class="hljs-string">&quot;&quot;</span>, <span class="hljs-string">&quot;apps&quot;</span>, <span class="hljs-string">&quot;extensions&quot;</span>, <span class="hljs-string">&quot;batch&quot;</span>, <span class="hljs-string">&quot;networking.k8s.io&quot;</span>] <span class="hljs-comment"># &quot;&quot; indicates core API group</span><br>  <span class="hljs-attr">resources:</span> [<span class="hljs-string">&quot;*&quot;</span>] <span class="hljs-comment"># Allow access to all resources within the namespace</span><br>  <span class="hljs-attr">verbs:</span> [<span class="hljs-string">&quot;*&quot;</span>] <span class="hljs-comment"># Allow all verbs</span><br>        <br><span class="hljs-meta">---</span><br><span class="hljs-comment"># rolebinding-tenant-a-admin.yaml: 将用户 &quot;user-a&quot; 绑定到租户 A 管理员角色</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">RoleBinding</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin-binding</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">subjects:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">kind:</span> <span class="hljs-string">User</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">user-a</span> <span class="hljs-comment"># Name is case sensitive</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br><span class="hljs-attr">roleRef:</span><br>  <span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br></code></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl apply -f role-tenant-a-admin.yaml<br>kubectl apply -f rolebinding-tenant-a-admin.yaml<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>Network Policies</strong>:</p>
+<ul>
+<li><strong>提供网络隔离</strong>: NetworkPolicy 允许定义 Pod 之间以及 Pod 与外部网络端点之间的 <strong>网络访问规则</strong>。这是实现租户间网络隔离的 <strong>核心机制</strong>。</li>
+<li><strong>依赖 CNI</strong>: 需要使用支持 NetworkPolicy 的 CNI 插件（如 Calico, Cilium, Weave Net）。</li>
+<li><strong>默认策略</strong>: 最佳实践是首先应用一个 <strong>默认拒绝 (Default Deny)</strong> 策略到每个租户 Namespace，阻止所有入站 (Ingress) 和&#x2F;或出站 (Egress) 流量，然后根据需要显式地允许特定流量。</li>
+<li><strong>Linux 内核关联</strong>: NetworkPolicy 的实现通常依赖于 Linux 内核的网络过滤机制，如 <strong>iptables</strong> 或更现代的 <strong>eBPF (Extended Berkeley Packet Filter)</strong>。CNI 插件会监听 NetworkPolicy 对象，并将规则转换为相应的 iptables 规则链或 eBPF 程序加载到内核中，从而在数据包路径上进行过滤。</li>
+<li><strong>配置示例</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># netpol-default-deny-ingress.yaml: 拒绝所有进入 tenant-a 的流量</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">NetworkPolicy</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">default-deny-ingress</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">podSelector:</span> &#123;&#125; <span class="hljs-comment"># An empty podSelector selects all pods in the namespace</span><br>  <span class="hljs-attr">policyTypes:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">Ingress</span> <span class="hljs-comment"># Apply policy to Ingress traffic</span><br><span class="hljs-meta">---</span><br><span class="hljs-comment"># netpol-allow-nginx-ingress.yaml: 允许来自特定 namespace (e.g., monitoring) 的流量访问 nginx Pod</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">NetworkPolicy</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">allow-nginx-ingress</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">podSelector:</span><br>    <span class="hljs-attr">matchLabels:</span><br>      <span class="hljs-attr">app:</span> <span class="hljs-string">nginx</span><br>  <span class="hljs-attr">policyTypes:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-string">Ingress</span><br>  <span class="hljs-attr">ingress:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">from:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">namespaceSelector:</span><br>        <span class="hljs-attr">matchLabels:</span><br>          <span class="hljs-attr">team:</span> <span class="hljs-string">monitoring</span> <span class="hljs-comment"># Allow from pods in namespaces labeled &#x27;team=monitoring&#x27;</span><br>    <span class="hljs-attr">ports:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>      <span class="hljs-attr">port:</span> <span class="hljs-number">80</span><br></code></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl apply -f netpol-default-deny-ingress.yaml -n tenant-a<br>kubectl apply -f netpol-allow-nginx-ingress.yaml -n tenant-a<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>Resource Quotas</strong>:</p>
+<ul>
+<li><strong>提供资源总量限制</strong>: ResourceQuota 用于限制一个 Namespace <strong>能够消耗的资源总量</strong>，包括计算资源（CPU 请求&#x2F;限制, 内存 请求&#x2F;限制）、存储资源（持久卷声明数量, 总存储容量）以及对象数量（Pods, Services, Secrets, ConfigMaps 等）。</li>
+<li><strong>防止资源滥用</strong>: 确保单个租户不会耗尽整个集群的资源，影响其他租户。</li>
+<li><strong>配置示例</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># quota-tenant-a.yaml: 限制 tenant-a 的资源</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">ResourceQuota</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-quota</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">hard:</span><br>    <span class="hljs-attr">requests.cpu:</span> <span class="hljs-string">&quot;10&quot;</span>       <span class="hljs-comment"># Total requested CPU across all pods cannot exceed 10 cores</span><br>    <span class="hljs-attr">requests.memory:</span> <span class="hljs-string">20Gi</span>    <span class="hljs-comment"># Total requested Memory cannot exceed 20 GiB</span><br>    <span class="hljs-attr">limits.cpu:</span> <span class="hljs-string">&quot;20&quot;</span>         <span class="hljs-comment"># Total limited CPU cannot exceed 20 cores</span><br>    <span class="hljs-attr">limits.memory:</span> <span class="hljs-string">40Gi</span>      <span class="hljs-comment"># Total limited Memory cannot exceed 40 GiB</span><br>    <span class="hljs-attr">pods:</span> <span class="hljs-string">&quot;50&quot;</span>               <span class="hljs-comment"># Maximum number of pods</span><br>    <span class="hljs-attr">services:</span> <span class="hljs-string">&quot;20&quot;</span>           <span class="hljs-comment"># Maximum number of services</span><br>    <span class="hljs-attr">persistentvolumeclaims:</span> <span class="hljs-string">&quot;10&quot;</span> <span class="hljs-comment"># Maximum number of PVCs</span><br>    <span class="hljs-attr">requests.storage:</span> <span class="hljs-string">&quot;100Gi&quot;</span> <span class="hljs-comment"># Maximum total requested storage by PVCs</span><br></code></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl apply -f quota-tenant-a.yaml -n tenant-a<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>Limit Ranges</strong>:</p>
+<ul>
+<li><strong>提供容器级别的资源约束</strong>: LimitRange 用于为一个 Namespace 中的 <strong>每个 Pod 或 Container</strong> 设置默认、最小或最大的资源请求（requests）和限制（limits）。</li>
+<li><strong>规范资源使用</strong>: 确保 Pod 不会请求过大或过小的资源，同时强制所有 Pod 都设置资源请求&#x2F;限制（这是 ResourceQuota 正常工作的前提）。</li>
+<li><strong>配置示例</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># limits-tenant-a.yaml: 设置 tenant-a 中容器的默认和最大资源</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">LimitRange</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-limits</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">limits:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">type:</span> <span class="hljs-string">Container</span><br>    <span class="hljs-attr">max:</span> <span class="hljs-comment"># Maximum limits per container</span><br>      <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2&quot;</span><br>      <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;4Gi&quot;</span><br>    <span class="hljs-attr">min:</span> <span class="hljs-comment"># Minimum requests per container</span><br>      <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;100m&quot;</span><br>      <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;100Mi&quot;</span><br>    <span class="hljs-attr">default:</span> <span class="hljs-comment"># Default limits if not specified by container</span><br>      <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;500m&quot;</span><br>      <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;1Gi&quot;</span><br>    <span class="hljs-attr">defaultRequest:</span> <span class="hljs-comment"># Default requests if not specified by container</span><br>      <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;200m&quot;</span><br>      <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;256Mi&quot;</span><br></code></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl apply -f limits-tenant-a.yaml -n tenant-a<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>Pod Security Admission (PSA) &#x2F; Pod Security Policies (PSP - Deprecated)</strong>:</p>
+<ul>
+<li><strong>提供运行时安全控制</strong>: 限制 Pod 的安全相关行为，如是否能以 root 用户运行、是否能访问宿主机文件系统、是否能使用特权模式、允许加载哪些内核能力 (Capabilities) 等。PSA 是内置的 Admission Controller，提供了 <code>privileged</code>, <code>baseline</code>, <code>restricted</code> 三种策略级别，可以通过 Namespace Label 来强制实施。</li>
+<li><strong>增强安全性</strong>: 防止租户 Pod 破坏节点或其他租户的 Pod。</li>
+</ul>
+</li>
+<li><p><strong>Admission Controllers (尤其是 Validating&#x2F;Mutating Webhooks)</strong>:</p>
+<ul>
+<li><strong>提供自定义策略实施</strong>: 可以部署自定义的 Admission Webhook（通常结合 OPA Gatekeeper 或 Kyverno）来实施更复杂的、组织特定的策略，例如强制所有资源打上特定标签、禁止使用 <code>latest</code> 镜像标签、限制可以使用的 Ingress Hostname 等。</li>
+</ul>
+</li>
+<li><p><strong>(高级) 运行时隔离</strong>: 使用如 <strong>gVisor</strong> 或 <strong>Kata Containers</strong> 等沙箱技术，为 Pod 提供更强的内核级隔离，但会带来一定的性能开销。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>挑战</strong>:</p>
+<ul>
+<li><strong>复杂性</strong>: 正确配置所有隔离机制需要深入的 Kubernetes 知识。</li>
+<li><strong>控制平面共享</strong>: 所有租户共享 API Server, etcd 等控制平面组件，一个租户的恶意或错误行为（如 API Flood）可能影响整个集群（需要 API 优先级和公平性 APF）。</li>
+<li><strong>内核共享</strong>: 容器共享宿主机内核，内核漏洞可能导致隔离被破坏（除非使用沙箱技术）。</li>
+<li><strong>“吵闹的邻居”问题</strong>: 即使有 Quota，一个租户的网络流量、磁盘 I&#x2F;O 也可能间接影响其他租户的性能。</li>
+</ul>
+</li>
+<li><p><strong>设计模式</strong>:</p>
+<ul>
+<li><strong>Namespace as a Service</strong>: 最常见的多租户模式，使用上述 K8s 原生机制在共享集群中隔离租户。适用于信任度较高或对隔离性要求不是极高的场景。</li>
+<li><strong>Cluster as a Service</strong>: 为每个租户提供独立的 Kubernetes 集群。隔离性最好，但成本和管理开销最高。</li>
+<li><strong>Control Plane as a Service</strong>: 多个租户共享基础设施（节点），但拥有独立的控制平面（如使用 Virtual Kubelet 或 vCluster 等技术）。在隔离性和成本之间取得平衡。</li>
+</ul>
+</li>
+</ul>
+<p>多租户是一个复杂的主题，没有一刀切的解决方案。选择哪种模式和哪些隔离机制取决于具体的安全要求、信任模型、成本预算和管理能力。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/kubernetes/" class="print-no-link">#kubernetes</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>kubernetes生产化集群管理</div>
+      <div>https://mfzzf.github.io/2025/04/24/kubernetes生产化集群管理/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Mzzf</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年4月24日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/04/22/Ingress/" title="Ingress">
+                        <span class="hidden-mobile">Ingress</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -31,11 +31,10 @@
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317141928036.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317141918159.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317145348516.png">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001000991.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001019487.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/17/kubernetes-API-server/image-20250317001025889.png">
 <meta property="article:published_time" content="2025-03-16T16:09:25.000Z">
-<meta property="article:modified_time" content="2025-03-20T03:10:53.705Z">
+<meta property="article:modified_time" content="2025-04-22T08:04:04.955Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="k8s">
 <meta name="twitter:card" content="summary_large_image">
@@ -490,15 +489,16 @@
 </ul>
 <h4 id="2-2-1-RBAC"><a href="#2-2-1-RBAC" class="headerlink" title="2.2.1 RBAC"></a>2.2.1 RBAC</h4><p>RBAC 的核心概念：</p>
 <ul>
-<li><strong>Role（角色）</strong>：定义了一组权限规则。</li>
-<li><strong>ClusterRole（集群角色）</strong>：与 Role 类似，但作用于整个集群。</li>
-<li><strong>RoleBinding（角色绑定）</strong>：将 Role 或 ClusterRole 与用户、组或 ServiceAccount 绑定。</li>
-<li><strong>ClusterRoleBinding（集群角色绑定）</strong>：将 ClusterRole 与用户、组或 ServiceAccount 绑定。</li>
-</ul>
-<img src="/2025/03/17/kubernetes-API-server/image-20250317001000991.png" srcset="/img/loading.gif" lazyload class="" title="image-20250317001000991">
-
-<ul>
-<li><strong>针对群组授权</strong></li>
+<li><p><strong>Role（角色）</strong>：定义了一组权限规则。</p>
+</li>
+<li><p><strong>ClusterRole（集群角色）</strong>：与 Role 类似，但作用于整个集群。</p>
+</li>
+<li><p><strong>RoleBinding（角色绑定）</strong>：将 Role 或 ClusterRole 与用户、组或 ServiceAccount 绑定。</p>
+</li>
+<li><p><strong>ClusterRoleBinding（集群角色绑定）</strong>：将 ClusterRole 与用户、组或 ServiceAccount 绑定。</p>
+</li>
+<li><p><strong>针对群组授权</strong></p>
+</li>
 </ul>
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">ClusterRoleBinding</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">read-secrets-global</span><br><span class="hljs-attr">subjects:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">kind:</span> <span class="hljs-string">Group</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">manager</span> <span class="hljs-comment"># &#x27;name&#x27; 是区分大小写的</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br><span class="hljs-attr">roleRef:</span><br>  <span class="hljs-attr">kind:</span> <span class="hljs-string">ClusterRole</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">secret-reader</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br></code></pre></td></tr></table></figure>
 
