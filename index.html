@@ -229,6 +229,46 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
+        <a href="/2025/04/27/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E8%BF%90%E7%BB%B4/" target="_self">
+          kubernetes生产化运维
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/27/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E8%BF%90%E7%BB%B4/" target="_self">
+        <div>
+          
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-27 09:00" pubdate>
+              2025-04-27
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/k8s/">#k8s</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
         <a href="/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/" target="_self">
           kubernetes生产化集群管理
         </a>
@@ -270,14 +310,14 @@
       <h2 class="index-header">
         
         <a href="/2025/04/22/Ingress/" target="_self">
-          Ingress
+          Kubernetes 网络服务暴露：从 Service 到 Ingress 与 BGP/DSR
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/04/22/Ingress/" target="_self">
         <div>
-          Kubernetes 网络负载均衡1. K8s 负载均衡的必要性 问题: Pod IP 是动态分配且 Pod 是短暂的 (ephemeral)。直接访问 Pod IP 不可靠。 需求: 提供稳定的服务访问入口 (IP&#x2F;Port)。 将请求分发到健康的后端 Pod 实例。 自动感知后端 Pod 变化并更新路由。    2. L4 负载均衡: Service 核心对象: Service (K
+          引言：Kubernetes 网络的核心挑战与解决方案Kubernetes 极大地简化了容器化应用的部署和管理，但在网络层面，它引入了新的挑战。Pods 是短暂的，其 IP 地址是动态分配的，这使得直接访问 Pod 变得不可靠。为了向集群内部和外部的客户端提供稳定、可靠的服务访问入口，并有效地将流量分发到健康的后端 Pod 实例，Kubernetes 提供了一系列网络抽象和机制。 本文将深入探讨 K
         </div>
       </a>
 
@@ -350,14 +390,14 @@
       <h2 class="index-header">
         
         <a href="/2025/04/10/kube-proxy/" target="_self">
-          kube_proxy
+          Kubernetes 网络核心：kube-proxy 与 CoreDNS 深度解析
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/04/10/kube-proxy/" target="_self">
         <div>
-          Kube-proxy 的深度解析核心定位与设计目标kube-proxy 是 Kubernetes 网络体系的核心组件，本质是集群服务的智能流量调度器。它以 DaemonSet 形式部署于每个节点，通过监听 API Server 的 Service 和 Endpoints 对象变化，动态维护节点网络规则，实现两大核心功能：服务发现（将抽象服务名解析为具体后端实例）和负载均衡（智能分配服务流量）。其设
+          Kubernetes 网络核心：kube-proxy 与 CoreDNS 深度解析引言：Kubernetes 网络面临的挑战在 Kubernetes (K8s) 集群中，应用程序以 Pod 的形式运行。Pod 是短暂的，它们的 IP 地址会随着创建、销毁和调度而动态变化。这给服务间的通信带来了挑战：客户端如何才能可靠地发现并连接到提供特定服务的 Pod 集合？ 为了解决这个问题，Kubernete
         </div>
       </a>
 
@@ -377,6 +417,16 @@
             
               <a href="/tags/kubernetes/">#kubernetes</a>
             
+              <a href="/tags/networking/">#networking</a>
+            
+              <a href="/tags/kube-proxy/">#kube-proxy</a>
+            
+              <a href="/tags/coredns/">#coredns</a>
+            
+              <a href="/tags/netfilter/">#netfilter</a>
+            
+              <a href="/tags/ipvs/">#ipvs</a>
+            
           </div>
         
       </div>
@@ -390,14 +440,14 @@
       <h2 class="index-header">
         
         <a href="/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/" target="_self">
-          Service对象
+          Kubernetes Service 深度解析
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/04/03/kubernetes-Service%E5%AF%B9%E8%B1%A1/" target="_self">
         <div>
-          Service 对象  Kubernetes Service 是集群内网络抽象的核心对象，其核心功能是通过稳定的虚拟 IP 和 DNS 名称对外暴露动态变化的 Pod 集合。我们从网络协议栈实现和控制器模式两个维度深入剖析其核心机制： 1. Service Selector 的标签驱动机制  底层基于 Kubernetes API 的 List-Watch 机制，Service Controlle
+          Service 对象：Kubernetes 网络抽象的核心  Kubernetes 中的 Service 是集群内部网络抽象的核心对象。它为一组功能相同的 Pod 提供了一个稳定的、统一的访问入口（虚拟 IP 地址和 DNS 名称），屏蔽了后端 Pod 实例的动态变化（如伸缩、故障恢复、滚动更新）。本文将深入探讨 Service 的核心概念、不同类型、实现机制及高级特性。 一、核心概念1. 稳定的
         </div>
       </a>
 
@@ -417,6 +467,10 @@
             
               <a href="/tags/kubernetes/">#kubernetes</a>
             
+              <a href="/tags/networking/">#networking</a>
+            
+              <a href="/tags/service/">#service</a>
+            
           </div>
         
       </div>
@@ -430,14 +484,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/29/%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%AE%A1%E7%90%86%E5%92%8C%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0/" target="_self">
-          生命周期管理和服务发现
+          Kubernetes 生命周期管理与服务发现深度解析
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/29/%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%AE%A1%E7%90%86%E5%92%8C%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0/" target="_self">
         <div>
-          K8S 的 QoS 类分类Kubernetes 定义了三种 QoS 类，分别是： 1. Guaranteed 一个 Pod 所有容器的 requests 和 limits 必须完全相等。  特性：这类 Pod 通常被视为最高优先级资源请求，因此在资源争夺时被保留。  场景：适用于需要强资源保证的关键性应用。  示例： 123456789101112131415apiVersion: v
+          引言 Kubernetes 作为领先的容器编排平台，其核心能力在于自动化应用的部署、扩展和管理。其中，精细化的 Pod 生命周期管理和健壮的服务发现机制是保障应用稳定、高可用的基石。本文将深入探讨 Kubernetes 在这两个方面的核心概念、底层原理、实现机制及最佳实践。       一、Pod 生命周期管理Pod 是 Kubernetes 中最小的可部署单元。理解和管理 Pod 的生命周期对于
         </div>
       </a>
 
@@ -470,14 +524,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/28/kubernetes-CSI/" target="_self">
-          kubernetes_CSI
+          Kubernetes 存储机制深度解析：CSI、EmptyDir 与 HostPath
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/28/kubernetes-CSI/" target="_self">
         <div>
-          Kubernetes CSI（Container Storage Interface）是 Kubernetes 存储生态中实现存储插件标准化的核心机制，其设计深度结合了 Kubernetes 的存储架构和 Linux 内核特性。以下从原理到实践的详细解析：  一、CSI 架构原理CSI 采用三层架构设计，解耦 Kubernetes 核心组件与存储实现：  Kubernetes 核心组件（控制平面）
+          Kubernetes 作为一个强大的容器编排平台，其存储子系统是支撑有状态应用的关键。理解 Kubernetes 如何管理存储、如何与底层存储系统交互至关重要。本文将深入探讨 Kubernetes 存储的核心概念，重点解析容器存储接口（CSI）标准，以及两种内建的卷类型：EmptyDir 和 HostPath，分析它们的实现原理、适用场景和潜在风险。  一、Kubernetes 存储核心概念回顾在
         </div>
       </a>
 
@@ -497,6 +551,10 @@
             
               <a href="/tags/k8s/">#k8s</a>
             
+              <a href="/tags/storage/">#storage</a>
+            
+              <a href="/tags/csi/">#csi</a>
+            
           </div>
         
       </div>
@@ -510,14 +568,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/25/kubernetes-CNI/" target="_self">
-          kubernetes_CNI
+          深入理解 Kubernetes CNI (容器网络接口)
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/25/kubernetes-CNI/" target="_self">
         <div>
-          CNICNI 是 Kubernetes 中一个至关重要的组件，它定义了一套标准接口，用于配置和管理容器的网络连接。CNI 将 Kubernetes 与底层网络实现解耦，允许用户选择不同的网络方案，从而提高了 Kubernetes 的灵活性和可扩展性。理解 CNI 的工作原理对于深入理解 Kubernetes 网络至关重要。
+          深入理解 Kubernetes CNI (容器网络接口)在 Kubernetes (K8s) 集群中，网络是连接各个组件和应用的基础设施。为了实现灵活、可插拔的网络解决方案，Kubernetes 采用了容器网络接口（Container Network Interface, CNI）规范。CNI 是 K8s 网络模型得以实现的关键，它定义了一套标准接口，用于容器运行时动态地配置容器的网络。理解 CN
         </div>
       </a>
 
@@ -537,6 +595,10 @@
             
               <a href="/tags/k8s/">#k8s</a>
             
+              <a href="/tags/CNI/">#CNI</a>
+            
+              <a href="/tags/Network/">#Network</a>
+            
           </div>
         
       </div>
@@ -550,14 +612,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/22/kubernetes-CRI/" target="_self">
-          kubernetes_CRI
+          Kubernetes 容器运行时接口 (CRI) 详解
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/22/kubernetes-CRI/" target="_self">
         <div>
-          CRI 是 Kubernetes 定义的一组 gRPC 接口。它允许 kubelet（Kubernetes 的节点代理）与容器运行时（例如 Docker, containerd, CRI-O 等）进行通信。
+          Kubernetes 作为业界领先的容器编排平台，其核心组件 Kubelet 需要与节点上的容器运行时进行交互，以管理 Pod 和容器的生命周期。为了实现 Kubernetes 与不同容器运行时的解耦，社区定义了容器运行时接口（Container Runtime Interface, CRI）。本文将深入探讨 CRI 的概念、容器运行时的分层架构、OCI 标准以及主流容器运行时的对比。
         </div>
       </a>
 
@@ -577,45 +639,9 @@
             
               <a href="/tags/k8s/">#k8s</a>
             
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/21/kubernetes-kubelet/" target="_self">
-          kubernetes_kubelet
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/21/kubernetes-kubelet/" target="_self">
-        <div>
-          Kubeletkubelet 是 Kubernetes 节点（Node）上的核心组件，负责管理节点上的 Pod 和容器生命周期，是 Kubernetes 控制平面（Control Plane）与节点层之间的桥梁。
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-21 17:08" pubdate>
-              2025-03-21
-            </time>
-          </div>
-        
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
+              <a href="/tags/CRI/">#CRI</a>
             
-              <a href="/tags/k8s/">#k8s</a>
+              <a href="/tags/Container-Runtime/">#Container Runtime</a>
             
           </div>
         

@@ -19,27 +19,24 @@
   <meta name="author" content="Mzzf">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Kubeletkubelet 是 Kubernetes 节点（Node）上的核心组件，负责管理节点上的 Pod 和容器生命周期，是 Kubernetes 控制平面（Control Plane）与节点层之间的桥梁。">
+    <meta name="description" content="Kubelet：Kubernetes 集群的节点基石Kubelet 是在 Kubernetes 集群中每个 节点（Node） 上运行的核心代理（Agent）。它的根本职责是确保在节点上运行的 容器（Containers） 符合 控制平面（Control Plane） 通过 PodSpec 定义的期望状态。可以将其视为控制平面指令在具体节点上的执行者和状态汇报者，是连接 Master 与 Worke">
 <meta property="og:type" content="article">
-<meta property="og:title" content="kubernetes_kubelet">
+<meta property="og:title" content="Kubernetes Kubelet 深度解析">
 <meta property="og:url" content="https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/index.html">
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
-<meta property="og:description" content="Kubeletkubelet 是 Kubernetes 节点（Node）上的核心组件，负责管理节点上的 Pod 和容器生命周期，是 Kubernetes 控制平面（Control Plane）与节点层之间的桥梁。">
+<meta property="og:description" content="Kubelet：Kubernetes 集群的节点基石Kubelet 是在 Kubernetes 集群中每个 节点（Node） 上运行的核心代理（Agent）。它的根本职责是确保在节点上运行的 容器（Containers） 符合 控制平面（Control Plane） 通过 PodSpec 定义的期望状态。可以将其视为控制平面指令在具体节点上的执行者和状态汇报者，是连接 Master 与 Worke">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/image-20250321224007971.png">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/image-20250321232354306.png">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/image-20250321234138744.png">
-<meta property="og:image" content="https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/image-20250322110715382.png">
 <meta property="article:published_time" content="2025-03-21T09:08:18.000Z">
-<meta property="article:modified_time" content="2025-03-22T15:24:05.354Z">
+<meta property="article:modified_time" content="2025-04-27T10:18:24.766Z">
 <meta property="article:author" content="Mzzf">
+<meta property="article:tag" content="kubernetes">
 <meta property="article:tag" content="k8s">
+<meta property="article:tag" content="kubelet">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/image-20250321224007971.png">
   
   
   
-  <title>kubernetes_kubelet - Mzzf&#39;s Blog</title>
+  <title>Kubernetes Kubelet 深度解析 - Mzzf&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -205,7 +202,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="kubernetes_kubelet"></span>
+            <span id="subtitle" data-typed-text="Kubernetes Kubelet 深度解析"></span>
           
         </div>
 
@@ -228,7 +225,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.7k 字
+          4.6k 字
         
       </span>
     
@@ -239,7 +236,7 @@
         
         
         
-          23 分钟
+          39 分钟
         
       </span>
     
@@ -276,256 +273,154 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">kubernetes_kubelet</h1>
+            <h1 id="seo-header">Kubernetes Kubelet 深度解析</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="Kubelet"><a href="#Kubelet" class="headerlink" title="Kubelet"></a>Kubelet</h1><p>kubelet 是 Kubernetes 节点（Node）上的核心组件，负责管理节点上的 Pod 和容器生命周期，是 Kubernetes 控制平面（Control Plane）与节点层之间的桥梁。</p>
-<span id="more"></span>
-
+                <h1 id="Kubelet：Kubernetes-集群的节点基石"><a href="#Kubelet：Kubernetes-集群的节点基石" class="headerlink" title="Kubelet：Kubernetes 集群的节点基石"></a>Kubelet：Kubernetes 集群的节点基石</h1><p><strong>Kubelet</strong> 是在 Kubernetes 集群中每个 <strong>节点（Node）</strong> 上运行的核心<strong>代理（Agent）</strong>。它的根本职责是确保在节点上运行的 <strong>容器（Containers）</strong> 符合 <strong>控制平面（Control Plane）</strong> 通过 <strong>PodSpec</strong> 定义的期望状态。可以将其视为控制平面指令在具体节点上的<strong>执行者</strong>和<strong>状态汇报者</strong>，是连接 Master 与 Worker 节点的关键桥梁，负责 Pod 的生命周期管理、节点资源监控与汇报等核心任务。理解 Kubelet 的工作原理对于深入掌握 Kubernetes 的运行机制至关重要。</p>
 <hr>
-<img src="/2025/03/21/kubernetes-kubelet/image-20250321224007971.png" srcset="/img/loading.gif" lazyload class="" title="image-20250321224007971">
-
+<h2 id="Kubelet-核心架构与交互接口"><a href="#Kubelet-核心架构与交互接口" class="headerlink" title="Kubelet 核心架构与交互接口"></a>Kubelet 核心架构与交互接口</h2><p>Kubelet 内部包含多个协同工作的管理器和循环，并通过标准的 API 接口与集群其他组件及外部系统交互。</p>
+<h3 id="Kubelet-API-服务"><a href="#Kubelet-API-服务" class="headerlink" title="Kubelet API 服务"></a>Kubelet API 服务</h3><p>Kubelet 暴露了若干 HTTP API 端点，用于不同的交互场景：</p>
+<ul>
+<li><strong>认证与授权的 HTTPS API (默认端口 :10250)</strong>：这是 Kubelet <strong>最主要的 API 服务端口</strong>，用于接收来自 <strong>API Server</strong> 的指令，例如创建、删除、更新 Pod。API Server 通过此端口向 Kubelet 下发任务。同时，Kubelet 也通过此端口对外提供节点和 Pod 的详细信息查询，但访问此端口<strong>需要严格的认证和授权</strong>（通常使用 TLS 证书）。<code>kubectl exec</code>, <code>kubectl logs</code> 等命令最终也会通过 API Server 代理将请求转发到 Kubelet 的这个端口。</li>
+<li><strong>非认证的只读 HTTP API (默认端口 :10255)</strong>：此端口提供一个<strong>无需认证</strong>即可访问的只读接口，主要用于获取 Pod 和节点的基本状态信息（如 <code>/pods</code>, <code>/stats</code> 等）。由于其安全性较低，<strong>已不推荐在生产环境中使用</strong>，并且在较新版本的 Kubernetes 中可能默认禁用。外部监控系统（如 Prometheus）有时会配置为从这个端口拉取指标，但更推荐使用 Metrics Server 或者通过 :10250 端口的安全接口获取。</li>
+<li><strong>健康检查 HTTP API (默认端口 :10248)</strong>：这个端口主要提供 Kubelet 自身的健康状态检查端点，通常是 <code>/healthz</code>。监控系统或负载均衡器可以调用此接口来判断 Kubelet 进程是否存活且正常工作。</li>
+</ul>
+<p>这些 API 是 Kubelet 与外界沟通的窗口，特别是 <code>:10250</code> 端口，承载了 Kubelet 与控制平面交互的核心流量。</p>
 <hr>
-<h2 id="整体框架"><a href="#整体框架" class="headerlink" title="整体框架"></a>整体框架</h2><h3 id="1-Kubelet-API"><a href="#1-Kubelet-API" class="headerlink" title="1. Kubelet API"></a><strong>1. Kubelet API</strong></h3><p>Kubelet 提供了一系列 HTTP API 服务，用于与外部或 Kubernetes 控制平面通信。关键的端口与服务如下：</p>
+<h2 id="Kubelet-内部核心组件剖析"><a href="#Kubelet-内部核心组件剖析" class="headerlink" title="Kubelet 内部核心组件剖析"></a>Kubelet 内部核心组件剖析</h2><p>Kubelet 内部由多个并发运行的管理器（Manager）和控制循环（Loop）构成，它们各司其职，共同维护节点的 Pod 运行状态。</p>
+<h3 id="syncLoop-核心协调循环"><a href="#syncLoop-核心协调循环" class="headerlink" title="syncLoop: 核心协调循环"></a><strong>syncLoop: 核心协调循环</strong></h3><p><code>syncLoop</code> 是 Kubelet 的<strong>心脏</strong>，它是一个持续运行的<strong>控制循环（Reconciliation Loop）</strong>。其核心任务是<strong>将节点上 Pod 的实际状态与期望状态进行同步</strong>。</p>
 <ul>
-<li><strong>:10250 API</strong>：接受 Master 节点发来的指令，管理 Pod 和 Pod 中的容器，每个 Kubelet 在 API Server 上注册自身节点信息，定期向 Master 发送节点使用情况，并通过 cAdvisor 监控节点和容器的资源。</li>
-<li><strong>:10255 只读 API</strong> - 提供一个无需认证的只读接口，通常用于外部系统（如监控系统）获取 Pod 和节点的状态信息。（此端口已逐渐不推荐使用）</li>
-<li><strong>:10248 &#x2F;healthz</strong> - 用于 Kubelet 自身的健康检查。主要提供 <code>/healthz</code> 接口，以供其他组件监控 Kubelet 运行状况。</li>
+<li><strong>获取期望状态</strong>：<code>syncLoop</code> 主要通过 <strong>Watch 机制</strong>监听 <strong>API Server</strong>，获取分配给本节点的 Pod 的配置信息（期望状态）。此外，它还可以从<strong>静态 Pod 目录</strong>（由 <code>--pod-manifest-path</code> 参数指定，通常是 <code>/etc/kubernetes/manifests/</code>）或远程 HTTP URL（由 <code>--manifest-url</code> 参数指定）读取 Pod 定义。</li>
+<li><strong>获取实际状态</strong>：通过 <strong>PLEG (Pod Lifecycle Event Generator)</strong> 和<strong>容器运行时接口 (CRI)</strong> 获取节点上当前实际运行的 Pod 和容器状态。</li>
+<li><strong>状态比较与动作执行</strong>：<code>syncLoop</code> 对比期望状态和实际状态的差异。如果发现不一致（例如，需要创建新 Pod、删除旧 Pod、重启容器等），它会计算出需要执行的操作，并将这些操作分发给 <strong>PodWorker</strong> 进行处理。这个过程体现了 Kubernetes <strong>声明式 API</strong> 的核心思想：用户只定义期望状态，由控制器（这里是 Kubelet 的 <code>syncLoop</code>）负责驱动系统达到该状态。</li>
 </ul>
-<p>这些接口是外界与 Kubelet 交互的重要入口。</p>
+<h3 id="PodWorker-Pod-操作执行单元"><a href="#PodWorker-Pod-操作执行单元" class="headerlink" title="PodWorker: Pod 操作执行单元"></a><strong>PodWorker: Pod 操作执行单元</strong></h3><p><code>PodWorker</code> 负责<strong>具体执行</strong> <code>syncLoop</code> 决策出的 Pod 相关操作。它通常管理一个 <strong>Goroutine 池</strong>，并发地处理各个 Pod 的创建、更新和删除任务。例如，当需要创建一个 Pod 时，<code>PodWorker</code> 会调用<strong>容器运行时接口 (CRI)</strong> 来创建 Sandbox 和容器、设置网络、挂载卷等。这种并发处理机制提高了 Kubelet 管理大量 Pod 的效率。</p>
+<h3 id="容器运行时接口-CRI-Shim"><a href="#容器运行时接口-CRI-Shim" class="headerlink" title="容器运行时接口 (CRI) Shim"></a><strong>容器运行时接口 (CRI) Shim</strong></h3><p>Kubelet <strong>本身不直接操作容器</strong>（如 Docker、containerd、CRI-O）。它通过 <strong>容器运行时接口 (Container Runtime Interface, CRI)</strong> 这个<strong>抽象层</strong>与具体的容器运行时进行交互。CRI 定义了一套标准的 <strong>gRPC</strong> 接口，包括 <code>RuntimeService</code>（管理 Pod Sandbox 和容器生命周期）和 <code>ImageService</code>（管理容器镜像）。Kubelet 调用这些 gRPC 接口，由运行在节点上的 <strong>CRI Shim</strong>（如 <code>cri-containerd</code>, <code>cri-o</code>）负责将 CRI 请求翻译成底层容器运行时的具体命令。这种设计使得 Kubernetes 可以<strong>灵活地支持多种容器运行时</strong>，实现了 Kubelet 与容器运行时的解耦。</p>
+<h3 id="PLEG-Pod-Lifecycle-Event-Generator-Pod-生命周期事件生成器"><a href="#PLEG-Pod-Lifecycle-Event-Generator-Pod-生命周期事件生成器" class="headerlink" title="PLEG (Pod Lifecycle Event Generator): Pod 生命周期事件生成器"></a><strong>PLEG (Pod Lifecycle Event Generator): Pod 生命周期事件生成器</strong></h3><p>PLEG 是 Kubelet 中一个<strong>至关重要的</strong>、但有时也容易引发性能问题的模块。它的主要职责是<strong>持续监测节点上容器的真实状态，并将变化以事件的形式通知给 <code>syncLoop</code></strong>。</p>
+<ul>
+<li><p><strong>工作机制</strong>：PLEG <strong>定期（默认为 1 秒）<strong>通过 CRI 调用容器运行时的 <code>ListContainers</code> 或类似接口，获取节点上</strong>所有</strong>容器的当前状态。然后，它会与自己维护的内部缓存进行比较，识别出状态发生变化的容器（如启动、停止、死亡等）。对于检测到的变化，PLEG 会生成相应的 <strong>Pod 生命周期事件</strong>，并将这些事件发送到一个内部通道，供 <code>syncLoop</code> 消费。</p>
+</li>
+<li><p><strong>为何需要 PLEG</strong>：虽然容器运行时本身会产生事件，但这些事件可能丢失或不及时。PLEG 通过**主动轮询（Relist）**的方式，确保 Kubelet 能够可靠地感知到容器的最终状态，即使错过了某些瞬时事件。</p>
+</li>
+<li><p><strong>性能考量</strong>：频繁的 <code>relist</code> 操作（尤其是在节点上 Pod 数量非常多时）会对容器运行时和 Kubelet 自身造成<strong>显著的性能压力</strong>。如果 <code>relist</code> 操作耗时过长（例如超过 PLEG 的检查周期），可能导致 Kubelet 无法及时更新 Pod 状态，甚至误判节点为 <code>NotReady</code>。这就是为什么 Kubernetes 会建议限制<strong>每个节点的最大 Pod 数量 (<code>maxPods</code>)</strong> 的原因之一。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># KubeletConfiguration 示例片段，限制节点 Pod 数量</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">kubelet.config.k8s.io/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">KubeletConfiguration</span><br><span class="hljs-attr">maxPods:</span> <span class="hljs-number">110</span> <span class="hljs-comment"># 默认值，可根据节点规格调整</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="ProbeManager-容器健康探测器"><a href="#ProbeManager-容器健康探测器" class="headerlink" title="ProbeManager: 容器健康探测器"></a><strong>ProbeManager: 容器健康探测器</strong></h3><p><code>ProbeManager</code> 负责执行 Pod 定义中配置的 <strong>Liveness Probe (存活探针)</strong>、<strong>Readiness Probe (就绪探针)</strong> 和 <strong>Startup Probe (启动探针)</strong>。</p>
+<ul>
+<li><strong>Liveness Probe</strong>：用于判断容器<strong>是否仍在正常运行</strong>。如果探测失败，Kubelet 会根据 Pod 的 <code>restartPolicy</code> <strong>杀死并尝试重启</strong>该容器。这有助于自动恢复陷入死锁或无响应状态的应用。</li>
+<li><strong>Readiness Probe</strong>：用于判断容器<strong>是否已准备好接收外部流量</strong>。如果探测失败，Kubernetes Service Controller 会将该 Pod 的 Endpoint 从相应的 Service 中移除，使其暂时不接收新的请求，直到探测成功。这确保了流量只会被发送到真正准备就绪的实例。</li>
+<li><strong>Startup Probe</strong>：用于处理<strong>启动时间较长</strong>的应用。在 Startup Probe 成功之前，Liveness 和 Readiness Probe 不会执行。这可以防止启动过程中的应用被 Liveness Probe 误杀。</li>
+</ul>
+<p><code>ProbeManager</code> 根据探针配置（如检查方式 - HTTP GET, TCP Socket, Exec Command，以及频率、超时、阈值等），周期性地执行检查，并将结果反馈给 Kubelet 的状态管理系统。</p>
+<h3 id="cAdvisor-容器与节点资源监控"><a href="#cAdvisor-容器与节点资源监控" class="headerlink" title="cAdvisor: 容器与节点资源监控"></a><strong>cAdvisor: 容器与节点资源监控</strong></h3><p><strong>cAdvisor (Container Advisor)</strong> 是 Google 开源的一个用于<strong>监控容器资源使用和性能</strong>的工具，它被<strong>内嵌</strong>在 Kubelet 的二进制文件中运行。cAdvisor 负责收集本节点上所有容器以及节点本身的<strong>资源使用数据</strong>（CPU、内存、文件系统、网络等）。</p>
+<ul>
+<li><strong>数据来源</strong>：cAdvisor 主要通过读取 <strong>Linux 内核</strong>提供的 <strong>cgroups 文件系统</strong>（位于 <code>/sys/fs/cgroup</code>）和 <code>/proc</code> 文件系统来获取精确的资源使用信息。</li>
+<li><strong>数据用途</strong>：<ul>
+<li>Kubelet 通过 cAdvisor 获取的数据来更新 Pod 和节点的<strong>状态信息</strong>（如资源使用量），并汇报给 API Server。</li>
+<li><strong>调度器 (Scheduler)</strong> 使用这些信息来做出更优的 Pod 调度决策。</li>
+<li><strong>水平 Pod 自动伸缩器 (HPA)</strong> 依赖这些指标来判断是否需要增减 Pod 副本。</li>
+<li>Kubelet 的 <strong>EvictionManager</strong> 也使用这些数据来判断节点资源是否紧张。</li>
+<li>可以通过 Kubelet 的 <code>/metrics/cadvisor</code> 端点（通常在 :10250 端口，需要认证）或只读端口 <code>:10255</code>（如果启用）暴露这些指标，供 Prometheus 等监控系统采集。</li>
+</ul>
+</li>
+</ul>
+<h3 id="StatusManager-状态管理器"><a href="#StatusManager-状态管理器" class="headerlink" title="StatusManager: 状态管理器"></a><strong>StatusManager: 状态管理器</strong></h3><p><code>StatusManager</code> 负责<strong>管理和同步 Pod 的状态信息</strong>。它从 Kubelet 内部的其他组件（如 PLEG、ProbeManager）收集 Pod 的最新状态，并将其<strong>定期（通过心跳）更新到 API Server</strong>。API Server 随后将这些状态持久化到 <strong>etcd</strong> 中。用户通过 <code>kubectl get pod</code> 等命令看到的就是由 <code>StatusManager</code> 汇报的状态。如果 Kubelet 与 API Server 长时间失联，<code>StatusManager</code> 无法更新状态，控制平面中的 <strong>Node Controller</strong> 最终会将该节点标记为 <code>NotReady</code>。</p>
+<h3 id="EvictionManager-资源驱逐管理器"><a href="#EvictionManager-资源驱逐管理器" class="headerlink" title="EvictionManager: 资源驱逐管理器"></a><strong>EvictionManager: 资源驱逐管理器</strong></h3><p><code>EvictionManager</code> 负责<strong>监控节点的资源状况</strong>（如内存、磁盘空间、inode 使用率），并在资源低于预设的<strong>驱逐阈值 (Eviction Thresholds)</strong> 时，主动**驱逐（Evict）**节点上的 Pod 以回收资源，防止节点因资源耗尽而变得不稳定。</p>
+<ul>
+<li><p><strong>驱逐信号 (Eviction Signals)</strong>：常见的信号包括 <code>memory.available</code>, <code>nodefs.available</code> (节点根文件系统可用空间), <code>imagefs.available</code> (容器镜像存储文件系统可用空间), <code>nodefs.inodesFree</code> (节点根文件系统可用 inode)。</p>
+</li>
+<li><p><strong>驱逐阈值 (Eviction Thresholds)</strong>：可以配置<strong>硬驱逐 (Hard Eviction)</strong> 阈值（一旦达到立即触发驱逐）和<strong>软驱逐 (Soft Eviction)</strong> 阈值（达到后会有一个宽限期，若资源仍未恢复则触发驱逐）。</p>
+</li>
+<li><p><strong>驱逐策略</strong>：当需要驱逐时，EvictionManager 会根据 Pod 的 <strong>QoS (Quality of Service) 等级</strong>（<code>Guaranteed</code> &gt; <code>Burstable</code> &gt; <code>BestEffort</code>）和<strong>资源使用情况</strong>来决定驱逐的优先级。通常优先驱逐 <code>BestEffort</code> 级别的 Pod，或者超出其资源请求（Request）最多的 <code>Burstable</code> Pod。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># KubeletConfiguration 示例片段，配置硬驱逐阈值</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">kubelet.config.k8s.io/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">KubeletConfiguration</span><br><span class="hljs-attr">evictionHard:</span><br>  <span class="hljs-attr">memory.available:</span> <span class="hljs-string">&quot;100Mi&quot;</span>      <span class="hljs-comment"># 当可用内存低于 100Mi 时触发驱逐</span><br>  <span class="hljs-attr">nodefs.available:</span> <span class="hljs-string">&quot;10%&quot;</span>       <span class="hljs-comment"># 当节点根文件系统可用空间低于 10% 时触发驱逐</span><br>  <span class="hljs-attr">imagefs.available:</span> <span class="hljs-string">&quot;15%&quot;</span>      <span class="hljs-comment"># 当镜像文件系统可用空间低于 15% 时触发驱逐</span><br>  <span class="hljs-attr">nodefs.inodesFree:</span> <span class="hljs-string">&quot;5%&quot;</span>        <span class="hljs-comment"># 当节点根文件系统可用 inode 低于 5% 时触发驱逐</span><br><span class="hljs-comment"># evictionSoft: ... # 可选，配置软驱逐阈值及宽限期</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="VolumeManager-存储卷管理器"><a href="#VolumeManager-存储卷管理器" class="headerlink" title="VolumeManager: 存储卷管理器"></a><strong>VolumeManager: 存储卷管理器</strong></h3><p><code>VolumeManager</code> 负责 Pod 所需<strong>存储卷 (Volume)</strong> 的<strong>挂载 (Mount)</strong> 和<strong>卸载 (Unmount)</strong> 操作。它与 <strong>CSI (Container Storage Interface)</strong> 驱动程序交互，管理各种类型的持久化和非持久化存储卷。</p>
+<ul>
+<li><strong>挂载流程</strong>：在 Pod 启动前，<code>VolumeManager</code> 会确保所有声明的卷都已<strong>准备就绪 (Attach, if necessary)</strong> 并<strong>挂载 (Mount)</strong> 到节点上的<strong>指定路径</strong>。然后，这些路径会被传递给容器运行时，以便在容器内部进行绑定挂载 (bind mount)。</li>
+<li><strong>卸载流程</strong>：当 Pod 被删除时，<code>VolumeManager</code> 负责<strong>卸载</strong>这些卷，并在必要时执行<strong>清理 (Detach)</strong> 操作。</li>
+<li><strong>关键作用</strong>：确保有状态应用能够正确地访问其持久化数据。</li>
+</ul>
+<h3 id="ImageGC-与-DiskSpaceManager-镜像与磁盘空间管理"><a href="#ImageGC-与-DiskSpaceManager-镜像与磁盘空间管理" class="headerlink" title="ImageGC 与 DiskSpaceManager: 镜像与磁盘空间管理"></a><strong>ImageGC 与 DiskSpaceManager: 镜像与磁盘空间管理</strong></h3><ul>
+<li><strong>ImageGC (Image Garbage Collector)</strong>：负责<strong>自动清理节点上未被任何运行中或最近创建的 Pod 使用的容器镜像</strong>。它根据配置的策略（如基于镜像使用时间和磁盘空间占用率的阈值）来决定回收哪些镜像，以防止节点磁盘被不再需要的镜像占满。</li>
+<li><strong>DiskSpaceManager</strong>：与 ImageGC 类似，但更广泛地<strong>监控节点磁盘空间</strong>（特别是容器可写层和空目录卷使用的空间），并在必要时触发<strong>容器日志清理</strong>或其他磁盘清理操作，协同 <code>EvictionManager</code> 工作。</li>
+</ul>
+<h3 id="CertificateManager-证书管理器"><a href="#CertificateManager-证书管理器" class="headerlink" title="CertificateManager: 证书管理器"></a><strong>CertificateManager: 证书管理器</strong></h3><p><code>CertificateManager</code> 负责管理 Kubelet 用于与 API Server 进行 <strong>TLS 安全通信</strong>所需的<strong>客户端证书</strong>。它可以配置为<strong>自动请求和轮换 (rotate)</strong> 这些证书，确保 Kubelet 与控制平面之间的通信始终是加密且经过认证的，增强了集群的安全性。</p>
 <hr>
-<h3 id="2-核心组件"><a href="#2-核心组件" class="headerlink" title="2. 核心组件"></a><strong>2. 核心组件</strong></h3><h4 id="1-syncLoop"><a href="#1-syncLoop" class="headerlink" title="(1) syncLoop"></a><strong>(1) syncLoop</strong></h4><p><code>syncLoop</code> 是 Kubelet 的核心主循环，负责持续同步节点的状态和调度的 Pod 期望状态。</p>
-<ul>
-<li>通过 Kubernetes API Server <strong>Watch</strong> 机制获取调度到该节点的 Pod 信息（期望状态）。</li>
-<li>对比节点上实际运行的 Pod 状态（实际状态）。</li>
-<li>调用其他模块（如 <code>PodWorker</code>）完成实际状态与期望状态的对齐。</li>
-</ul>
-<h4 id="2-PodWorker"><a href="#2-PodWorker" class="headerlink" title="(2) PodWorker"></a><strong>(2) PodWorker</strong></h4><p><code>PodWorker</code> 是每个 Pod 的具体操作执行模块。它是一个并发协程池，用于处理 Pod 的创建、更新、删除等任务。与 <code>syncLoop</code> 配合，<code>PodWorker</code> 实现了节点状态与调度期望状态的最终一致性。</p>
-<h4 id="3-ProbeManager"><a href="#3-ProbeManager" class="headerlink" title="(3) ProbeManager"></a><strong>(3) ProbeManager</strong></h4><p><code>ProbeManager</code> 负责 Pod 的健康检查。</p>
-<ul>
-<li><strong>Liveness Probe</strong>：判断容器是否健康，不健康时触发重启。</li>
-<li><strong>Readiness Probe</strong>：判断容器是否准备就绪，用于流量负载分发。</li>
-<li><strong>Startup Probe</strong>：当容器启动较慢时，避免被误判为不健康。</li>
-</ul>
-<p>ProbeManager 会根据 Pod 的探针配置，周期性调用相关检查逻辑，确保应用运行状态。</p>
-<h4 id="4-OOMWatcher"><a href="#4-OOMWatcher" class="headerlink" title="(4) OOMWatcher"></a><strong>(4) OOMWatcher</strong></h4><p><code>OOMWatcher</code> 监听容器是否因内存不足（OOM）被系统杀死，并触发回调通知其他模块进行后续处理。</p>
-<h4 id="5-GPUManager"><a href="#5-GPUManager" class="headerlink" title="(5) GPUManager"></a><strong>(5) GPUManager</strong></h4><p><code>GPUManager</code> 专为需要显卡支持的容器（如深度学习模型或 GPU 加速的应用）服务，确保请求 GPU 资源的 Pod 能够成功调度并正常初始化设备。</p>
-<h4 id="6-cAdvisor"><a href="#6-cAdvisor" class="headerlink" title="(6) cAdvisor"></a><strong>(6) cAdvisor</strong></h4><p>cAdvisor 是 Google 开源的资源监控工具，被内置为 Kubelet 的一部分，负责收集节点和容器的资源消耗（CPU、内存、网络、磁盘 IO 等）。这些数据被用于：</p>
-<ul>
-<li>提供给 Kubernetes 控制平面的资源调度。</li>
-<li>在节点上触发资源回收或补救机制。</li>
-</ul>
-<h4 id="7-DiskSpaceManager-Image-GC"><a href="#7-DiskSpaceManager-Image-GC" class="headerlink" title="(7) DiskSpaceManager &amp; Image GC"></a><strong>(7) DiskSpaceManager &amp; Image GC</strong></h4><ul>
-<li><code>DiskSpaceManager</code> 负责监控节点磁盘空间，并协作执行相应的垃圾回收。</li>
-<li><code>Image GC</code> 用于定期回收未使用的镜像资源，避免磁盘因持久化镜像而耗尽。</li>
-</ul>
-<h4 id="8-StatusManager"><a href="#8-StatusManager" class="headerlink" title="(8) StatusManager"></a><strong>(8) StatusManager</strong></h4><p><code>StatusManager</code> 负责汇报节点和 Pod 的状态信息。具体工作包括：</p>
-<ul>
-<li>将本地运行中 Pod 的状态（如 Ready、运行时间、网络状态）上传到 API Server。</li>
-<li>将状态数据同步到 <code>syncLoop</code>，用于进一步决策。</li>
-</ul>
-<h4 id="9-EvictionManager"><a href="#9-EvictionManager" class="headerlink" title="(9) EvictionManager"></a><strong>(9) EvictionManager</strong></h4><p><code>EvictionManager</code> 负责节点资源压力下的 Pod 驱逐。它监控节点整体资源状况，当内存、磁盘、inode 等资源低于预设阈值时，会主动驱逐“非关键”Pod 以释放资源。</p>
-<h4 id="10-VolumeManager"><a href="#10-VolumeManager" class="headerlink" title="(10) VolumeManager"></a><strong>(10) VolumeManager</strong></h4><p><code>VolumeManager</code> 负责处理 Pod 的存储卷挂载和卸载，例如支持 <code>PersistentVolume</code> (PV) 的分配与管理。在 Pod 创建过程中，确保所需存储卷按请求挂载到容器。</p>
-<h4 id="11-CertificateManager"><a href="#11-CertificateManager" class="headerlink" title="(11) CertificateManager"></a><strong>(11) CertificateManager</strong></h4><p><code>CertificateManager</code> 负责管理 Kubelet 所需的证书和密钥文件，用于与 API Server 安全通信的 TLS 握手。</p>
-<hr>
-<h2 id="kubelet-管理-Pod-的流程"><a href="#kubelet-管理-Pod-的流程" class="headerlink" title="kubelet 管理 Pod 的流程"></a>kubelet 管理 Pod 的流程</h2><img src="/2025/03/21/kubernetes-kubelet/image-20250321232354306.png" srcset="/img/loading.gif" lazyload class="" title="image-20250321232354306">
-
+<h2 id="Kubelet-管理-Pod-的完整流程"><a href="#Kubelet-管理-Pod-的完整流程" class="headerlink" title="Kubelet 管理 Pod 的完整流程"></a>Kubelet 管理 Pod 的完整流程</h2><p>理解 Kubelet 如何接收指令并最终运行一个 Pod 是掌握其工作方式的关键。</p>
 <ol>
-<li><p><strong>Pod 清单的生产与获取</strong>：</p>
+<li><p><strong>Pod 期望状态来源</strong>：</p>
 <ul>
-<li><strong>API Server</strong>：Kubelet 从 API Server 获取需要运行的 Pod 信息。</li>
-<li><strong>Manifest 目录</strong>：通过启动参数 <code>--config</code> 指定目录（如 <code>/etc/kubernetes/manifests/</code>），周期性扫描文件获取 Pod 定义（默认间隔 20 秒，可配置）。</li>
-<li><strong>HTTP Server</strong>：通过启动参数 <code>--manifest-url</code> 设置 URL 来周期性拉取 Pod 清单。</li>
-<li><strong>HTTP 接口调用</strong>：通过 kubelet 自身暴露的 HTTP 服务接口，允许动态提交新的 Pod 清单。</li>
+<li><strong>API Server (主要来源)</strong>：Kubelet 通过 <strong>Watch</strong> 机制实时监听 API Server 上与其 <code>nodeName</code> 匹配的 Pod 对象创建、更新和删除事件。这是最常用和动态的方式。</li>
+<li><strong>静态 Pod (Static Pods)</strong>：Kubelet 可以配置一个本地<strong>文件目录</strong> (<code>--pod-manifest-path</code>)。它会<strong>周期性扫描</strong>此目录下的 YAML 或 JSON 文件，并将这些文件定义的 Pod 直接在本节点上运行，<strong>无需 API Server 的介入</strong>。这类 Pod 通常用于运行集群关键组件（如 API Server、etcd 自身，如果它们以 Pod 形式部署的话），确保即使在控制平面不可用时，这些基础服务也能在节点上启动。</li>
+<li><strong>HTTP URL</strong>：类似静态 Pod，Kubelet 可以配置一个 URL (<code>--manifest-url</code>)，<strong>周期性</strong>地从该 URL 拉取 Pod 定义文件。</li>
+<li><strong>(不推荐) HTTP 接口</strong>：Kubelet 曾支持通过其 HTTP 接口直接提交 Pod 定义，但这种方式已被弃用。</li>
 </ul>
 </li>
-<li><p><strong>syncLoop - 消费者流程</strong>：</p>
+<li><p><strong>syncLoop 消费与处理</strong>：</p>
 <ul>
-<li>Kubelet 的核心事件循环（syncLoop）持续监听 Pod 变更事件（如新建、更新或删除）。</li>
-<li><strong>Worker 处理逻辑</strong>：<ul>
-<li>调用 <code>syncPod</code> 函数处理每个 Pod。</li>
-<li>在 <code>syncPod</code> 中，调用 <code>computePodActions</code> 比对清单中的 Pod（期望状态）和当前节点运行中的实际 Pod（实际状态）。</li>
-<li>根据比对结果，计算需要新增、修改或删除的 Pod，并通过容器运行时接口（CRI：Container Runtime Interface）执行相应的操作。</li>
+<li><code>syncLoop</code> 从上述来源获取到 Pod 的<strong>期望状态 (Desired State)</strong>。</li>
+<li>它通过 PLEG 和 CRI 获取 Pod 的<strong>实际状态 (Actual State)</strong>。</li>
+<li>调用内部的 <code>computePodActions</code> 函数，<strong>比较</strong>期望状态和实际状态，生成需要执行的操作（如 <code>SyncPod</code>, <code>KillPod</code>）。</li>
+<li>将这些操作分发给 <code>PodWorker</code>。</li>
 </ul>
 </li>
+<li><p><strong>PodWorker 执行操作</strong>：</p>
+<ul>
+<li><code>PodWorker</code> 接收到 <code>SyncPod</code> 指令后，开始执行 Pod 的创建或更新流程。</li>
+<li><strong>调用 CRI</strong>：<ul>
+<li><strong>创建 Pod Sandbox</strong>：首先调用 CRI 的 <code>RunPodSandbox</code> 接口。CRI Shim 会创建一个<strong>基础的隔离环境</strong>，通常是一个非常轻量级的 <strong>“pause” 容器</strong>。这个 Pause 容器的核心作用是<strong>持有 Pod 共享的网络命名空间 (net ns)</strong>，以及可能的 IPC 命名空间 (ipc ns) 和 PID 命名空间 (pid ns)。Pod 内的所有应用容器都将加入到这个 Pause 容器的命名空间中，从而实现它们之间的网络互通（共享同一个 IP 和端口空间）和 IPC 通信。</li>
+<li><strong>配置网络</strong>：Sandbox 创建后，Kubelet 会调用 <strong>CNI (Container Network Interface)</strong> 插件（通过 CRI 触发）。CNI 插件负责为 Pod Sandbox 分配 IP 地址、设置网络路由等网络相关的配置，将其接入集群网络。</li>
+<li><strong>挂载卷</strong>：<code>VolumeManager</code> 介入，确保 Pod 所需的存储卷（通过 <strong>CSI (Container Storage Interface)</strong> 或内置的 Volume 插件）被正确挂载到节点上的预期位置，供后续容器使用。</li>
+<li><strong>拉取镜像</strong>：为每个应用容器调用 CRI 的 <code>PullImage</code> 接口，确保所需的容器镜像存在于本地。</li>
+<li><strong>创建容器</strong>：为每个应用容器调用 CRI 的 <code>CreateContainer</code> 接口，在 Pod Sandbox 的共享命名空间内创建容器实例，但不启动。</li>
+<li><strong>启动容器</strong>：最后，为每个应用容器调用 CRI 的 <code>StartContainer</code> 接口，启动容器内的进程。</li>
 </ul>
 </li>
-<li><p><strong>容器运行时接口 (CRI)</strong>：</p>
+<li><code>PodWorker</code> 接收到 <code>KillPod</code> 指令后，会逆向执行上述流程，调用 CRI 接口停止容器、删除容器、卸载卷、删除 Sandbox 等。</li>
+</ul>
+</li>
+<li><p><strong>状态反馈</strong>：</p>
 <ul>
-<li>Kubelet 并不会直接操作容器，而是通过 CRI 进行抽象的容器操作。</li>
-<li>CRI 执行 Pod 和容器的新增、更新、删除操作，屏蔽物理容器运行时（如 Docker、containerd）之间的实现差异。</li>
+<li>在整个过程中以及 Pod 运行期间，PLEG、ProbeManager 等组件持续监控状态。</li>
+<li><code>StatusManager</code> 汇总这些状态，并<strong>定期通过心跳上报给 API Server</strong>，更新 etcd 中的 Pod 对象状态。</li>
+<li>用户或其他控制器可以通过查询 API Server 获取 Pod 的最新状态（如 <code>Pending</code>, <code>Running</code>, <code>Succeeded</code>, <code>Failed</code>, <code>Unknown</code>）以及更详细的 <code>Conditions</code> 和 <code>ContainerStatuses</code>。</li>
 </ul>
 </li>
 </ol>
 <hr>
-<h2 id="Pod-生命周期管理-PLEG"><a href="#Pod-生命周期管理-PLEG" class="headerlink" title="Pod 生命周期管理 (PLEG)"></a><strong>Pod 生命周期管理 (PLEG)</strong></h2><p><strong>PLEG (Pod Lifecycle Event Generator)</strong> 是 Kubelet 的一个关键模块，用于监听和维护容器的实际状态。</p>
+<h2 id="节点管理与自注册"><a href="#节点管理与自注册" class="headerlink" title="节点管理与自注册"></a>节点管理与自注册</h2><p>Kubelet 不仅管理 Pod，也负责将自身所在的<strong>物理机或虚拟机注册为 Kubernetes 集群的一个 Node 资源</strong>，并持续维护该 Node 的状态。</p>
 <ol>
-<li><p><strong>功能</strong>： </p>
+<li><p><strong>节点自注册 (Node Self-Registration)</strong>：</p>
 <ul>
-<li>收集当前节点上所有 Pod 的运行状态，例如容器是否已启动、运行中、退出等。</li>
-<li>定期通过 <strong>relist 操作</strong>，从容器运行时（CRI）中获取实际 Pod 的状态清单。</li>
-<li>将这些状态事件发送到 Kubelet，帮助它同步期望状态与实际状态。</li>
-</ul>
-</li>
-<li><p><strong>状态报告</strong>：</p>
-<ul>
-<li>PLEG 的状态信息会周期性地上传到 Kubernetes 控制平面（API Server），并最终存储到 etcd 中。</li>
-<li>如果 PLEG 中出现问题（如 relist 被阻塞或超时），Kubernetes 控制平面可能会错误地认为节点状态异常（Node Not Ready）。</li>
-</ul>
-</li>
-<li><p><strong>性能限制</strong>：</p>
-<ul>
-<li>Kubernetes 会对每个节点上的 Pod 数量设定上限，原因包括：<ul>
-<li><strong>时间开销</strong>：PLEG 每秒 relist 一次节点上的 Pod，如果 Pod 数过多，会使 relist 操作消耗大量时间。</li>
-<li><strong>节点状态异常</strong>：如 CRI 卡住、无法及时上报状态时，就可能导致控制平面认为节点处于 <code>NotReady</code> 状态。</li>
-</ul>
-</li>
-<li>这种限制保障了分布式系统的稳定性。</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h2 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a><strong>节点管理</strong></h2><p>Kubernetes 中的节点由 Kubelet 注册、监控并周期性汇报状态。以下是节点管理的主要流程：</p>
-<ol>
-<li><p><strong>Kubelet 的节点自注册</strong>：</p>
-<ul>
-<li>通过启动参数 <code>--register-node</code> 决定是否自动向 API Server 注册节点。</li>
-<li>若启用，Kubelet 会在启动时通过与 API Server 通信，注册节点自身的信息（如容量、配置）。</li>
+<li>通过启动参数 <code>--register-node=true</code> (默认值)，Kubelet 在启动时会<strong>自动尝试向 API Server 注册</strong>自己。它会收集节点信息（如操作系统、内核版本、CPU&#x2F;内存容量、容器运行时版本等），创建一个 Node 对象，并提交给 API Server。</li>
+<li>如果 API Server 中已存在同名的 Node 对象，Kubelet 会尝试更新它。</li>
+<li>自注册需要 Kubelet 拥有与 API Server 通信的凭证（通常是 <code>kubeconfig</code> 文件，由 <code>--kubeconfig</code> 参数指定）以及在 API Server 上创建&#x2F;更新 Node 对象的权限。</li>
 </ul>
 </li>
 <li><p><strong>手动注册节点</strong>：</p>
 <ul>
-<li>假如未开启节点自注册模式，用户需手动创建节点资源，并将节点的相关信息配置到 API Server。</li>
-<li>同时，需要手动配置 Kubelet 的启动参数，告知其 API Server 的地址。</li>
+<li>如果设置 <code>--register-node=false</code>，或者 Kubelet 没有权限自注册，管理员就需要<strong>手动创建 Node 对象</strong>。</li>
+<li>管理员需要准备一个 Node 对象的 YAML 或 JSON 定义文件，包含节点的名称（必须与 Kubelet 启动时通过 <code>--hostname-override</code> 指定或自动获取的主机名一致）、标签、容量等信息，然后使用 <code>kubectl apply -f node.yaml</code> 创建。</li>
+<li>即使是手动注册，Kubelet 仍然需要配置 <code>--kubeconfig</code> 以便与 API Server 通信，汇报节点状态和接收 Pod 任务。</li>
 </ul>
 </li>
-<li><p><strong>节点状态更新</strong>：</p>
+<li><p><strong>节点状态更新与心跳</strong>：</p>
 <ul>
-<li>Kubelet 会定期向控制平面（API Server）发送心跳、节点资源使用情况、节点运行状态等信息。</li>
-<li>API Server 在收到这些信息后，将其写入 etcd，供调度器和控制器使用。</li>
+<li>无论如何注册，Kubelet 都会<strong>定期（由 <code>--node-status-update-frequency</code> 控制，默认 10 秒）向 API Server 发送心跳</strong>，更新 Node 对象的 <code>status</code> 字段。</li>
+<li>状态信息包括：<ul>
+<li><strong>Node Conditions</strong>：描述节点当前状态的关键标志，如 <code>Ready</code> (节点是否健康且可调度 Pod), <code>MemoryPressure</code>, <code>DiskPressure</code>, <code>PIDPressure</code> (节点是否存在资源压力)。这些 Condition 由 Kubelet 根据内部监控（如 EvictionManager 的信号）动态更新。</li>
+<li><strong>Node Capacity &amp; Allocatable</strong>：节点的总资源容量和可供 Pod 分配的资源量。</li>
+<li><strong>Node Info</strong>：操作系统、内核版本、容器运行时版本等静态信息。</li>
+</ul>
+</li>
+<li><strong>Node Controller</strong> 在控制平面会监控这些心跳。如果一个节点在一段时间内（由 <code>--node-monitor-grace-period</code> 控制，默认 40 秒）没有发送心跳，Node Controller 会将该节点的 <code>Ready</code> Condition 标记为 <code>Unknown</code>；如果更长时间（由 <code>--node-monitor-period</code> 相关配置决定）没有响应，可能会标记为 <code>False</code>，并触发驱逐该节点上的 Pod 等操作。</li>
 </ul>
 </li>
 </ol>
 <hr>
-<h2 id="Pod-启动流程"><a href="#Pod-启动流程" class="headerlink" title="Pod 启动流程"></a><strong>Pod 启动流程</strong></h2><img src="/2025/03/21/kubernetes-kubelet/image-20250321234138744.png" srcset="/img/loading.gif" lazyload class="" title="image-20250321234138744">
-
-<h3 id="1-用户提交-Pod-创建请求"><a href="#1-用户提交-Pod-创建请求" class="headerlink" title="1. 用户提交 Pod 创建请求"></a><strong>1. 用户提交 Pod 创建请求</strong></h3><p>用户通过 <code>kubectl</code> 命令或 Kubernetes API 客户端将 Pod 的定义（如 YAML 或 JSON 格式）发送到 API Server。 </p>
-<ol>
-<li><p><strong>流程细节</strong>：</p>
-<ul>
-<li>用户运行命令：<code>kubectl apply -f pod.yaml</code> 或直接调用 REST API。</li>
-<li>API Server 会对收到的 Pod 对象执行一系列验证、权限检查和默认值填充等逻辑：<ul>
-<li><strong>权限校验</strong>：通过 RBAC（Role-Based Access Control）验证用户对资源类型的权限。</li>
-<li><strong>Admission Webhook</strong>：触发一系列 Admission Controllers，用于资源约束、默认值注入或自定义逻辑的执行。</li>
-<li><strong>Schema 验证</strong>：验证 Pod 定义是否符合 Kubernetes 的 API 规范。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>写入 etcd</strong>：</p>
-<ul>
-<li>验证成功后，API Server 将 Pod 信息写入 etcd，与此同时，返回状态 <code>201 CREATED</code> 给用户，表示资源创建成功。</li>
-<li>etcd 是 Kubernetes 的分布式一致性存储组件，所有的集群状态变更最终都会存储在 etcd 中。</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h3 id="2-调度器-Scheduler-分配节点"><a href="#2-调度器-Scheduler-分配节点" class="headerlink" title="2. 调度器 (Scheduler) 分配节点"></a><strong>2. 调度器 (Scheduler) 分配节点</strong></h3><p>调度器负责决定每个 Pod 应该在哪个 Node（工作节点）运行，这是 Kubernetes 中资源调度的重要阶段。</p>
-<h3 id="流程细节："><a href="#流程细节：" class="headerlink" title="流程细节："></a>流程细节：</h3><ol>
-<li><p><strong>Scheduler 监听未绑定的 Pod</strong>：</p>
-<ul>
-<li>调度器通过 Watch 机制监听 API Server，寻找 <code>spec.nodeName</code> 字段为空的 Pod（即尚未绑定到具体节点的 Pod）。</li>
-</ul>
-</li>
-<li><p><strong>调度决策过程</strong>:</p>
-<ul>
-<li>调度器会根据 <strong>调度算法</strong> 对集群中的可用节点进行评估。主要包括：<ul>
-<li><strong>Predicate - 过滤节点</strong>：<ul>
-<li>基本过滤条件（如节点健康状态、资源容量是否足够等）会筛选出一组候选节点。</li>
-<li>网络、存储条件等插件可能也会影响过滤结果。</li>
-</ul>
-</li>
-<li><strong>Priority - 节点评分</strong>：<ul>
-<li>为每个候选节点根据调度优先级打分，例如节点剩余资源多的分数更高，或使 Pod 与本地数据亲和的节点优先。</li>
-<li>最终选择得分最高的一个节点。</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>绑定节点</strong>：</p>
-<ul>
-<li>调度器决定节点后，会通过调用 API Server 的 <code>Bind</code> 接口，将 Pod 的 <code>spec.nodeName</code> 字段设置为目标节点，建立 Pod 与节点的绑定关系。</li>
-<li>Pod 的最新状态信息会被写入到 etcd 中，由 API Server 同步到其他组件。</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h3 id="3-Kubelet-开始管理-Pod"><a href="#3-Kubelet-开始管理-Pod" class="headerlink" title="3. Kubelet 开始管理 Pod"></a><strong>3. Kubelet 开始管理 Pod</strong></h3><p>调度完成后，Pod 被分配到具体的工作节点，此时 Kubelet（运行在该节点上的组件）开始接管 Pod 的创建和管理。</p>
-<h4 id="Kubelet-的处理流程："><a href="#Kubelet-的处理流程：" class="headerlink" title="Kubelet 的处理流程："></a><strong>Kubelet 的处理流程</strong>：</h4><ol>
-<li><p><strong>监听 API Server</strong>：</p>
-<ul>
-<li>Kubelet 通过 Watch 机制监听 API Server 上的 Pod 定义变更（绑定到本节点的 Pod）。</li>
-<li>Pod 的元数据（如容器镜像名、CPU&#x2F;内存资源需求等）会被获取到本地。</li>
-</ul>
-</li>
-<li><p><strong>创建 Pod 的 sandbox 容器</strong>：</p>
-<ul>
-<li>Kubelet 调用 CRI（Container Runtime Interface）接口，运行一个 Sandbox 容器（如 <code>pause</code> 容器）。具体流程：<ul>
-<li><strong>Pause 容器作用：</strong><ul>
-<li><code>pause</code> 是 Pod 的第一个容器，负责承载网络、PID 和 IPC 等共享的 Linux Namespace。</li>
-<li>它是一个极为轻量级的容器（通常仅几百 KB 且几乎不占用 CPU），为 Pod 提供基础的隔离环境。</li>
-</ul>
-</li>
-<li><strong>网络配置：</strong><ul>
-<li>Sandbox 容器启动后，CNI（Container Network Interface） Plugin 会为 Pod 配置网络（如分配 IP 和设置网络路由）。</li>
-<li>若 Pod 需要挂载存储卷，Kubelet 也会在这个阶段通过 CSI（Container Storage Interface）完成卷的挂载。</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p><strong>构建 Pod 的运行环境</strong>：</p>
-<ul>
-<li>Sandbox 容器运行成功后，容器运行时（如 containerd 或 Docker）会等待 Kubelet 的进一步指令来准备用户定义的应用容器。</li>
-</ul>
-</li>
-<li><p><strong>容器生命周期管理</strong>：</p>
-<ul>
-<li>Kubelet 根据 Pod 定义中描述的容器逐一执行以下操作：<ul>
-<li><strong>PullImage</strong>：拉取容器镜像（若镜像已存在，则跳过）。</li>
-<li><strong>CreateContainer</strong>：创建容器。</li>
-<li><strong>StartContainer</strong>：启动容器。</li>
-</ul>
-</li>
-<li>当所有容器都创建并正常启动后，Pod 进入 “Running” 状态。</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h3 id="4-状态反馈与同步"><a href="#4-状态反馈与同步" class="headerlink" title="4. 状态反馈与同步"></a><strong>4. 状态反馈与同步</strong></h3><ol>
-<li><p><strong>状态更新</strong>：</p>
-<ul>
-<li>Kubelet 会周期性地获取 Pod 的实际运行状态（通过 CRI 和 PLEG）：<ul>
-<li>检查容器是否正常运行；</li>
-<li>如果存在失败，则可能记录事件（Event）并尝试重启容器。</li>
-</ul>
-</li>
-<li>这些状态信息会被汇报到 API Server，API Server 将其写入 etcd。</li>
-</ul>
-</li>
-<li><p><strong>状态查询结果</strong>：</p>
-<ul>
-<li>用户通过 <code>kubectl get pod &lt;pod-name&gt; -o wide</code> 或其他方式查询 Pod 状态时，会从 etcd 中读取最新状态。</li>
-<li>当所有容器成功运行，且健康检查通过时，Pod 会被标记为 <strong>Ready</strong>。</li>
-</ul>
-</li>
-</ol>
-<img src="/2025/03/21/kubernetes-kubelet/image-20250322110715382.png" srcset="/img/loading.gif" lazyload class="" title="image-20250322110715382">
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Kubelet 作为 Kubernetes 数据平面的核心组件，其内部结构复杂而精巧。它通过<strong>一系列管理器和控制循环</strong>，与 <strong>API Server</strong>、<strong>容器运行时 (CRI)</strong>、<strong>网络插件 (CNI)</strong>、<strong>存储插件 (CSI)</strong> 紧密协作，忠实地执行控制平面的指令，管理 Pod 的完整生命周期，监控并维护节点的健康状态和资源使用情况。深入理解 Kubelet 的<strong>核心机制</strong>（如 syncLoop、PLEG、CRI 交互、资源管理与驱逐、状态汇报）以及其<strong>关键配置</strong>（如 <code>maxPods</code>, <code>evictionHard</code>, <code>cgroupDriver</code>），对于诊断集群问题、优化节点性能以及进行更高级的 Kubernetes 开发和运维至关重要。 Kubelet 是将声明式的 Pod 定义转化为节点上实际运行的容器的关键执行者，是 Kubernetes 分布式系统稳定运行的基石之一。</p>
 
                 
               </div>
@@ -538,7 +433,11 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
+        <a href="/tags/kubernetes/" class="print-no-link">#kubernetes</a>
+      
         <a href="/tags/k8s/" class="print-no-link">#k8s</a>
+      
+        <a href="/tags/kubelet/" class="print-no-link">#kubelet</a>
       
     </div>
   
@@ -550,7 +449,7 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>kubernetes_kubelet</div>
+      <div>Kubernetes Kubelet 深度解析</div>
       <div>https://mfzzf.github.io/2025/03/21/kubernetes-kubelet/</div>
     </div>
     <div class="license-meta">
@@ -595,9 +494,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2025/03/22/kubernetes-CRI/" title="kubernetes_CRI">
+                      <a href="/2025/03/22/kubernetes-CRI/" title="Kubernetes 容器运行时接口 (CRI) 详解">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">kubernetes_CRI</span>
+                        <span class="hidden-mobile">Kubernetes 容器运行时接口 (CRI) 详解</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     

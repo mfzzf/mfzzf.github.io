@@ -229,6 +229,50 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
+        <a href="/2025/03/21/kubernetes-kubelet/" target="_self">
+          Kubernetes Kubelet 深度解析
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/21/kubernetes-kubelet/" target="_self">
+        <div>
+          Kubelet：Kubernetes 集群的节点基石Kubelet 是在 Kubernetes 集群中每个 节点（Node） 上运行的核心代理（Agent）。它的根本职责是确保在节点上运行的 容器（Containers） 符合 控制平面（Control Plane） 通过 PodSpec 定义的期望状态。可以将其视为控制平面指令在具体节点上的执行者和状态汇报者，是连接 Master 与 Worke
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-03-21 17:08" pubdate>
+              2025-03-21
+            </time>
+          </div>
+        
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/kubernetes/">#kubernetes</a>
+            
+              <a href="/tags/k8s/">#k8s</a>
+            
+              <a href="/tags/kubelet/">#kubelet</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
         <a href="/2025/03/18/golang-concurrency/" target="_self">
           Golang并发编程
         </a>
@@ -310,14 +354,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/18/kubernetes-controller-manager/" target="_self">
-          kubernetes_controller_manager
+          Kubernetes Controller Manager 深度解析
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/18/kubernetes-controller-manager/" target="_self">
         <div>
-          k8s-Controller-ManagerController Manager 是 Kubernetes（K8S）中的一个核心组件，负责管理和运行各种控制器（Controllers）。控制器是 Kubernetes 的自动化机制之一，Controller Manager 通过与 API Server 的交互来获取和更新集群的状态信息。它使用 Kubernetes 的 watch API 来实时监
+          Kubernetes Controller Manager 深度解析kube-controller-manager 是 Kubernetes (K8S) 集群控制平面的核心组件之一，是维护集群状态、实现自动化运维的关键。它体现了 Kubernetes 声明式 API 的核心思想：用户定义期望状态（Desired State），控制器负责驱动实际状态（Actual State）向期望状态趋近。kub
         </div>
       </a>
 
@@ -357,7 +401,7 @@
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/18/kubernetes-scheduler/" target="_self">
         <div>
-          Kube-Schedular简介kube-scheduler 是 Kubernetes 核心组件之一，负责 Pod 的调度（Scheduling）。简而言之，它的主要职责是决定一个未绑定到节点的 Pod 应该被分配到哪个节点上运行。调度器在 Kubernetes 中起到“任务分派员”的作用，其调度的核心目标是满足工作负载的资源需求（如 CPU、内存等），并同时遵循用户定义的调度策略和约束（如 Po
+          kube-scheduler简介kube-scheduler 是 Kubernetes 的核心组件之一，负责 Pod 的调度（Scheduling）。其主要职责是为尚未绑定节点的 Pod 选择合适的节点进行运行。调度器在 Kubernetes 中扮演“任务分派员”的角色，核心目标是满足工作负载的资源需求（如 CPU、内存等），同时遵循用户定义的调度策略和约束（如 Pod 的 nodeSelecto
         </div>
       </a>
 
@@ -390,14 +434,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/17/kubernetes-API-server/" target="_self">
-          kubernetes_API_server
+          深入理解 Kubernetes API Server：核心机制与实践
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/17/kubernetes-API-server/" target="_self">
         <div>
-          深入理解 Kubernetes API Server：访问控制、限流与对象实现kube-apiserver 是 Kubernetes 集群的”大脑”，负责处理所有请求，是集群管理的核心组件。本文将深入探讨 kube-apiserver 的访问控制机制（认证、鉴权、准入控制）、限流策略以及 APIServer 对象的实现原理。
+          深入理解 Kubernetes API Server：核心机制与实践Kubernetes API Server (kube-apiserver) 是 Kubernetes 控制平面的核心组件，扮演着集群”大脑”的角色。它是所有管理操作的入口点，负责处理 REST 请求、验证请求、执行业务逻辑并将结果持久化到 etcd。理解 API Server 的工作原理对于有效管理和扩展 Kubernetes
         </div>
       </a>
 
@@ -430,14 +474,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/" target="_self">
-          kubernetes架构原则与对象设计
+          Kubernetes 架构深度解析：从 Borg 到云原生
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/16/kubernetes%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/" target="_self">
         <div>
-          这篇文章解析了 Kubernetes 的对象设计。
+          本文深入探讨了 Kubernetes 的架构设计原则与核心对象模型，追溯其设计灵感来源 Borg，并解析其在云原生时代的关键作用。
         </div>
       </a>
 
@@ -456,6 +500,12 @@
             <i class="iconfont icon-tags"></i>
             
               <a href="/tags/k8s/">#k8s</a>
+            
+              <a href="/tags/Borg/">#Borg</a>
+            
+              <a href="/tags/Architecture/">#Architecture</a>
+            
+              <a href="/tags/Cloud-Native/">#Cloud Native</a>
             
           </div>
         
@@ -550,14 +600,14 @@
       <h2 class="index-header">
         
         <a href="/2025/03/16/docker/" target="_self">
-          Docker核心技术
+          Docker 核心技术深度解析
         </a>
       </h2>
 
       
       <a class="index-excerpt index-excerpt__noimg" href="/2025/03/16/docker/" target="_self">
         <div>
-          Cgroups,Namespace,Union FS
+          本文深入探讨 Docker 的核心技术，包括 Namespace、Cgroups 和 UnionFS，并涵盖 Dockerfile 最佳实践、网络、存储以及与 Kubernetes 的关系。
         </div>
       </a>
 
@@ -575,47 +625,7 @@
           <div class="post-meta">
             <i class="iconfont icon-tags"></i>
             
-              <a href="/tags/docker-k8s/">#docker,k8s</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/14/%E5%89%91%E6%8C%87offer/" target="_self">
-          剑指offer
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/14/%E5%89%91%E6%8C%87offer/" target="_self">
-        <div>
-          剑指 offer 算法刷题记录（Golang 版）
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-14 00:13" pubdate>
-              2025-03-14
-            </time>
-          </div>
-        
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/algorithm/">#algorithm</a>
+              <a href="/tags/docker-containers-virtualization-cgroups-namespaces-unionfs-k8s/">#docker, containers, virtualization, cgroups, namespaces, unionfs, k8s</a>
             
           </div>
         

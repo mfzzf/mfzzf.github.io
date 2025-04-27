@@ -19,24 +19,24 @@
   <meta name="author" content="Mzzf">
   <meta name="keywords" content="">
   
-    <meta name="description" content="cgroup（Control Groups） 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。">
+    <meta name="description" content="cgroup（Control Groups） 是 Linux 内核的一项核心功能，用于精细化地管理和限制进程组使用的系统资源，如 CPU、内存、I&#x2F;O 等。它是实现操作系统级虚拟化（如容器技术 Docker、Kubernetes）的关键基石。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Linux中的Cgroup">
+<meta property="og:title" content="Linux Cgroup 详解：从 v1 到 v2 的演进与实践">
 <meta property="og:url" content="https://mfzzf.github.io/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/index.html">
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
-<meta property="og:description" content="cgroup（Control Groups） 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。">
+<meta property="og:description" content="cgroup（Control Groups） 是 Linux 内核的一项核心功能，用于精细化地管理和限制进程组使用的系统资源，如 CPU、内存、I&#x2F;O 等。它是实现操作系统级虚拟化（如容器技术 Docker、Kubernetes）的关键基石。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://mfzzf.github.io/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/image-20250315141042299.png">
 <meta property="article:published_time" content="2025-03-13T09:03:15.000Z">
-<meta property="article:modified_time" content="2025-03-15T06:10:44.445Z">
+<meta property="article:modified_time" content="2025-04-27T10:22:05.111Z">
 <meta property="article:author" content="Mzzf">
-<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Linux, Cgroup, Kernel">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mfzzf.github.io/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/image-20250315141042299.png">
   
   
   
-  <title>Linux中的Cgroup - Mzzf&#39;s Blog</title>
+  <title>Linux Cgroup 详解：从 v1 到 v2 的演进与实践 - Mzzf&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -202,7 +202,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Linux中的Cgroup"></span>
+            <span id="subtitle" data-typed-text="Linux Cgroup 详解：从 v1 到 v2 的演进与实践"></span>
           
         </div>
 
@@ -225,7 +225,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          846 字
+          2.3k 字
         
       </span>
     
@@ -236,7 +236,7 @@
         
         
         
-          8 分钟
+          20 分钟
         
       </span>
     
@@ -273,151 +273,165 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">Linux中的Cgroup</h1>
+            <h1 id="seo-header">Linux Cgroup 详解：从 v1 到 v2 的演进与实践</h1>
             
             
               <div class="markdown-body">
                 
-                <p><strong>cgroup（Control Groups）</strong> 是 Linux 内核中的一项重要功能，用于管理和限制系统资源的使用。它允许用户按照需求对 CPU、内存、I&#x2F;O 等资源进行精细化的控制，从而为容器化技术（如 Docker 和 Kubernetes）提供了基础支持。</p>
+                <p><strong>cgroup（Control Groups）</strong> 是 Linux 内核的一项核心功能，用于精细化地管理和限制进程组使用的系统资源，如 CPU、内存、I&#x2F;O 等。它是实现操作系统级虚拟化（如容器技术 Docker、Kubernetes）的关键基石。</p>
 <span id="more"></span>
 
-<p>Linux 的 cgroup 有两个版本：<strong>cgroup v1</strong> 和 <strong>cgroup v2</strong>。随着 Linux 内核的发展，cgroup v2 在功能和设计上对 v1 做了很多改进。本文将详细探讨 cgroup v1 和 v2 的区别，并提供技术细节和实际应用示例。</p>
+<p>随着 Linux 内核的发展，cgroup 经历了从 v1 到 v2 的重要演进。cgroup v2 旨在解决 v1 在设计和使用上的一些复杂性和不一致性。本文将深入探讨 cgroup 的基本概念，详细对比 v1 和 v2 的核心差异，并通过实例展示如何使用它们来控制资源。</p>
 <hr>
-<h2 id="什么是-cgroup？"><a href="#什么是-cgroup？" class="headerlink" title="什么是 cgroup？"></a>什么是 cgroup？</h2><p>cgroup 是 Linux 内核的一项功能，用于：</p>
+<h2 id="1-什么是-cgroup？"><a href="#1-什么是-cgroup？" class="headerlink" title="1. 什么是 cgroup？"></a>1. 什么是 cgroup？</h2><p>cgroup 主要提供以下能力：</p>
 <ol>
-<li><strong>资源限制</strong>：限制某些进程可以使用的资源量（如 CPU、内存等）。</li>
-<li><strong>资源优先级</strong>：为不同的进程分配不同的资源优先级。</li>
-<li><strong>资源计费</strong>：跟踪进程使用的资源量。</li>
-<li><strong>进程管理</strong>：将一组进程组织为一个组，并对其统一管理。</li>
+<li><strong>资源限制（Resource Limiting）</strong>：限制进程组可以使用的资源上限（例如，内存使用量、CPU 核心数）。</li>
+<li><strong>优先级控制（Prioritization）</strong>：控制不同进程组对资源的访问优先级（例如，CPU 时间片分配、块 I&#x2F;O 调度）。</li>
+<li><strong>资源审计（Accounting）</strong>：统计进程组使用的资源量，用于监控和计费。</li>
+<li><strong>进程控制（Control）</strong>：将进程分组管理，可以冻结（freeze）或恢复（thaw）组内所有进程。</li>
 </ol>
-<p>它的主要应用场景包括：</p>
+<p><strong>主要应用场景：</strong></p>
 <ul>
-<li>容器技术（如 Docker、Kubernetes）。</li>
-<li>虚拟化技术。</li>
-<li>系统性能调优。</li>
+<li><strong>容器技术</strong>：Docker、Kubernetes 等使用 cgroup 隔离和限制容器资源。</li>
+<li><strong>系统服务管理</strong>：Systemd 使用 cgroup 管理服务的资源。</li>
+<li><strong>性能调优</strong>：限制特定应用的资源消耗，保障关键服务性能。</li>
+<li><strong>虚拟化</strong>：配合 Namespace 等技术提供轻量级隔离环境。</li>
 </ul>
 <hr>
-<h2 id="cgroup-v1-和-v2-的区别"><a href="#cgroup-v1-和-v2-的区别" class="headerlink" title="cgroup v1 和 v2 的区别"></a>cgroup v1 和 v2 的区别</h2><h3 id="1-文件结构对比"><a href="#1-文件结构对比" class="headerlink" title="1.文件结构对比"></a>1.<strong>文件结构对比</strong></h3><h4 id="cgroup-v1-的文件结构"><a href="#cgroup-v1-的文件结构" class="headerlink" title="cgroup v1 的文件结构"></a>cgroup v1 的文件结构</h4><p>在 cgroup v1 中，每种资源（如 CPU、内存、I&#x2F;O）都有独立的子系统，每个子系统都有自己的目录和控制文件。例如：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs bash">/sys/fs/cgroup/<br>├── cpu/<br>│   ├── cpu.cfs_quota_us<br>│   ├── cpu.cfs_period_us<br>│   ├── tasks<br>│   └── ...<br>├── memory/<br>│   ├── memory.limit_in_bytes<br>│   ├── memory.usage_in_bytes<br>│   ├── tasks<br>│   └── ...<br>└── blkio/<br>    ├── blkio.throttle.read_bps_device<br>    ├── blkio.throttle.write_bps_device<br>    ├── tasks<br>    └── ...<br></code></pre></td></tr></table></figure>
-
+<h2 id="2-为何需要-cgroup-v2？"><a href="#2-为何需要-cgroup-v2？" class="headerlink" title="2. 为何需要 cgroup v2？"></a>2. 为何需要 cgroup v2？</h2><p>cgroup v1 虽然功能强大，但在设计和使用上存在一些问题：</p>
 <ul>
-<li>每个子系统（如 <code>cpu</code>、<code>memory</code>）管理自己的资源。</li>
-<li>配置文件分散在不同的目录中，容易导致配置冲突。</li>
+<li><strong>多层级结构混乱</strong>：每种资源控制器（子系统）可以有自己独立的层级树，导致进程可能属于多个不同的层级，管理复杂且容易出错。</li>
+<li><strong>控制器行为不一致</strong>：不同控制器之间的启用、禁用和管理方式存在差异。</li>
+<li><strong>接口不统一</strong>：控制文件的命名和功能缺乏一致性。</li>
+<li><strong>进程关联复杂</strong>：需要将进程 ID 写入每个相关控制器的 <code>tasks</code> 文件中。</li>
 </ul>
-<h4 id="cgroup-v2-的文件结构"><a href="#cgroup-v2-的文件结构" class="headerlink" title="cgroup v2 的文件结构"></a>cgroup v2 的文件结构</h4><p>在 cgroup v2 中，所有控制器共享一个统一的层次结构和文件系统：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">/sys/fs/cgroup/<br>├── cgroup.controllers<br>├── cgroup.procs<br>├── cgroup.subtree_control<br>├── cpu.max<br>├── memory.max<br>├── io.max<br>└── ...<br></code></pre></td></tr></table></figure>
-
-<ul>
-<li>统一的文件结构，所有资源控制参数（如 CPU、内存、I&#x2F;O）都在同一目录下。</li>
-<li>减少了配置冲突，更加简洁和高效。</li>
-</ul>
+<p>cgroup v2 的设计目标就是解决这些问题，提供一个更<strong>统一、简洁、一致</strong>的资源控制框架。</p>
 <hr>
-<h3 id="2-资源控制参数对比"><a href="#2-资源控制参数对比" class="headerlink" title="2. 资源控制参数对比"></a>2. <strong>资源控制参数对比</strong></h3><p>以下是 cgroup v1 和 v2 在资源控制方面的主要参数对比：</p>
-<h4 id="CPU-控制参数"><a href="#CPU-控制参数" class="headerlink" title="CPU 控制参数"></a>CPU 控制参数</h4><table>
+<h2 id="3-cgroup-v1-与-v2-的核心区别"><a href="#3-cgroup-v1-与-v2-的核心区别" class="headerlink" title="3. cgroup v1 与 v2 的核心区别"></a>3. cgroup v1 与 v2 的核心区别</h2><h3 id="3-1-层级结构（Hierarchy）"><a href="#3-1-层级结构（Hierarchy）" class="headerlink" title="3.1 层级结构（Hierarchy）"></a>3.1 层级结构（Hierarchy）</h3><ul>
+<li><strong>cgroup v1</strong>：允许多个独立的层级结构。一个进程可以同时属于多个不同控制器的 cgroup 组。例如，一个进程可能在 <code>cpu</code> 控制器的 <code>/cpusetA</code> 组，同时在 <code>memory</code> 控制器的 <code>/memoryB</code> 组。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># v1 示例挂载点</span><br>/sys/fs/cgroup/cpu/<br>/sys/fs/cgroup/memory/<br>/sys/fs/cgroup/blkio/<br><span class="hljs-comment"># ... 可能还有 cpuset, devices 等独立挂载</span><br></code></pre></td></tr></table></figure></li>
+<li><strong>cgroup v2</strong>：强制使用<strong>统一的层级结构</strong>。所有可用的控制器都挂载在同一个层级树下。一个进程只能属于一个 cgroup 组。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># v2 示例挂载点 (通常是 /sys/fs/cgroup)</span><br>/sys/fs/cgroup/<br></code></pre></td></tr></table></figure>
+这种统一结构极大地简化了管理，避免了 v1 中复杂的层级关系和潜在冲突。</li>
+</ul>
+<h3 id="3-2-控制器管理（Controller-Management）"><a href="#3-2-控制器管理（Controller-Management）" class="headerlink" title="3.2 控制器管理（Controller Management）"></a>3.2 控制器管理（Controller Management）</h3><ul>
+<li><strong>cgroup v1</strong>：控制器（子系统）在挂载时确定。不同的挂载点可以挂载不同的控制器组合。</li>
+<li><strong>cgroup v2</strong>：控制器在层级内部进行管理。<ul>
+<li>根 cgroup (<code>/sys/fs/cgroup/</code>) 的 <code>cgroup.controllers</code> 文件显示所有<strong>可用</strong>的控制器。</li>
+<li>父 cgroup 的 <code>cgroup.subtree_control</code> 文件用于<strong>启用或禁用</strong>哪些控制器可以传递给其子 cgroup 使用。例如，向 <code>cgroup.subtree_control</code> 写入 <code>+cpu +memory</code> 表示允许子 cgroup 使用 CPU 和内存控制器。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-3-进程关联（Process-Association）"><a href="#3-3-进程关联（Process-Association）" class="headerlink" title="3.3 进程关联（Process Association）"></a>3.3 进程关联（Process Association）</h3><ul>
+<li><strong>cgroup v1</strong>：将进程 PID 写入特定控制器层级下的 <code>tasks</code> 文件，以将进程加入该 cgroup。如果需要同时受多个控制器管理，可能需要写入多个 <code>tasks</code> 文件。</li>
+<li><strong>cgroup v2</strong>：将进程 PID 写入目标 cgroup 目录下的 <code>cgroup.procs</code> 文件。由于是统一层级，只需写入一次即可。<strong>注意：</strong> 在 v2 中，只有叶子节点（没有子 cgroup 的节点）才能包含进程（除非是根 cgroup）。一个 cgroup 要么管理资源分配给子 cgroup（通过 <code>cgroup.subtree_control</code>），要么直接包含进程。</li>
+</ul>
+<h3 id="3-4-接口文件（Interface-Files）"><a href="#3-4-接口文件（Interface-Files）" class="headerlink" title="3.4 接口文件（Interface Files）"></a>3.4 接口文件（Interface Files）</h3><p>cgroup v2 努力统一和规范接口文件。</p>
+<ul>
+<li><p><strong>通用文件</strong>：</p>
+<ul>
+<li><code>cgroup.procs</code>: 组内进程列表（PID）。</li>
+<li><code>cgroup.controllers</code>: 当前 cgroup 可用的控制器。</li>
+<li><code>cgroup.subtree_control</code>: 为子 cgroup 启用&#x2F;禁用控制器。</li>
+</ul>
+</li>
+<li><p><strong>资源控制文件对比</strong>：v2 的命名更规范，功能更聚合。</p>
+<table>
 <thead>
 <tr>
-<th><strong>功能</strong></th>
-<th><strong>cgroup v1 参数</strong></th>
-<th><strong>cgroup v2 参数</strong></th>
+<th>功能 (示例)</th>
+<th>cgroup v1 参数 (示例)</th>
+<th>cgroup v2 参数 (示例)</th>
+<th>说明</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>设置 CPU 时间配额</td>
-<td><code>cpu.cfs_quota_us</code></td>
+<td><strong>CPU 带宽限制</strong></td>
+<td><code>cpu.cfs_quota_us</code>, <code>cpu.cfs_period_us</code></td>
 <td><code>cpu.max</code></td>
+<td>v2 使用 <code>&lt;quota&gt; &lt;period&gt;</code> 格式，更直观。</td>
 </tr>
 <tr>
-<td>设置 CPU 时间周期</td>
-<td><code>cpu.cfs_period_us</code></td>
-<td><code>cpu.max</code></td>
-</tr>
-<tr>
-<td>设置 CPU 权重（优先级）</td>
+<td><strong>CPU 权重</strong></td>
 <td><code>cpu.shares</code></td>
 <td><code>cpu.weight</code></td>
+<td>v2 范围 1-10000，默认 100。v1 范围 2-262144，默认 1024。</td>
 </tr>
-</tbody></table>
-<ul>
-<li>在 cgroup v2 中，<code>cpu.max</code> 替代了 <code>cpu.cfs_quota_us</code> 和 <code>cpu.cfs_period_us</code>，格式为 <code>&lt;quota&gt; &lt;period&gt;</code>。</li>
-<li><code>cpu.weight</code> 替代了 <code>cpu.shares</code>，用于设置 CPU 权重。</li>
-</ul>
-<h4 id="内存控制参数"><a href="#内存控制参数" class="headerlink" title="内存控制参数"></a>内存控制参数</h4><table>
-<thead>
 <tr>
-<th><strong>功能</strong></th>
-<th><strong>cgroup v1 参数</strong></th>
-<th><strong>cgroup v2 参数</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>设置内存上限</td>
+<td><strong>内存上限</strong></td>
 <td><code>memory.limit_in_bytes</code></td>
 <td><code>memory.max</code></td>
+<td>v2 接口更简洁。</td>
 </tr>
 <tr>
-<td>设置内存软限制</td>
-<td><code>memory.soft_limit_in_bytes</code></td>
-<td>不支持</td>
+<td><strong>内存低水位</strong></td>
+<td><code>memory.low_limit_in_bytes</code> (部分内核支持)</td>
+<td><code>memory.low</code></td>
+<td>内存回收保护。</td>
 </tr>
 <tr>
-<td>内存使用量</td>
+<td><strong>内存高水位</strong></td>
+<td>无直接对应</td>
+<td><code>memory.high</code></td>
+<td>内存压力调节，超过此值会尝试回收。</td>
+</tr>
+<tr>
+<td><strong>当前内存使用</strong></td>
 <td><code>memory.usage_in_bytes</code></td>
 <td><code>memory.current</code></td>
-</tr>
-</tbody></table>
-<ul>
-<li>cgroup v2 简化了内存控制，废弃了一些复杂的参数（如软限制）。</li>
-</ul>
-<h4 id="I-O-控制参数"><a href="#I-O-控制参数" class="headerlink" title="I&#x2F;O 控制参数"></a>I&#x2F;O 控制参数</h4><table>
-<thead>
-<tr>
-<th><strong>功能</strong></th>
-<th><strong>cgroup v1 参数</strong></th>
-<th><strong>cgroup v2 参数</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>限制读写带宽</td>
-<td><code>blkio.throttle.read_bps_device</code></td>
-<td><code>io.max</code></td>
+<td></td>
 </tr>
 <tr>
-<td>限制 IOPS</td>
-<td><code>blkio.throttle.write_iops_device</code></td>
+<td><strong>I&#x2F;O 带宽&#x2F;IOPS 限制</strong></td>
+<td><code>blkio.throttle.read_bps_device</code>, <code>blkio.throttle.write_iops_device</code></td>
 <td><code>io.max</code></td>
+<td>v2 统一接口，格式如 <code>maj:min rbps=N wips=M</code> (读写带宽&#x2F;IOPS)。</td>
 </tr>
 </tbody></table>
-<ul>
-<li>cgroup v2 使用 <code>io.max</code> 统一配置 I&#x2F;O 带宽和 IOPS 限制。</li>
+</li>
+</ul>
+<h3 id="3-5-内部进程约束（Internal-Process-Constraint）"><a href="#3-5-内部进程约束（Internal-Process-Constraint）" class="headerlink" title="3.5 内部进程约束（Internal Process Constraint）"></a>3.5 内部进程约束（Internal Process Constraint）</h3><ul>
+<li><strong>cgroup v1</strong>：允许非叶子节点（即同时拥有子 cgroup 的节点）包含进程。</li>
+<li><strong>cgroup v2</strong>：默认情况下，只有<strong>叶子节点</strong>才能包含进程。一个 cgroup 节点要么是资源分配的“分发者”（通过 <code>cgroup.subtree_control</code> 控制子节点可用资源），要么是资源的“使用者”（包含进程）。这使得资源分配模型更清晰。</li>
 </ul>
 <hr>
-<h2 id="控制-CPU-使用率示例："><a href="#控制-CPU-使用率示例：" class="headerlink" title="控制 CPU 使用率示例："></a>控制 CPU 使用率示例：</h2><p>运行以下 Go 程序，会吃掉两个 CPU：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;<br>        <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>                <span class="hljs-keyword">for</span> &#123;<br>                &#125;<br>        &#125;()<br>        <span class="hljs-keyword">for</span> &#123;<br><br>        &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<h2 id="4-实践：限制-CPU-使用率"><a href="#4-实践：限制-CPU-使用率" class="headerlink" title="4. 实践：限制 CPU 使用率"></a>4. 实践：限制 CPU 使用率</h2><p>我们使用一个简单的 Go 程序来模拟 CPU 密集型任务，它会启动两个 goroutine 无限循环，尝试占满两个 CPU 核心。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs go"><span class="hljs-comment">// busyloop.go</span><br><span class="hljs-keyword">package</span> main<br><br><span class="hljs-keyword">import</span> <span class="hljs-string">&quot;runtime&quot;</span><br><br><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;<br>	runtime.GOMAXPROCS(<span class="hljs-number">2</span>) <span class="hljs-comment">// 确保我们尝试使用两个核心</span><br><br>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>		<span class="hljs-keyword">for</span> &#123;<br>		&#125;<br>	&#125;()<br><br>	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;<br>		<span class="hljs-keyword">for</span> &#123;<br>		&#125;<br>	&#125;()<br><br>	<span class="hljs-comment">// 主 goroutine 也忙碌，确保至少有两个线程在运行</span><br>	<span class="hljs-keyword">for</span> &#123;<br>	&#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<figure class="highlight ebnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs ebnf"><span class="hljs-attribute">go build -o busyloop</span><br></code></pre></td></tr></table></figure>
+<p>编译并运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs bash">go build -o busyloop<br>./busyloop &amp; <span class="hljs-comment"># 后台运行</span><br>BUSYLOOP_PID=$! <span class="hljs-comment"># 获取进程 PID</span><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Busyloop PID: <span class="hljs-variable">$BUSYLOOP_PID</span>&quot;</span><br></code></pre></td></tr></table></figure>
 
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">./busyloop<br></code></pre></td></tr></table></figure>
+<p>此时运行 <code>top</code> 命令，会看到 <code>busyloop</code> 进程的 CPU 使用率接近 200%。</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs nginx"><span class="hljs-attribute">top</span> -p <span class="hljs-variable">$BUSYLOOP_PID</span><br><span class="hljs-comment"># 输出类似:</span><br><span class="hljs-comment">#   PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND</span><br><span class="hljs-comment"># 12345 user      20   0  702356   1024    640 R 199.9   0.0   0:18.75 busyloop</span><br></code></pre></td></tr></table></figure>
 
-<p>此时运行<code>top</code>命令，会显示 200%CPU 占用。</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache">   <span class="hljs-attribute">PID</span> USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND                                <br><span class="hljs-attribute">426388</span> cadmin    <span class="hljs-number">20</span>   <span class="hljs-number">0</span>  <span class="hljs-number">702356</span>   <span class="hljs-number">1024</span>    <span class="hljs-number">640</span> R <span class="hljs-number">210</span>.<span class="hljs-number">0</span>   <span class="hljs-number">0</span>.<span class="hljs-number">0</span>   <span class="hljs-number">0</span>:<span class="hljs-number">18</span>.<span class="hljs-number">75</span> busyloop  <br></code></pre></td></tr></table></figure>
+<p>现在，我们将使用 cgroup 将其 CPU 使用率限制在 <strong>10%</strong> (相当于 0.1 个 CPU 核心)。</p>
+<h3 id="4-1-使用-cgroup-v1-限制-CPU"><a href="#4-1-使用-cgroup-v1-限制-CPU" class="headerlink" title="4.1 使用 cgroup v1 限制 CPU"></a>4.1 使用 cgroup v1 限制 CPU</h3><p>假设 cgroup v1 的 CPU 子系统挂载在 <code>/sys/fs/cgroup/cpu</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 1. 创建 cgroup 目录</span><br><span class="hljs-built_in">sudo</span> <span class="hljs-built_in">mkdir</span> /sys/fs/cgroup/cpu/cpulimit_v1_demo<br><br><span class="hljs-comment"># 2. 设置 CPU 带宽限制 (10% = 10000us / 100000us)</span><br><span class="hljs-comment"># cfs_period_us: CPU 带宽统计周期，单位微秒 (通常是 100ms = 100000us)</span><br><span class="hljs-comment"># cfs_quota_us: 在一个周期内，该 cgroup 可使用的 CPU 时间，单位微秒</span><br><span class="hljs-built_in">sudo</span> sh -c <span class="hljs-string">&#x27;echo 100000 &gt; /sys/fs/cgroup/cpu/cpulimit_v1_demo/cpu.cfs_period_us&#x27;</span><br><span class="hljs-built_in">sudo</span> sh -c <span class="hljs-string">&#x27;echo 10000 &gt; /sys/fs/cgroup/cpu/cpulimit_v1_demo/cpu.cfs_quota_us&#x27;</span><br><br><span class="hljs-comment"># 3. 将进程移动到 cgroup</span><br><span class="hljs-built_in">sudo</span> sh -c <span class="hljs-string">&quot;echo <span class="hljs-variable">$BUSYLOOP_PID</span> &gt; /sys/fs/cgroup/cpu/cpulimit_v1_demo/tasks&quot;</span><br><br><span class="hljs-comment"># 4. 观察 top 输出，CPU 使用率应下降到 10% 左右</span><br>top -p <span class="hljs-variable">$BUSYLOOP_PID</span><br></code></pre></td></tr></table></figure>
 
-<p>他的 PID 号是<code>426388</code>，我们可以<code>mkdir /sys/fs/cgroup/cpudemo</code>，然后将它添加到<code>cpu.procs</code>中。</p>
-<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs vim"><span class="hljs-keyword">echo</span> <span class="hljs-keyword">ps</span> -ef|<span class="hljs-keyword">grep</span> busyloop|<span class="hljs-keyword">grep</span> -v <span class="hljs-keyword">grep</span>|awk <span class="hljs-string">&#x27;&#123;print $2&#125;&#x27;</span> &gt; cgroup.procs<br><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;100000 1000000&quot;</span> &gt; cpu.<span class="hljs-built_in">max</span><br></code></pre></td></tr></table></figure>
+<h3 id="4-2-使用-cgroup-v2-限制-CPU"><a href="#4-2-使用-cgroup-v2-限制-CPU" class="headerlink" title="4.2 使用 cgroup v2 限制 CPU"></a>4.2 使用 cgroup v2 限制 CPU</h3><p>假设 cgroup v2 挂载在 <code>/sys/fs/cgroup</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 1. 创建 cgroup 目录</span><br><span class="hljs-built_in">sudo</span> <span class="hljs-built_in">mkdir</span> /sys/fs/cgroup/cpulimit_v2_demo<br><br><span class="hljs-comment"># 2. (可选) 确保父 cgroup 允许传递 cpu 控制器给子 cgroup</span><br><span class="hljs-comment"># 如果 /sys/fs/cgroup/cgroup.subtree_control 中没有 +cpu，则需要添加</span><br><span class="hljs-comment"># sudo sh -c &#x27;echo &quot;+cpu&quot; &gt; /sys/fs/cgroup/cgroup.subtree_control&#x27;</span><br><span class="hljs-comment"># 注意：这会影响 /sys/fs/cgroup 下的所有直接子 cgroup</span><br><br><span class="hljs-comment"># 3. 设置 CPU 带宽限制 (10% = 10000us / 100000us)</span><br><span class="hljs-comment"># cpu.max 格式: &quot;&lt;quota&gt; &lt;period&gt;&quot;</span><br><span class="hljs-built_in">sudo</span> sh -c <span class="hljs-string">&#x27;echo &quot;10000 100000&quot; &gt; /sys/fs/cgroup/cpulimit_v2_demo/cpu.max&#x27;</span><br><br><span class="hljs-comment"># 4. 将进程移动到 cgroup</span><br><span class="hljs-comment"># 注意：需要将进程的所有线程都移动过去，写入 cgroup.procs 会自动处理</span><br><span class="hljs-built_in">sudo</span> sh -c <span class="hljs-string">&quot;echo <span class="hljs-variable">$BUSYLOOP_PID</span> &gt; /sys/fs/cgroup/cpulimit_v2_demo/cgroup.procs&quot;</span><br><br><span class="hljs-comment"># 5. 观察 top 输出，CPU 使用率应下降到 10% 左右</span><br>top -p <span class="hljs-variable">$BUSYLOOP_PID</span><br></code></pre></td></tr></table></figure>
 
-<p>此时限制 100000&#x2F;1000000 就是使用 10% 的 CPU 了。</p>
+<p><strong>清理（示例结束后）：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 停止进程</span><br><span class="hljs-built_in">kill</span> <span class="hljs-variable">$BUSYLOOP_PID</span><br><br><span class="hljs-comment"># 删除 cgroup 目录 (确保里面没有进程)</span><br><span class="hljs-comment"># 对于 v1:</span><br><span class="hljs-comment"># sudo rmdir /sys/fs/cgroup/cpu/cpulimit_v1_demo</span><br><span class="hljs-comment"># 对于 v2:</span><br><span class="hljs-comment"># sudo rmdir /sys/fs/cgroup/cpulimit_v2_demo</span><br></code></pre></td></tr></table></figure>
+
 <hr>
-<h2 id="如何检查系统使用的是-cgroup-v1-还是-v2？"><a href="#如何检查系统使用的是-cgroup-v1-还是-v2？" class="headerlink" title="如何检查系统使用的是 cgroup v1 还是 v2？"></a>如何检查系统使用的是 cgroup v1 还是 v2？</h2><p>运行以下命令：</p>
+<h2 id="5-如何检查系统使用的是-cgroup-v1-还是-v2？"><a href="#5-如何检查系统使用的是-cgroup-v1-还是-v2？" class="headerlink" title="5. 如何检查系统使用的是 cgroup v1 还是 v2？"></a>5. 如何检查系统使用的是 cgroup v1 还是 v2？</h2><p>检查 cgroup 文件系统的挂载类型是区分 v1 和 v2 的最常用方法：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">mount | grep cgroup<br></code></pre></td></tr></table></figure>
 
 <ul>
-<li>如果输出中包含 <code>cgroup2</code>，说明系统使用的是 cgroup v2。</li>
-<li>如果输出中包含多个子系统（如 <code>cpu</code>、<code>memory</code> 等），说明使用的是 cgroup v1。</li>
+<li><strong>cgroup v2</strong>: 如果输出中看到类似 <code>cgroup2 on /sys/fs/cgroup type cgroup2</code> 的行，表示系统主要使用 <strong>cgroup v2</strong>（通常是统一挂载）。</li>
+<li><strong>cgroup v1</strong>: 如果看到多行 <code>cgroup</code> 挂载，每行对应一个或多个控制器（子系统），例如 <code>cgroup on /sys/fs/cgroup/cpu,cpuacct type cgroup (rw,nosuid,nodev,noexec,relatime,cpu,cpuacct)</code> 和 <code>cgroup on /sys/fs/cgroup/memory type cgroup (rw,nosuid,nodev,noexec,relatime,memory)</code>，则表示系统主要使用 <strong>cgroup v1</strong>。</li>
+<li><strong>混合模式</strong>: 某些系统可能同时挂载了 v1 和 v2（例如，systemd 可能使用 v2，而 Docker 仍配置为使用 v1），需要仔细查看挂载点和类型。</li>
+</ul>
+<p>另一个方法是检查 <code>/sys/fs/cgroup</code> 目录结构：</p>
+<ul>
+<li>如果该目录下直接包含 <code>cgroup.controllers</code>, <code>cgroup.procs</code> 等文件，并且有子目录用于组织 cgroup，则很可能是 <strong>cgroup v2</strong>。</li>
+<li>如果该目录下包含 <code>cpu</code>, <code>memory</code>, <code>blkio</code> 等以控制器命名的子目录，则很可能是 <strong>cgroup v1</strong>。</li>
 </ul>
 <hr>
-<h2 id="可视化对比"><a href="#可视化对比" class="headerlink" title="可视化对比"></a>可视化对比</h2><p>以下是 cgroup v1 和 v2 的结构对比：</p>
+<h2 id="6-可视化对比"><a href="#6-可视化对比" class="headerlink" title="6. 可视化对比"></a>6. 可视化对比</h2><p>下图简要展示了 v1 和 v2 在层级结构上的差异：</p>
 <img src="/2025/03/13/Linux%E4%B8%AD%E7%9A%84Cgroup/image-20250315141042299.png" srcset="/img/loading.gif" lazyload class="" title="image-20250315141042299">
-
+<p><em>(图示：左侧为 cgroup v1 的多层级结构，右侧为 cgroup v2 的统一层级结构)</em></p>
 <hr>
+<h2 id="7-总结"><a href="#7-总结" class="headerlink" title="7. 总结"></a>7. 总结</h2><p>Cgroup 是 Linux 资源管理的核心机制。从 v1 到 v2 的演进，体现了 Linux 内核在追求更<strong>统一、简洁、高效</strong>的资源控制模型方面的努力。Cgroup v2 以其统一的层级结构和更一致的接口，简化了资源管理配置，是现代容器化和系统管理的发展趋势。理解 cgroup v1 和 v2 的差异对于系统管理员和开发者进行性能调优、资源隔离和容器管理至关重要。</p>
 
                 
               </div>
@@ -430,7 +444,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/Linux/" class="print-no-link">#Linux</a>
+        <a href="/tags/Linux-Cgroup-Kernel/" class="print-no-link">#Linux, Cgroup, Kernel</a>
       
     </div>
   
@@ -442,7 +456,7 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Linux中的Cgroup</div>
+      <div>Linux Cgroup 详解：从 v1 到 v2 的演进与实践</div>
       <div>https://mfzzf.github.io/2025/03/13/Linux中的Cgroup/</div>
     </div>
     <div class="license-meta">
@@ -487,9 +501,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2025/03/13/etcd/" title="深入理解 etcd">
+                      <a href="/2025/03/13/etcd/" title="深入理解 etcd：Kubernetes 的分布式基石">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">深入理解 etcd</span>
+                        <span class="hidden-mobile">深入理解 etcd：Kubernetes 的分布式基石</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -497,8 +511,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2025/03/13/Raft%E5%8D%8F%E8%AE%AE/" title="Raft协议">
-                        <span class="hidden-mobile">Raft协议</span>
+                      <a href="/2025/03/13/Raft%E5%8D%8F%E8%AE%AE/" title="Raft 分布式一致性协议详解">
+                        <span class="hidden-mobile">Raft 分布式一致性协议详解</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>

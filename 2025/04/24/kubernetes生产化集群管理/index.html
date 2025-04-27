@@ -27,8 +27,9 @@
 <meta property="og:description" content="生产化 Kubernetes 集群管理1. 计算节点相关生产化集群的考量在构建和维护生产级别的 Kubernetes 集群时，计算节点和控制平面都需要仔细考虑以下问题： 计算节点 (Worker Nodes):  操作系统管理: 如何实现操作系统的大规模批量安装和升级？自动化工具（如 Kickstart, Preseed, Packer, Foreman）和镜像管理（如 ostree）是关键。 如">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/image-20250425002033364.png">
+<meta property="og:image" content="https://mfzzf.github.io/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/image-20250426234348146.png">
 <meta property="article:published_time" content="2025-04-24T15:56:37.000Z">
-<meta property="article:modified_time" content="2025-04-24T16:57:37.557Z">
+<meta property="article:modified_time" content="2025-04-27T10:24:47.361Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="kubernetes">
 <meta name="twitter:card" content="summary_large_image">
@@ -545,6 +546,8 @@
 </ul>
 <h2 id="3-节点资源管理"><a href="#3-节点资源管理" class="headerlink" title="3. 节点资源管理"></a>3. 节点资源管理</h2><p>在 Kubernetes 集群中，<strong>节点 (Node)</strong> 是运行工作负载 (Pod) 的基本单元。对节点的资源进行有效管理是确保集群稳定性、性能和资源利用率的关键。生产环境中的节点资源管理需要考虑多个维度，包括节点自身的健康状态、为系统组件预留资源、防止资源耗尽的机制以及如何精确地为容器分配和限制资源。本章将深入探讨这些方面。</p>
 <h3 id="NUMA-Node-Non-Uniform-Memory-Access"><a href="#NUMA-Node-Non-Uniform-Memory-Access" class="headerlink" title="NUMA Node (Non-Uniform Memory Access)"></a>NUMA Node (Non-Uniform Memory Access)</h3><p>在现代多处理器服务器架构中，<strong>NUMA (Non-Uniform Memory Access)</strong> 是一个重要的内存设计。其核心思想是，处理器访问本地内存（直接连接到该处理器的内存）的速度要快于访问远程内存（连接到其他处理器的内存）。如下图所示，一个系统可能包含多个 NUMA Node，每个 Node 包含若干 CPU 核心和本地内存。</p>
+<img src="/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/image-20250426234348146.png" srcset="/img/loading.gif" lazyload class="" title="image-20250426234348146">
+
 <ul>
 <li><strong>意义</strong>: 当一个 Pod 内的进程运行时，如果其使用的 CPU 核心和内存分布在不同的 NUMA Node 上，就会发生跨 NUMA Node 的内存访问，导致性能下降。对于需要高性能、低延迟的应用（如数据库、DPDK 应用、高性能计算），NUMA 亲和性至关重要。</li>
 <li><strong>Kubernetes 处理</strong>: Kubernetes <strong>Kubelet</strong> 默认情况下并不保证 Pod 内的 CPU 和内存分配在同一个 NUMA Node 上。然而，通过 <strong>Topology Manager</strong>（Kubelet 的一个特性门控功能），可以实现更精细的资源拓扑感知调度。当设置为 <code>single-numa-node</code> 策略时，对于 <strong>Guaranteed QoS</strong> 的 Pod，Kubelet 会尝试将所有分配的 CPU 核心和内存都限制在同一个 NUMA Node 内，从而提升性能。这通常需要与 <strong>CPU Manager</strong> (<code>static</code> 策略) 和 <strong>Memory Manager</strong> (<code>static</code> 策略，较新版本支持) 配合使用。</li>
@@ -607,16 +610,19 @@
 </ul>
 <h3 id="Capacity-与-Allocatable"><a href="#Capacity-与-Allocatable" class="headerlink" title="Capacity 与 Allocatable"></a>Capacity 与 Allocatable</h3><p>理解节点的 <strong>Capacity (总容量)</strong> 和 <strong>Allocatable (可分配容量)</strong> 对于资源管理和调度至关重要。</p>
 <ul>
-<li><strong>Capacity</strong>: 指 Kubelet 检测到的节点硬件资源总量。<ul>
+<li><p><strong>Capacity</strong>: 指 Kubelet 检测到的节点硬件资源总量。</p>
+<ul>
 <li><strong>CPU</strong>: 通常来源于 Linux <code>/proc/cpuinfo</code> 文件，表示逻辑 CPU 核心数。</li>
 <li><strong>Memory</strong>: 通常来源于 Linux <code>/proc/meminfo</code> 文件，表示节点总物理内存。</li>
 <li><strong>Ephemeral Storage</strong>: 指节点根分区 (<code>/</code>) 或者 Kubelet 配置的用于存储 Pod 日志、<code>emptyDir</code> 卷等的临时存储分区的总大小。</li>
 </ul>
 </li>
-<li><strong>Allocatable</strong>: 指节点上实际可供用户 Pod 申请和使用的资源量。它是通过从 <strong>Capacity</strong> 中减去为系统预留的资源以及 Kubelet 驱逐阈值所保留的资源得到的。<br><strong><code>Allocatable = Capacity - KubeReserved - SystemReserved - Eviction Thresholds</code></strong></li>
-<li><strong>调度依据</strong>: <strong>kube-scheduler 只关心节点的 Allocatable 资源</strong>。当调度 Pod 时，它会检查节点的 Allocatable 资源是否满足 Pod 的 <code>requests</code>。</li>
-<li><strong>查看</strong>: 可以通过 <code>kubectl describe node &lt;node-name&gt;</code> 命令查看节点的 Capacity 和 Allocatable 信息。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 示例输出片段</span><br>Capacity:<br>  cpu:                24<br>  ephemeral-storage:  205838Mi<br>  hugepages-1Gi:      0<br>  hugepages-2Mi:      0<br>  memory:             179504088Ki <span class="hljs-comment"># 约 171 GiB</span><br>  pods:               110<br>Allocatable:<br>  cpu:                24<br>  ephemeral-storage:  205838Mi <span class="hljs-comment"># 示例中未配置预留或驱逐阈值</span><br>  hugepages-1Gi:      0<br>  hugepages-2Mi:      0<br>  memory:             177304536Ki <span class="hljs-comment"># 约 169 GiB (Capacity - 预留/驱逐)</span><br>  pods:               110<br></code></pre></td></tr></table></figure></li>
-<li><strong>图示</strong>:<br>!<br>(上图显示了总容量 Capacity 中，减去 <code>kube-reserved</code>, <code>system-reserved</code>, <code>eviction-threshold</code> 后，剩余的部分即为 <code>Allocatable</code>)</li>
+<li><p><strong>Allocatable</strong>: 指节点上实际可供用户 Pod 申请和使用的资源量。它是通过从 <strong>Capacity</strong> 中减去为系统预留的资源以及 Kubelet 驱逐阈值所保留的资源得到的。<br><strong><code>Allocatable = Capacity - KubeReserved - SystemReserved - Eviction Thresholds</code></strong></p>
+</li>
+<li><p><strong>调度依据</strong>: <strong>kube-scheduler 只关心节点的 Allocatable 资源</strong>。当调度 Pod 时，它会检查节点的 Allocatable 资源是否满足 Pod 的 <code>requests</code>。</p>
+</li>
+<li><p><strong>查看</strong>: 可以通过 <code>kubectl describe node &lt;node-name&gt;</code> 命令查看节点的 Capacity 和 Allocatable 信息。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 示例输出片段</span><br>Capacity:<br>  cpu:                24<br>  ephemeral-storage:  205838Mi<br>  hugepages-1Gi:      0<br>  hugepages-2Mi:      0<br>  memory:             179504088Ki <span class="hljs-comment"># 约 171 GiB</span><br>  pods:               110<br>Allocatable:<br>  cpu:                24<br>  ephemeral-storage:  205838Mi <span class="hljs-comment"># 示例中未配置预留或驱逐阈值</span><br>  hugepages-1Gi:      0<br>  hugepages-2Mi:      0<br>  memory:             177304536Ki <span class="hljs-comment"># 约 169 GiB (Capacity - 预留/驱逐)</span><br>  pods:               110<br></code></pre></td></tr></table></figure></li>
 </ul>
 <h3 id="节点磁盘管理-Node-Disk-Management"><a href="#节点磁盘管理-Node-Disk-Management" class="headerlink" title="节点磁盘管理 (Node Disk Management)"></a>节点磁盘管理 (Node Disk Management)</h3><p>Kubelet 会监控节点上与 Pod 运行相关的两个主要文件系统（如果存在的话），以防止磁盘耗尽导致的问题。</p>
 <ul>
@@ -701,7 +707,7 @@
 <li><strong>Guaranteed</strong> QoS 的 Pod，以及内存使用量未超出 <code>requests</code> 的 Burstable Pod（理论上不应发生，除非系统预留不足或计算错误，但在极端情况下可能被驱逐）。</li>
 </ol>
 </li>
-<li><strong>(内存使用量)</strong>: 在相同优先级&#x2F;QoS 等级内，<strong>当前内存使用量超出其 <code>requests</code> 值最多的 Pod</strong> 会被优先驱逐。</li>
+<li><strong>(内存使用量)</strong>: 在相同优先级&#x2F;QoS 等级内，<strong>当前内存使用量超出其 <code>requests</code> 值. 最多. 的 Pod</strong> 会被优先驱逐。</li>
 </ul>
 </li>
 </ol>
@@ -903,14 +909,18 @@
 </tbody></table>
 <h3 id="OOM-Killer-行为-Out-Of-Memory-Killer"><a href="#OOM-Killer-行为-Out-Of-Memory-Killer" class="headerlink" title="OOM Killer 行为 (Out Of Memory Killer)"></a>OOM Killer 行为 (Out Of Memory Killer)</h3><p>当节点内存严重不足时，<strong>Linux 内核的 OOM Killer</strong> 会介入，选择一个或多个进程杀死以释放内存。Kubernetes 通过设置 Cgroup 和调整进程的 <code>oom_score_adj</code> 值来影响 OOM Killer 的决策，以保护更重要的 Pod。</p>
 <ul>
-<li><strong><code>oom_score</code></strong>: 内核为每个进程计算一个 <code>oom_score</code> (0-1000)。分数越高，越容易被 OOM Killer 选中。分数主要基于进程使用的物理内存占系统总内存的百分比。</li>
-<li><strong><code>oom_score_adj</code></strong>: Kubelet 可以为容器内的进程设置 <code>oom_score_adj</code> 值 (-1000 到 1000)。这个值会调整内核计算出的 <code>oom_score</code>。<ul>
+<li><p><strong><code>oom_score</code></strong>: 内核为每个进程计算一个 <code>oom_score</code> (0-1000)。分数越高，越容易被 OOM Killer 选中。分数主要基于进程使用的物理内存占系统总内存的百分比。</p>
+</li>
+<li><p><strong><code>oom_score_adj</code></strong>: Kubelet 可以为容器内的进程设置 <code>oom_score_adj</code> 值 (-1000 到 1000)。这个值会调整内核计算出的 <code>oom_score</code>。</p>
+<ul>
 <li><code>-1000</code>: 完全禁止 OOM Killer 杀死该进程。</li>
 <li><code>1000</code>: 使进程非常容易被 OOM Killer 杀死。</li>
 </ul>
 </li>
-<li><strong>计算逻辑</strong>: 进程的最终 OOM 评分大致为 <code>(内存使用百分比 * 10) + oom_score_adj</code> (简化)。</li>
-<li><strong>Kubernetes QoS 与 <code>oom_score_adj</code></strong>: Kubelet 根据 Pod 的 QoS 类型和内存 <code>requests</code> 来设置容器进程的 <code>oom_score_adj</code>：<table>
+<li><p><strong>计算逻辑</strong>: 进程的最终 OOM 评分大致为 <code>(内存使用百分比 * 10) + oom_score_adj</code> (简化)。</p>
+</li>
+<li><p><strong>Kubernetes QoS 与 <code>oom_score_adj</code></strong>: Kubelet 根据 Pod 的 QoS 类型和内存 <code>requests</code> 来设置容器进程的 <code>oom_score_adj</code>：</p>
+<table>
 <thead>
 <tr>
 <th align="left">Pod QoS 类型</th>
@@ -1121,7 +1131,7 @@
 </li>
 </ul>
 <p>通过系统性地执行上述检查，通常可以定位到导致节点异常的根本原因，无论是资源耗尽、组件故障、网络问题还是底层系统问题。</p>
-<h2 id="6-基-于-extendedresource-扩-展-节-点-资-源"><a href="#6-基-于-extendedresource-扩-展-节-点-资-源" class="headerlink" title="6. 基 于 extendedresource 扩 展 节 点 资 源"></a>6. 基 于 extendedresource 扩 展 节 点 资 源</h2><p>Kubernetes 原生支持对 CPU、内存和临时存储（Ephemeral Storage）这些基本资源的调度和管理。然而，现代计算节点常常配备各种<strong>专用硬件</strong>，例如 <strong>GPU (图形处理单元)、FPGA (现场可编程门阵列)、高性能网络接口卡 (如 SR-IOV VF)、硬件加速器 (如 QAT)</strong> 等。Kubernetes 需要一种机制来发现、上报、调度和分配这些非原生、特定于硬件的资源，这就是 <strong>Extended Resources (扩展资源)</strong> 和 <strong>Device Plugins (设备插件)</strong> 机制要解决的问题。</p>
+<h2 id="6-基于-extendedresource-扩展节点资源"><a href="#6-基于-extendedresource-扩展节点资源" class="headerlink" title="6. 基于 extendedresource 扩展节点资源"></a>6. 基于 extendedresource 扩展节点资源</h2><p>Kubernetes 原生支持对 CPU、内存和临时存储（Ephemeral Storage）这些基本资源的调度和管理。然而，现代计算节点常常配备各种<strong>专用硬件</strong>，例如 <strong>GPU (图形处理单元)、FPGA (现场可编程门阵列)、高性能网络接口卡 (如 SR-IOV VF)、硬件加速器 (如 QAT)</strong> 等。Kubernetes 需要一种机制来发现、上报、调度和分配这些非原生、特定于硬件的资源，这就是 <strong>Extended Resources (扩展资源)</strong> 和 <strong>Device Plugins (设备插件)</strong> 机制要解决的问题。</p>
 <h3 id="解决了什么问题？"><a href="#解决了什么问题？" class="headerlink" title="解决了什么问题？"></a>解决了什么问题？</h3><p><strong>Extended Resources 机制使得 Kubernetes 能够感知并管理节点上的特殊硬件资源</strong>，就像管理 CPU 和内存一样。它解决了以下关键问题：</p>
 <ol>
 <li><strong>资源发现与广告</strong>：如何让 Kubernetes 集群知道某个节点拥有多少个特定类型的硬件设备（例如，2 个 NVIDIA GPU）？</li>
@@ -1350,7 +1360,7 @@
 <li><strong>提供访问权限控制</strong>: RBAC 用于精细化地控制 <strong>谁 (Subject: User, Group, ServiceAccount)</strong> 可以对 <strong>什么资源 (Resource: Pods, Services, Nodes)</strong> 执行 <strong>什么操作 (Verb: get, list, watch, create, update, patch, delete)</strong>。</li>
 <li><strong>Namespace 作用域</strong>: 可以创建 <code>Role</code> 和 <code>RoleBinding</code>，其权限仅限于特定的 Namespace。这是限制租户用户只能管理自己 Namespace 资源的关键。</li>
 <li><strong>Cluster 作用域</strong>: <code>ClusterRole</code> 和 <code>ClusterRoleBinding</code> 具有集群范围的权限，通常用于集群管理员或需要访问集群级别资源（如 Nodes, Namespaces）的组件。</li>
-<li><strong>配置示例</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># role-tenant-a-admin.yaml: 定义租户 A 管理员角色</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin</span><br><span class="hljs-attr">rules:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">apiGroups:</span> [<span class="hljs-string">&quot;&quot;</span>, <span class="hljs-string">&quot;apps&quot;</span>, <span class="hljs-string">&quot;extensions&quot;</span>, <span class="hljs-string">&quot;batch&quot;</span>, <span class="hljs-string">&quot;networking.k8s.io&quot;</span>] <span class="hljs-comment"># &quot;&quot; indicates core API group</span><br>  <span class="hljs-attr">resources:</span> [<span class="hljs-string">&quot;*&quot;</span>] <span class="hljs-comment"># Allow access to all resources within the namespace</span><br>  <span class="hljs-attr">verbs:</span> [<span class="hljs-string">&quot;*&quot;</span>] <span class="hljs-comment"># Allow all verbs</span><br>        <br><span class="hljs-meta">---</span><br><span class="hljs-comment"># rolebinding-tenant-a-admin.yaml: 将用户 &quot;user-a&quot; 绑定到租户 A 管理员角色</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">RoleBinding</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin-binding</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">subjects:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">kind:</span> <span class="hljs-string">User</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">user-a</span> <span class="hljs-comment"># Name is case sensitive</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br><span class="hljs-attr">roleRef:</span><br>  <span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br></code></pre></td></tr></table></figure>
+<li><strong>配置示例</strong>:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># role-tenant-a-admin.yaml: 定义租户 A 管理员角色</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin</span><br><span class="hljs-attr">rules:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">apiGroups:</span> [<span class="hljs-string">&quot;&quot;</span>, <span class="hljs-string">&quot;apps&quot;</span>, <span class="hljs-string">&quot;extensions&quot;</span>, <span class="hljs-string">&quot;batch&quot;</span>, <span class="hljs-string">&quot;networking.k8s.io&quot;</span>] <span class="hljs-comment"># &quot;&quot; indicates core API group</span><br>  <span class="hljs-attr">resources:</span> [<span class="hljs-string">&quot;*&quot;</span>] <span class="hljs-comment"># Allow access to all resources within the namespace</span><br>  <span class="hljs-attr">verbs:</span> [<span class="hljs-string">&quot;*&quot;</span>] <span class="hljs-comment"># Allow all verbs</span><br><br><span class="hljs-meta">---</span><br><span class="hljs-comment"># rolebinding-tenant-a-admin.yaml: 将用户 &quot;user-a&quot; 绑定到租户 A 管理员角色</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">RoleBinding</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin-binding</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">tenant-a</span><br><span class="hljs-attr">subjects:</span><br><span class="hljs-bullet">-</span> <span class="hljs-attr">kind:</span> <span class="hljs-string">User</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">user-a</span> <span class="hljs-comment"># Name is case sensitive</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br><span class="hljs-attr">roleRef:</span><br>  <span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tenant-a-admin</span><br>  <span class="hljs-attr">apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span><br></code></pre></td></tr></table></figure>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">kubectl apply -f role-tenant-a-admin.yaml<br>kubectl apply -f rolebinding-tenant-a-admin.yaml<br></code></pre></td></tr></table></figure></li>
 </ul>
 </li>
@@ -1481,12 +1491,18 @@
                   <article class="post-prev col-6">
                     
                     
+                      <a href="/2025/04/27/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E8%BF%90%E7%BB%B4/" title="kubernetes生产化运维">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">kubernetes生产化运维</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2025/04/22/Ingress/" title="Ingress">
-                        <span class="hidden-mobile">Ingress</span>
+                      <a href="/2025/04/22/Ingress/" title="Kubernetes 网络服务暴露：从 Service 到 Ingress 与 BGP/DSR">
+                        <span class="hidden-mobile">Kubernetes 网络服务暴露：从 Service 到 Ingress 与 BGP/DSR</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
