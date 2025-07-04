@@ -39,7 +39,7 @@
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/10/kube-proxy/image-20250415104221941.png">
 <meta property="og:image" content="https://mfzzf.github.io/2025/04/10/kube-proxy/image-20250415105305996.png">
 <meta property="article:published_time" content="2025-04-10T02:23:46.000Z">
-<meta property="article:modified_time" content="2025-04-27T09:47:33.890Z">
+<meta property="article:modified_time" content="2025-05-08T06:05:10.320Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="kubernetes">
 <meta property="article:tag" content="networking">
@@ -455,8 +455,6 @@
 
 <p><em>(Note: The provided example code was slightly adjusted for better practice (logging, <code>THIS_MODULE</code>, modern registration API), but kept the core logic as requested. The original prototype of the hook function is also mentioned for context.)</em></p>
 <h3 id="Hook函数的实现细节"><a href="#Hook函数的实现细节" class="headerlink" title="Hook函数的实现细节"></a>Hook函数的实现细节</h3><p>理解<code>nf_hookfn</code>的原型对于编写有效的Netfilter hook至关重要。虽然原型在不同内核版本中略有演变，但核心传递的信息保持一致。我们来看一个常见的（略旧但更易于解释基础概念的）原型，定义在<code>linux/netfilter.h</code>：</p>
-<C>
-
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-keyword">typedef</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> <span class="hljs-title function_">nf_hookfn</span><span class="hljs-params">(<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> hooknum,<span class="hljs-keyword">struct</span> sk_buff *skb,<span class="hljs-type">const</span> <span class="hljs-keyword">struct</span> net_device *in,<span class="hljs-type">const</span> <span class="hljs-keyword">struct</span> net_device *out,<span class="hljs-type">int</span> (*okfn)(<span class="hljs-keyword">struct</span> sk_buff *))</span>;<br></code></pre></td></tr></table></figure>
 
 <p><em>(较新内核倾向于使用 <code>nf_hookfn(void \*priv, struct sk_buff \*skb, const struct nf_hook_state \*state)</code>，其中<code>state</code>结构体封装了<code>hooknum</code>, <code>in</code>, <code>out</code>, <code>sk</code>等信息，<code>priv</code>通常指向注册时<code>nf_hook_ops</code>结构体本身)</em></p>

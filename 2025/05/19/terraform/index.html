@@ -19,22 +19,22 @@
   <meta name="author" content="Mzzf">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Kubernetes 生产化运维">
+    <meta name="description" content="Terraform 是 HashiCorp 出品的开源基础设施即代码（Infrastructure as Code, IaC）工具。用户可通过声明式配置语言 HCL（HashiCorp Configuration Language）编写代码，描述如云服务（AWS、Azure、GCP）、本地环境、Kubernetes 集群等各类基础设施资源，并通过命令行高效自动化地创建、变更和管理这些资源。 核心特">
 <meta property="og:type" content="article">
-<meta property="og:title" content="kubernetes生产化运维">
-<meta property="og:url" content="https://mfzzf.github.io/2025/04/27/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E8%BF%90%E7%BB%B4/index.html">
+<meta property="og:title" content="terraform">
+<meta property="og:url" content="https://mfzzf.github.io/2025/05/19/terraform/index.html">
 <meta property="og:site_name" content="Mzzf&#39;s Blog">
-<meta property="og:description" content="Kubernetes 生产化运维">
+<meta property="og:description" content="Terraform 是 HashiCorp 出品的开源基础设施即代码（Infrastructure as Code, IaC）工具。用户可通过声明式配置语言 HCL（HashiCorp Configuration Language）编写代码，描述如云服务（AWS、Azure、GCP）、本地环境、Kubernetes 集群等各类基础设施资源，并通过命令行高效自动化地创建、变更和管理这些资源。 核心特">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2025-04-27T01:00:32.000Z">
-<meta property="article:modified_time" content="2025-05-09T07:11:01.594Z">
+<meta property="article:published_time" content="2025-05-19T14:51:02.000Z">
+<meta property="article:modified_time" content="2025-05-20T05:41:21.946Z">
 <meta property="article:author" content="Mzzf">
 <meta property="article:tag" content="k8s">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>kubernetes生产化运维 - Mzzf&#39;s Blog</title>
+  <title>terraform - Mzzf&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -200,7 +200,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="kubernetes生产化运维"></span>
+            <span id="subtitle" data-typed-text="terraform"></span>
           
         </div>
 
@@ -211,8 +211,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2025-04-27 09:00" pubdate>
-          2025年4月27日 上午
+        <time datetime="2025-05-19 22:51" pubdate>
+          2025年5月19日 晚上
         </time>
       </span>
     
@@ -223,7 +223,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          6 字
+          1.1k 字
         
       </span>
     
@@ -234,7 +234,7 @@
         
         
         
-          1 分钟
+          9 分钟
         
       </span>
     
@@ -271,13 +271,117 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">kubernetes生产化运维</h1>
+            <h1 id="seo-header">terraform</h1>
             
             
               <div class="markdown-body">
                 
-                <hr>
-<h1 id="Kubernetes-生产化运维"><a href="#Kubernetes-生产化运维" class="headerlink" title="Kubernetes 生产化运维"></a>Kubernetes 生产化运维</h1>
+                <p>Terraform 是 HashiCorp 出品的开源基础设施即代码（Infrastructure as Code, IaC）工具。用户可通过声明式配置语言 HCL（HashiCorp Configuration Language）编写代码，描述如云服务（AWS、Azure、GCP）、本地环境、Kubernetes 集群等各类基础设施资源，并通过命令行高效自动化地创建、变更和管理这些资源。</p>
+<p><strong>核心特性：</strong></p>
+<ul>
+<li><strong>多平台支持</strong>：兼容主流云厂商、本地虚拟化、Kubernetes 等生态。</li>
+<li><strong>声明式配置</strong>：聚焦于最终期望状态，具体变更细节由 Terraform 自动推导与执行。</li>
+<li><strong>代码可审计</strong>：基础设施配置可纳入版本控制（如 Git），实现历史追踪与变更回滚。</li>
+<li><strong>自动管理依赖</strong>：自动分析资源依赖关系，按需有序创建&#x2F;销毁。</li>
+<li><strong>模块化复用</strong>：支持自定义或社区模块，提升资源复用与可维护性。</li>
+</ul>
+<p>Terraform 已广泛应用于 DevOps、云原生、自动化运维等领域，是实现基础设施自动化与一致性的关键工具。</p>
+<hr>
+<h3 id="常用命令速查"><a href="#常用命令速查" class="headerlink" title="常用命令速查"></a>常用命令速查</h3><ul>
+<li><p><code>terraform init</code><br>初始化当前目录，下载 provider 插件与模块。每次 provider、模块变更后需重新执行。<br>可用 <code>--plugin-dir</code> 参数指定本地插件目录。</p>
+</li>
+<li><p><code>terraform plan</code><br>生成并展示变更执行计划，<strong>只预览不实际操作</strong>。</p>
+</li>
+<li><p><code>terraform apply</code><br>执行 plan 阶段的变更，创建&#x2F;修改&#x2F;销毁资源。<br><code>-auto-approve</code> 可自动跳过交互确认。</p>
+</li>
+<li><p><code>terraform destroy</code><br>一键销毁所有受管资源，<strong>操作需谨慎</strong>。<br>可配合 <code>-auto-approve</code> 实现自动化。</p>
+</li>
+</ul>
+<blockquote>
+<p><strong>建议：</strong>  </p>
+<ul>
+<li>每次变更（增删资源、provider 升级等）建议先 <code>init</code>，再 <code>plan</code>，确认无误后 <code>apply</code>。</li>
+<li>生产环境强烈建议启用远程状态存储和 state 锁，避免多人冲突。</li>
+</ul>
+</blockquote>
+<ul>
+<li><p><code>terraform import</code><br>将已有基础设施资源纳入 Terraform 管理，无需重建。<br>用法：<code>terraform import ADDRESS ID</code><br>导入后建议执行 <code>terraform plan</code> 核查与实际状态同步，并适当调整配置。</p>
+</li>
+<li><p><code>terraform refresh</code><br>根据真实基础设施刷新本地 state 文件，保持一致性。</p>
+</li>
+<li><p><code>terraform state list</code><br>列出现有 state 管理的所有资源地址。</p>
+</li>
+<li><p><code>terraform state rm</code><br>从 state 中移除指定资源，仅影响 Terraform 管理，不实际删除资源。</p>
+</li>
+<li><p><code>terraform state pull</code><br>拉取远程后端最新 state，常用于检查&#x2F;备份。</p>
+</li>
+<li><p><code>terraform state push</code><br>推送本地 state 到远程后端，常见于手动同步或恢复。</p>
+</li>
+</ul>
+<hr>
+<h3 id="推荐目录结构"><a href="#推荐目录结构" class="headerlink" title="推荐目录结构"></a>推荐目录结构</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs text">project-root/<br>├── main.tf             # 主资源定义<br>├── variables.tf        # 输入变量声明<br>├── outputs.tf          # 输出变量声明<br>├── providers.tf        # Provider 配置<br>├── terraform.tfvars    # 变量取值（可选）<br>├── modules/            # 可复用模块<br>│   └── &lt;module&gt;/<br>│       ├── main.tf<br>│       ├── variables.tf<br>│       └── outputs.tf<br>├── envs/               # 多环境分离（如 dev、prod）<br>│   ├── dev/<br>│   │   └── terraform.tfvars<br>│   └── prod/<br>│       └── terraform.tfvars<br>├── .terraform/         # Provider 插件缓存（自动生成）<br>└── terraform.tfstate   # 状态文件（本地/远程）<br><br># 说明<br>- 根目录 *.tf 文件：全局资源与变量。<br>- modules/：封装常用资源模板（如 vpc、ecs、rds）。<br>- envs/：区分不同环境的变量/后端配置。<br>- .terraform/ 与 terraform.tfstate 建议加入 .gitignore，避免泄密。<br></code></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="变量赋值方式与优先级"><a href="#变量赋值方式与优先级" class="headerlink" title="变量赋值方式与优先级"></a>变量赋值方式与优先级</h3><p>Terraform 支持多种变量赋值方式，优先级高→低如下：</p>
+<ol>
+<li><strong>命令行参数</strong>  <ul>
+<li><code>terraform apply -var=&quot;key=value&quot;</code></li>
+</ul>
+</li>
+<li><strong>变量文件</strong>  <ul>
+<li><code>terraform apply -var-file=&quot;xxx.tfvars&quot;</code></li>
+</ul>
+</li>
+<li><strong>环境变量</strong>  <ul>
+<li><code>export TF_VAR_key=value</code></li>
+</ul>
+</li>
+<li><strong>变量默认值</strong>  <ul>
+<li>在 <code>variables.tf</code> 中通过 <code>default</code> 指定</li>
+</ul>
+</li>
+<li><strong>交互式输入</strong>  <ul>
+<li>执行时手动输入</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p><strong>提示：</strong> 多种方式并存时，优先级高的覆盖低的。</p>
+</blockquote>
+<hr>
+<h3 id="表达式与函数实用笔记"><a href="#表达式与函数实用笔记" class="headerlink" title="表达式与函数实用笔记"></a>表达式与函数实用笔记</h3><ul>
+<li><strong>基础表达式</strong>  <ul>
+<li>属性引用：<code>var.name</code>、<code>resource.type.name.attr</code></li>
+<li>运算符：<code>!</code>, <code>*</code>, <code>/</code>, <code>+</code>, <code>-</code>, <code>&gt;=</code>, <code>==</code>, <code>!=</code>, <code>&amp;&amp;</code></li>
+<li>条件表达式：<code>condition ? true_val : false_val</code></li>
+<li>For 表达式：<code>[for s in var.list : upper(s)]</code></li>
+<li>Splat 表达式：<code>var.list[*].id</code></li>
+<li>动态块：<code>dynamic &quot;block&quot; &#123; ... &#125;</code></li>
+</ul>
+</li>
+<li><strong>约束与类型</strong>  <ul>
+<li>变量类型约束、provider 版本约束等</li>
+</ul>
+</li>
+<li><strong>常用内建函数</strong>  <ul>
+<li>数值：<code>abs</code>、<code>floor</code>、<code>max</code>、<code>min</code>、<code>pow</code></li>
+<li>字符串：<code>format</code>、<code>join</code>、<code>lower</code>、<code>replace</code>、<code>split</code>、<code>substr</code></li>
+<li>集合：<code>concat</code>、<code>flatten</code>、<code>merge</code>、<code>sort</code>、<code>tolist</code></li>
+<li>编码：<code>base64encode</code>、<code>jsonencode</code>、<code>urlencode</code></li>
+<li>文件系统：<code>abspath</code>、<code>dirname</code>、<code>basename</code>、<code>file</code>、<code>templatefile</code></li>
+<li>时间日期：<code>timestamp</code>、<code>formatdate</code>、<code>timeadd</code></li>
+<li>哈希加密：<code>sha1</code>、<code>sha256</code>、<code>md5</code>、<code>uuid</code></li>
+<li>类型转换：<code>tostring</code>、<code>tomap</code>、<code>tolist</code>、<code>toset</code></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>详见官方文档：<a target="_blank" rel="noopener" href="https://developer.hashicorp.com/terraform/language/functions">https://developer.hashicorp.com/terraform/language/functions</a></p>
+</blockquote>
+<hr>
+<p>方案二：使用 Terraform Workspace 实现多环境隔离</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 列出所有 workspace</span><br>terraform workspace list<br><span class="hljs-comment"># 输出示例:</span><br><span class="hljs-comment"># * default</span><br><br><span class="hljs-comment"># 创建并切换到 dev 环境</span><br>terraform workspace new dev<br><span class="hljs-comment"># 输出: Created and switched to workspace &quot;dev&quot;!</span><br><br><span class="hljs-comment"># 在 dev workspace 中创建资源</span><br>terraform apply -auto-approve<br><br><span class="hljs-comment"># 创建并切换到 testing 环境</span><br>terraform workspace new testing<br><span class="hljs-comment"># 输出: Created and switched to workspace &quot;testing&quot;!</span><br><br><span class="hljs-comment"># 在 testing workspace 中创建资源</span><br>terraform apply -auto-approve<br><br><span class="hljs-comment"># 查看所有 workspace</span><br>terraform workspace list<br><br><span class="hljs-comment"># 删除 testing 环境资源</span><br>terraform destroy -auto-approve<br><br><span class="hljs-comment"># 切换回 dev 环境</span><br>terraform workspace <span class="hljs-keyword">select</span> dev<br><br><span class="hljs-comment"># 删除 dev 环境资源</span><br>terraform destroy -auto-approve<br></code></pre></td></tr></table></figure>
+
                 
               </div>
             
@@ -301,8 +405,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>kubernetes生产化运维</div>
-      <div>https://mfzzf.github.io/2025/04/27/kubernetes生产化运维/</div>
+      <div>terraform</div>
+      <div>https://mfzzf.github.io/2025/05/19/terraform/</div>
     </div>
     <div class="license-meta">
       
@@ -314,7 +418,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2025年4月27日</div>
+          <div>2025年5月19日</div>
         </div>
       
       
@@ -346,18 +450,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2025/05/15/SRE%E8%BF%90%E7%BB%B4/" title="SRE运维">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">SRE运维</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2025/04/24/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/" title="kubernetes生产化集群管理">
-                        <span class="hidden-mobile">kubernetes生产化集群管理</span>
+                      <a href="/2025/05/19/go-study/" title="go-study">
+                        <span class="hidden-mobile">go-study</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>

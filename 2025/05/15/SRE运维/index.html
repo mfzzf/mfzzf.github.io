@@ -1,0 +1,2083 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Mzzf">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Linux SRE 运维常用命令详解与实战1. 引言在站点可靠性工程（Site Reliability Engineering, SRE）的日常运维工作中，Linux 命令行工具是不可或缺的。SRE 工程师需要利用这些工具进行系统监控、故障排查、性能分析、日志审计和安全加固。本报告旨在详细介绍 SRE 运维中常用的一系列 Linux 命令，包括 grep、iptables、awk、sed、ps、n">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SRE运维">
+<meta property="og:url" content="https://mfzzf.github.io/2025/05/15/SRE%E8%BF%90%E7%BB%B4/index.html">
+<meta property="og:site_name" content="Mzzf&#39;s Blog">
+<meta property="og:description" content="Linux SRE 运维常用命令详解与实战1. 引言在站点可靠性工程（Site Reliability Engineering, SRE）的日常运维工作中，Linux 命令行工具是不可或缺的。SRE 工程师需要利用这些工具进行系统监控、故障排查、性能分析、日志审计和安全加固。本报告旨在详细介绍 SRE 运维中常用的一系列 Linux 命令，包括 grep、iptables、awk、sed、ps、n">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-05-15T08:49:34.000Z">
+<meta property="article:modified_time" content="2025-05-15T13:50:30.678Z">
+<meta property="article:author" content="Mzzf">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="SRE">
+<meta property="article:tag" content="运维">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>SRE运维 - Mzzf&#39;s Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"mfzzf.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Mzzf&#39;s blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SRE运维"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-05-15 16:49" pubdate>
+          2025年5月15日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          19k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          161 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SRE运维</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="Linux-SRE-运维常用命令详解与实战"><a href="#Linux-SRE-运维常用命令详解与实战" class="headerlink" title="Linux SRE 运维常用命令详解与实战"></a>Linux SRE 运维常用命令详解与实战</h1><h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h2><p>在站点可靠性工程（Site Reliability Engineering, SRE）的日常运维工作中，Linux 命令行工具是不可或缺的。SRE 工程师需要利用这些工具进行系统监控、故障排查、性能分析、日志审计和安全加固。本报告旨在详细介绍 SRE 运维中常用的一系列 Linux 命令，包括 <code>grep</code>、<code>iptables</code>、<code>awk</code>、<code>sed</code>、<code>ps</code>、<code>netstat</code> (及其替代者 <code>ss</code>) 等，并结合一个详细的实战案例，展示如何综合运用这些命令解决实际问题。掌握这些命令的精髓，对于提升运维效率和保障系统稳定性至关重要。本报告还将涵盖 <code>top</code>、<code>vmstat</code>、<code>iostat</code>、<code>lsof</code>、<code>curl</code>、<code>find</code>、<code>df</code>、<code>du</code>、<code>systemctl</code> 和 <code>journalctl</code> 等其他核心命令。</p>
+<h2 id="2-核心文本处理与防火墙管理命令详解"><a href="#2-核心文本处理与防火墙管理命令详解" class="headerlink" title="2. 核心文本处理与防火墙管理命令详解"></a>2. 核心文本处理与防火墙管理命令详解</h2><h3 id="2-1-grep-Global-Regular-Expression-Print"><a href="#2-1-grep-Global-Regular-Expression-Print" class="headerlink" title="2.1. grep (Global Regular Expression Print)"></a>2.1. grep (Global Regular Expression Print)</h3><p><strong>核心功能</strong>: <code>grep</code> 用于在文件或标准输入中搜索匹配特定模式（字符串或正则表达式）的行，并将匹配的行输出到标准输出 。它是日志分析、数据筛选和文本搜索的基石。</p>
+<p><strong>基本语法</strong>: <code>grep PATTERN [FILE...]</code></p>
+<p><strong>常用选项</strong>:</p>
+<ul>
+<li><code>-i</code>, <code>--ignore-case</code>: 忽略大小写进行匹配 。</li>
+<li><code>-v</code>, <code>--invert-match</code>: 反转匹配，显示不包含模式的行 。</li>
+<li><code>-r</code>, <code>-R</code>, <code>--recursive</code>: 递归搜索目录下的所有文件 。<code>-r</code> 默认跟踪符号链接目录，<code>-R</code> 不跟踪 。</li>
+<li><code>-n</code>, <code>--line-number</code>: 在输出的每行前显示行号 。</li>
+<li><code>-c</code>, <code>--count</code>: 只输出每个文件中匹配模式的行数，而不是匹配的行本身 。</li>
+<li><code>-E</code>, <code>--extended-regexp</code>: 使用扩展正则表达式 (ERE) 。这使得例如 <code>|</code> (或)、<code>+</code> (一个或多个)、<code>?</code> (零个或一个) 等元字符可以直接使用。</li>
+<li><code>-F</code>, <code>--fixed-strings</code>: 将模式视为固定字符串（字面量），而不是正则表达式 。当搜索包含特殊字符的文本时很有用。</li>
+<li><code>-o</code>, <code>--only-matching</code>: 只显示行中与模式匹配的部分，每个匹配部分占一行。</li>
+<li><code>-A NUM</code>, <code>--after-context=NUM</code>: 打印匹配行及其后 NUM 行。</li>
+<li><code>-B NUM</code>, <code>--before-context=NUM</code>: 打印匹配行及其前 NUM 行。</li>
+<li><code>-C NUM</code>, <code>--context=NUM</code>: 打印匹配行及其前后各 NUM 行。</li>
+<li><code>-l</code>, <code>--files-with-matches</code>: 只打印包含匹配项的文件名。</li>
+<li><code>-H</code>, <code>--with-filename</code>: 在多文件搜索时，打印每个匹配项所在的文件名。</li>
+<li><code>-w</code>, <code>--word-regexp</code>: 只匹配整个单词 。</li>
+</ul>
+<p><strong>正则表达式 (Regex) 应用</strong>:</p>
+<ul>
+<li><strong>锚点</strong>: <code>^</code> 匹配行首，<code>$</code> 匹配行尾 。例如, <code>grep &#39;^error&#39;</code> 查找以 “error” 开头的行。</li>
+<li><strong>字符匹配</strong>: <code>.</code> 匹配任意单个字符 。</li>
+<li><strong>方括号表达式</strong>: <code>[abc]</code> 匹配 a、b 或 c。<code>[a-z]</code> 匹配任意小写字母。<code>[^0-9]</code> 匹配任意非数字字符 。</li>
+<li><strong>字符类</strong>: <code>[[:digit:]]</code> 匹配数字, <code>[[:alpha:]]</code> 匹配字母, <code>[[:space:]]</code> 匹配空白字符 。</li>
+<li><strong>量词</strong>: <code>*</code> (零个或多个), <code>+</code> (一个或多个, ERE), <code>?</code> (零个或一个, ERE), <code>&#123;n&#125;</code> (恰好n个, ERE), <code>&#123;n,&#125;</code> (至少n个, ERE), <code>&#123;n,m&#125;</code> (n到m个, ERE) 。</li>
+<li><strong>替换&#x2F;或</strong>: <code>|</code> (ERE) 用于匹配多个模式之一。例如 <code>grep -E &#39;error|warning&#39;</code> 。</li>
+<li><strong>分组</strong>: <code>()</code> (ERE) 用于将模式的一部分组合成一个单元 。</li>
+<li><strong>特殊反斜杠表达式</strong>: <code>\b</code> 匹配单词边界, <code>\w</code> 匹配单词字符 。</li>
+</ul>
+<p><strong>SRE 使用场景与示例</strong>:</p>
+<ul>
+<li><strong>日志分析</strong>:<ul>
+<li>搜索错误日志: <code>grep -i &#39;error&#39; /var/log/syslog</code> 。</li>
+<li>查找特定IP地址的访问记录: <code>grep &#39;192.168.1.100&#39; /var/log/nginx/access.log</code> 。</li>
+<li>统计特定错误出现的次数: <code>grep -c &#39;NullPointerException&#39; application.log</code> 。</li>
+<li>显示包含 “failed login” 的行以及其后5行: <code>grep -A 5 &#39;failed login&#39; /var/log/auth.log</code>。</li>
+</ul>
+</li>
+<li><strong>配置文件审查</strong>:<ul>
+<li>查找特定配置项: <code>grep &#39;^ListenPort&#39; /etc/ssh/sshd_config</code> 。</li>
+<li>显示不以 <code>#</code> 开头的配置行: <code>grep -v &#39;^#&#39; /etc/nginx/nginx.conf</code> 。</li>
+</ul>
+</li>
+<li><strong>代码搜索</strong>:<ul>
+<li>在项目中递归搜索函数定义: <code>grep -r &#39;function process_payment&#39; /srv/myapp/</code> 。</li>
+</ul>
+</li>
+<li><strong>结合管道使用</strong>:<ul>
+<li>列出所有正在运行的Java进程: <code>ps aux | grep &#39;[j]ava&#39;</code> (使用 <code>[]</code> 避免 grep 进程自身被匹配)。</li>
+<li>查找监听80端口的进程: <code>netstat -tulnp | grep &#39;:80&#39;</code>。</li>
+</ul>
+</li>
+</ul>
+<p><strong>表: grep 常用选项</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">选项</th>
+<th align="left">描述</th>
+<th align="left">SRE 场景示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>-i</code></td>
+<td align="left">忽略大小写</td>
+<td align="left"><code>grep -i &#39;exception&#39; app.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-v</code></td>
+<td align="left">反转匹配 (不包含)</td>
+<td align="left"><code>grep -v &#39;DEBUG&#39; app.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-r / -R</code></td>
+<td align="left">递归搜索</td>
+<td align="left"><code>grep -r &#39;API_KEY&#39; /etc/</code></td>
+</tr>
+<tr>
+<td align="left"><code>-n</code></td>
+<td align="left">显示行号</td>
+<td align="left"><code>grep -n &#39;FATAL&#39; error.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-c</code></td>
+<td align="left">统计匹配行数</td>
+<td align="left"><code>grep -c &#39;HTTP/1.1&quot; 500&#39; access.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-E</code></td>
+<td align="left">使用扩展正则表达式</td>
+<td align="left">&#96;grep -E ‘timeout</td>
+</tr>
+<tr>
+<td align="left"><code>-o</code></td>
+<td align="left">只显示匹配的部分</td>
+<td align="left"><code>grep -oE &#39;[0-9]&#123;1,3&#125;\.[0-9]&#123;1,3&#125;\.[0-9]&#123;1,3&#125;\.[0-9]&#123;1,3&#125;&#39; access.log</code> (提取IP)</td>
+</tr>
+<tr>
+<td align="left"><code>-A NUM</code></td>
+<td align="left">显示匹配行及其后NUM行</td>
+<td align="left"><code>grep -A 3 &#39;transaction failed&#39; payment.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-B NUM</code></td>
+<td align="left">显示匹配行及其前NUM行</td>
+<td align="left"><code>grep -B 2 &#39;user_login_failed&#39; auth.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-C NUM</code></td>
+<td align="left">显示匹配行及其前后各NUM行</td>
+<td align="left"><code>grep -C 5 &#39;segmentation fault&#39; kern.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>-l</code></td>
+<td align="left">只列出包含匹配模式的文件名</td>
+<td align="left"><code>grep -rl &#39;TODO&#39; /opt/project/src</code></td>
+</tr>
+<tr>
+<td align="left"><code>-w</code></td>
+<td align="left">匹配整个单词</td>
+<td align="left"><code>grep -w &#39;port&#39; config.ini</code></td>
+</tr>
+<tr>
+<td align="left"><code>grep</code> 的核心价值在于其快速、灵活的文本模式匹配能力。</td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<p>对于 SRE 工程师而言，系统日志、配置文件、应用输出等都是海量的文本数据。</p>
+<p><code>grep</code> 及其正则表达式的强大功能，使得工程师能够迅速从这些数据中筛选出关键信息，例如错误提示、特定事件、配置参数等。这种能力在故障排查、性能分析、安全审计等多种场景下都至关重要。</p>
+<p>例如，在服务发生故障时，通过 <code>grep</code> 搜索错误日志中的特定关键字（如 “Exception”, “Error”, “Timeout”），可以快速定位问题发生的时间点和大致原因 。结合 <code>-A</code>, <code>-B</code>, <code>-C</code> 选项，可以获取错误发生的上下文信息，为进一步分析提供线索。</p>
+<p>在安全事件响应中，<code>grep</code> 可以用来搜索入侵痕迹，如特定的恶意IP地址、可疑的命令执行记录等。其递归搜索能力 (<code>-r</code> 或 <code>-R</code>) 使得在整个文件系统中查找特定内容成为可能，这对于追踪配置变更或查找散落在各处的日志文件非常有用。此外，<code>grep</code> 经常作为管道命令链中的一环，与其他命令（如 <code>ps</code>, <code>netstat</code>, <code>awk</code>, <code>sort</code>, <code>uniq</code> 等）协同工作，实现更复杂的数据提取和分析任务。例如，<code>ps aux | grep &#39;my_service&#39;</code> 可以快速查看特定服务的进程状态。熟练掌握 <code>grep</code> 不仅能提高日常运维效率，更是 SRE 解决复杂问题的基础技能之一。</p>
+<h3 id="2-2-iptables"><a href="#2-2-iptables" class="headerlink" title="2.2. iptables"></a>2.2. iptables</h3><p><strong>核心功能</strong>: <code>iptables</code> 是 Linux 内核防火墙 Netfilter 的用户空间命令行工具，用于配置、维护和检查 IPv4 数据包过滤规则集 。SRE 使用它来控制网络流量，保护服务器免受未经授权的访问和攻击。</p>
+<p><strong>基本概念</strong>:</p>
+<ul>
+<li><strong>Tables (表)</strong>: 规则的集合，按功能组织。主要有 <code>filter</code>, <code>nat</code>, <code>mangle</code>, <code>raw</code>, <code>security</code> 表 。<ul>
+<li><code>filter</code>: 默认表，用于数据包过滤（允许&#x2F;拒绝）。</li>
+<li><code>nat</code>: 用于网络地址转换 (NAT)，如 SNAT, DNAT, MASQUERADE。</li>
+<li><code>mangle</code>: 用于修改数据包的 IP 头部字段 (如 TTL, TOS)。</li>
+</ul>
+</li>
+<li><strong>Chains (链)</strong>: 表内规则的序列。数据包按顺序通过链中的规则。内置链对应 Netfilter 钩子点 。<ul>
+<li><code>INPUT</code>: 处理发往本机的数据包。</li>
+<li><code>OUTPUT</code>: 处理由本机发出的数据包。</li>
+<li><code>FORWARD</code>: 处理流经本机的数据包（路由）。</li>
+<li><code>PREROUTING</code> (<code>nat</code>, <code>mangle</code>, <code>raw</code> 表): 在路由决策之前处理数据包。</li>
+<li><code>POSTROUTING</code> (<code>nat</code>, <code>mangle</code> 表): 在路由决策之后，数据包即将发出时处理。</li>
+</ul>
+</li>
+<li><strong>Rules (规则)</strong>: 定义了匹配数据包的条件和匹配成功后执行的动作 (Target) 。</li>
+<li><strong>Targets (目标&#x2F;动作)</strong>: 规则匹配后对数据包执行的操作 。<ul>
+<li><code>ACCEPT</code>: 允许数据包通过。</li>
+<li><code>DROP</code>: 丢弃数据包，不发送任何响应。</li>
+<li><code>REJECT</code>: 拒绝数据包，并向发送方返回错误信息 (如 ICMP port-unreachable)。</li>
+<li><code>LOG</code>: 记录数据包信息到内核日志 (通常是 <code>/var/log/kern.log</code> 或 <code>/var/log/syslog</code>)，然后将数据包传递给链中的下一条规则 。</li>
+<li><code>MASQUERADE</code> (<code>nat</code> 表的 <code>POSTROUTING</code> 链): 一种特殊的 SNAT，用于动态 IP 地址（如家庭宽带），自动使用出站接口的 IP 地址 。</li>
+<li><code>DNAT</code> (<code>nat</code> 表的 <code>PREROUTING</code> 和 <code>OUTPUT</code> 链): 目标网络地址转换，用于将发往特定 IP 和端口的流量重定向到内部网络的另一台主机和端口（端口转发）。</li>
+<li><code>SNAT</code> (<code>nat</code> 表的 <code>POSTROUTING</code> 链): 源网络地址转换，用于修改数据包的源 IP 地址 。</li>
+</ul>
+</li>
+</ul>
+<p><strong>规则管理</strong>:</p>
+<ul>
+<li><strong>查看规则</strong>: <code>sudo iptables -L [chain] [-t table] [-v -n --line-numbers]</code> 。<ul>
+<li><code>-L</code>: 列出规则。</li>
+<li><code>-v</code>: 显示详细信息（包括接口、包和字节计数器）。</li>
+<li><code>-n</code>: 以数字形式显示 IP 地址和端口号（不进行 DNS 解析）。</li>
+<li><code>--line-numbers</code>: 显示规则的行号，便于插入或删除。</li>
+</ul>
+</li>
+<li><strong>添加规则</strong>:<ul>
+<li><code>sudo iptables -A &lt;chain&gt; ... -j &lt;target&gt;</code>: 追加规则到链尾 。</li>
+<li><code>sudo iptables -I &lt;chain&gt; [rule_number] ... -j &lt;target&gt;</code>: 插入规则到指定位置（默认为链首）。</li>
+</ul>
+</li>
+<li><strong>删除规则</strong>:<ul>
+<li><code>sudo iptables -D &lt;chain&gt; &lt;rule_number&gt;</code>: 按行号删除 。</li>
+<li><code>sudo iptables -D &lt;chain&gt; ... -j &lt;target&gt;</code>: 按规则内容删除 。</li>
+</ul>
+</li>
+<li><strong>修改&#x2F;替换规则</strong>: <code>sudo iptables -R &lt;chain&gt; &lt;rule_number&gt; ... -j &lt;target&gt;</code> 。</li>
+<li><strong>清空规则</strong>:<ul>
+<li><code>sudo iptables -F [chain]</code>: 清空指定链（或所有链）的规则 。</li>
+<li><code>sudo iptables -X [chain]</code>: 删除用户自定义的空链 。</li>
+<li><code>sudo iptables -Z [chain]</code>: 清零指定链（或所有链）的包和字节计数器 。</li>
+</ul>
+</li>
+<li><strong>设置默认策略</strong>: <code>sudo iptables -P &lt;chain&gt; &lt;target&gt;</code> (例如, <code>sudo iptables -P INPUT DROP</code>) 。</li>
+<li><strong>保存和恢复规则</strong>:<ul>
+<li><code>sudo iptables-save &gt; /etc/iptables/rules.v4</code> (Debian&#x2F;Ubuntu, 需安装 <code>iptables-persistent</code>) 。</li>
+<li><code>sudo service iptables save</code> (CentOS&#x2F;RHEL 6) 或 <code>sudo systemctl stop firewalld; sudo yum install iptables-services; sudo systemctl enable iptables; sudo systemctl start iptables; sudo iptables-save &gt; /etc/sysconfig/iptables</code> (CentOS&#x2F;RHEL 7+，如果想用iptables替换firewalld) 。</li>
+<li><code>sudo iptables-restore &lt; /etc/iptables/rules.v4</code> 。</li>
+</ul>
+</li>
+</ul>
+<p><strong>常用匹配条件</strong>:</p>
+<ul>
+<li><code>-p, --protocol &lt;protocol&gt;</code>: 协议 (<code>tcp</code>, <code>udp</code>, <code>icmp</code>, <code>all</code>) 。</li>
+<li><code>-s, --source &lt;address[/mask]&gt;</code>: 源 IP 地址或网络 。</li>
+<li><code>-d, --destination &lt;address[/mask]&gt;</code>: 目标 IP 地址或网络 。</li>
+<li><code>-i, --in-interface &lt;name&gt;</code>: 数据包进入的网络接口 (用于 <code>INPUT</code>, <code>FORWARD</code>, <code>PREROUTING</code> 链) 。</li>
+<li><code>-o, --out-interface &lt;name&gt;</code>: 数据包传出的网络接口 (用于 <code>OUTPUT</code>, <code>FORWARD</code>, <code>POSTROUTING</code> 链) 。</li>
+<li><code>--sport &lt;port&gt;</code>: 源端口 (需指定 <code>-p tcp</code> 或 <code>-p udp</code>) 。</li>
+<li><code>--dport &lt;port&gt;</code>: 目标端口 (需指定 <code>-p tcp</code> 或 <code>-p udp</code>) 。</li>
+<li><code>-m &lt;module_name&gt; --&lt;module_options&gt;</code>: 使用扩展模块。<ul>
+<li><code>state</code>: 连接状态模块 (<code>--state NEW,ESTABLISHED,RELATED,INVALID</code>) 。</li>
+<li><code>multiport</code>: 多端口模块 (<code>--dports 22,80,443</code> 或 <code>--sports 1000:2000</code>) 。</li>
+<li><code>limit</code>: 限制日志速率等 (<code>--limit 5/min</code>) 。</li>
+<li><code>iprange</code>: IP 地址范围模块 (<code>--src-range 192.168.1.100-192.168.1.200</code>) 。</li>
+<li><code>time</code>: 时间模块 (<code>--timestart 09:00 --timestop 18:00 --weekdays Mon,Tue,Wed,Thu,Fri</code>) 。</li>
+</ul>
+</li>
+</ul>
+<p><strong>SRE 防火墙配置示例</strong>:</p>
+<ul>
+<li><strong>基本 Web 服务器防火墙策略 (推荐默认拒绝)</strong>:<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 清空现有规则 (生产环境慎用，除非明确知道后果)</span><br><span class="hljs-built_in">sudo</span> iptables -F<br><span class="hljs-built_in">sudo</span> iptables -X<br><span class="hljs-built_in">sudo</span> iptables -Z<br><br><span class="hljs-comment"># 设置默认拒绝策略</span><br><span class="hljs-built_in">sudo</span> iptables -P INPUT DROP<br><span class="hljs-built_in">sudo</span> iptables -P FORWARD DROP<br><span class="hljs-built_in">sudo</span> iptables -P OUTPUT ACCEPT <span class="hljs-comment"># 或者更严格的 DROP，然后明确允许出站流量</span><br><br><span class="hljs-comment"># 允许回环接口流量</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -i lo -j ACCEPT<br><span class="hljs-built_in">sudo</span> iptables -A OUTPUT -o lo -j ACCEPT<br><br><span class="hljs-comment"># 允许已建立和相关的连接 (非常重要，允许服务器响应外部请求)</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT<br><br><span class="hljs-comment"># 允许 SSH (例如，在端口 22 上，可以限制源 IP)</span><br><span class="hljs-comment"># sudo iptables -A INPUT -p tcp -s YOUR_TRUSTED_IP/24 --dport 22 -j ACCEPT</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -p tcp --dport 22 -j ACCEPT <span class="hljs-comment"># 简化版，不限制源IP</span><br><br><span class="hljs-comment"># 允许 HTTP 和 HTTPS</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -p tcp --dport 80 -j ACCEPT<br><span class="hljs-built_in">sudo</span> iptables -A INPUT -p tcp --dport 443 -j ACCEPT<br><br><span class="hljs-comment"># (可选) 允许 ICMP (ping)</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT<br><br><span class="hljs-comment"># 记录并丢弃其他所有入站流量 (记录规则应在最终 DROP 规则之前)</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -m <span class="hljs-built_in">limit</span> --<span class="hljs-built_in">limit</span> 5/min -j LOG --log-prefix <span class="hljs-string">&quot;IPTABLES-INPUT-DENIED: &quot;</span> --log-level 7<br><span class="hljs-built_in">sudo</span> iptables -A INPUT -j DROP<br><br><span class="hljs-comment"># 记录并丢弃所有转发流量 (如果服务器不作为路由器)</span><br><span class="hljs-built_in">sudo</span> iptables -A FORWARD -m <span class="hljs-built_in">limit</span> --<span class="hljs-built_in">limit</span> 5/min -j LOG --log-prefix <span class="hljs-string">&quot;IPTABLES-FORWARD-DENIED: &quot;</span> --log-level 7<br><span class="hljs-built_in">sudo</span> iptables -A FORWARD -j DROP<br></code></pre></td></tr></table></figure></li>
+<li><strong>阻止恶意 IP</strong>: <code>sudo iptables -I INPUT -s &lt;malicious_ip&gt; -j DROP</code> 。</li>
+<li><strong>端口转发 (DNAT)</strong>: 将外部端口 8080 的 TCP 流量转发到内部服务器 192.168.1.100 的 80 端口。假设 <code>eth0</code> 是外网接口，<code>eth_internal</code> 是内网接口。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">sudo</span> iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8080 -j DNAT --to-destination 192.168.1.100:80<br><span class="hljs-built_in">sudo</span> iptables -A FORWARD -i eth0 -o eth_internal -p tcp --dport 80 -d 192.168.1.100 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT<br></code></pre></td></tr></table></figure></li>
+<li><strong>源 NAT (MASQUERADE) 实现内网共享上网</strong>:<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 假设 eth0 是外网接口 (互联网), eth1 是内网接口 (LAN)</span><br><span class="hljs-comment"># 开启 IP 转发: echo 1 &gt; /proc/sys/net/ipv4/ip_forward (或修改 /etc/sysctl.conf)</span><br><span class="hljs-built_in">sudo</span> iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE<br><span class="hljs-built_in">sudo</span> iptables -A FORWARD -i eth1 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT<br><span class="hljs-built_in">sudo</span> iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT <span class="hljs-comment"># 允许从 LAN 到 WAN 的新连接</span><br></code></pre></td></tr></table></figure></li>
+<li><strong>记录被丢弃的数据包</strong>:<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 在 INPUT 链中，针对特定端口（如 SSH）的 DROP 规则前插入 LOG 规则</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -p tcp --dport 22 -j LOG --log-prefix <span class="hljs-string">&quot;SSH_DROP: &quot;</span> --log-level 4 <span class="hljs-comment"># warning level</span><br><span class="hljs-built_in">sudo</span> iptables -A INPUT -p tcp --dport 22 -j DROP<br></code></pre></td></tr></table></figure>
+日志通常记录在 <code>/var/log/kern.log</code> 或 <code>/var/log/syslog</code>，具体取决于系统日志守护进程 (如 <code>rsyslog</code>) 的配置。可以通过修改 <code>rsyslog</code> 配置将 <code>iptables</code> 日志重定向到特定文件，例如在 <code>rsyslog.conf</code> 中添加类似 <code>:msg,contains,&quot;IPTABLES-DENIED: &quot; -/var/log/iptables.log</code> 和 <code>&amp; ~</code> (停止处理该消息，防止重复记录) 的规则 。</li>
+</ul>
+<p><strong>表: iptables 关键表和链</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">表 (Table)</th>
+<th align="left">链 (Chain)</th>
+<th align="left">SRE 上下文中的用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>filter</code></td>
+<td align="left"><code>INPUT</code></td>
+<td align="left">保护服务器本身免受不必要的入站流量。</td>
+</tr>
+<tr>
+<td align="left"><code>filter</code></td>
+<td align="left"><code>OUTPUT</code></td>
+<td align="left">控制源自服务器的流量 (较少严格限制)。</td>
+</tr>
+<tr>
+<td align="left"><code>filter</code></td>
+<td align="left"><code>FORWARD</code></td>
+<td align="left">控制流经服务器的流量 (如果它充当路由器&#x2F;网关)。</td>
+</tr>
+<tr>
+<td align="left"><code>nat</code></td>
+<td align="left"><code>PREROUTING</code></td>
+<td align="left">目标 NAT (例如，端口转发到内部服务)。</td>
+</tr>
+<tr>
+<td align="left"><code>nat</code></td>
+<td align="left"><code>POSTROUTING</code></td>
+<td align="left">源 NAT (例如，MASQUERADE 用于从私有网络访问互联网)。</td>
+</tr>
+<tr>
+<td align="left"><code>nat</code></td>
+<td align="left"><code>OUTPUT</code></td>
+<td align="left">对本地生成的包进行 NAT。</td>
+</tr>
+<tr>
+<td align="left"><code>mangle</code></td>
+<td align="left">(多种)</td>
+<td align="left">高级数据包修改 (例如，QoS 标记，TTL 更改)。</td>
+</tr>
+</tbody></table>
+<p><strong>规则顺序和默认策略的关键性</strong><br><code>iptables</code> 规则的处理顺序至关重要。数据包一旦匹配到链中的某条终止性规则（如 <code>ACCEPT</code>, <code>DROP</code>, <code>REJECT</code>），处理即停止，后续规则不再被检查 。这意味着，如果一条宽泛的 <code>ACCEPT</code> 规则出现在一条针对其子集流量的特定 <code>DROP</code> 规则之前，那么该 <code>DROP</code> 规则将永远不会被触发。因此，SRE 工程师必须精心规划规则顺序，通常将更具体的规则置于更通用的规则之前。</p>
+<p>采用“默认拒绝” (<code>DROP</code>) 的策略是安全最佳实践。为 <code>INPUT</code> 和 <code>FORWARD</code> 链设置默认 <code>DROP</code> 策略，可以确保任何未被明确允许的流量都会被阻止。之后，再逐条添加 <code>ACCEPT</code> 规则以放行必要的服务和流量。几乎总是最先添加的 <code>ACCEPT</code> 规则之一是针对 <code>ESTABLISHED,RELATED</code> 状态的流量，这允许服务器对已建立的连接或与已建立连接相关的流量（如FTP数据传输或ICMP错误消息）进行响应。</p>
+<p>未能正确排序规则或设置不安全的默认策略是导致安全漏洞或网络连接问题的常见原因。调试 <code>iptables</code> 问题时，经常需要检查规则顺序和计数器（通过 <code>sudo iptables -L -v -n --line-numbers</code> 查看）。</p>
+<p><strong><code>iptables</code> 与较新的前端工具 (例如 <code>firewalld</code>, <code>ufw</code>)</strong><br>虽然 <code>iptables</code> 功能强大，但其配置也相对复杂。一些工具如 <code>ufw</code> (Uncomplicated Firewall) 和 <code>firewalld</code> (常见于基于 RHEL 的系统) 提供了更用户友好的界面，并在后台管理 <code>iptables</code> 规则 。<code>firewalld</code> 引入了区域 (zones) 和服务 (services) 的概念，可以简化常见场景下的管理。</p>
+<p>SRE 工程师需要理解 <code>iptables</code> 以便进行细粒度控制和底层 Netfilter 行为的调试。然而，对于许多标准的防火墙配置，使用 <code>ufw</code> 或 <code>firewalld</code> 可能更高效且不易出错。但在高度定制或对性能敏感的场景中，直接操作 <code>iptables</code> 可能仍然是必要的。了解这些替代方案，并将 <code>iptables</code> 视为 SRE 必须掌握的基础工具，即使日常任务中可能使用前端工具，也能更全面地管理 Linux 防火墙。</p>
+<h3 id="2-3-awk-Aho-Weinberger-and-Kernighan"><a href="#2-3-awk-Aho-Weinberger-and-Kernighan" class="headerlink" title="2.3. awk (Aho, Weinberger, and Kernighan)"></a>2.3. awk (Aho, Weinberger, and Kernighan)</h3><p><strong>核心功能</strong>: <code>awk</code> 是一种功能强大的文本处理编程语言，特别适用于扫描和处理模式，对文件或数据流中的数据进行操作，并生成报告 。</p>
+<p><strong>基本语法</strong>: <code>awk [options] &#39;pattern &#123; action &#125;&#39; [file...]</code> 。</p>
+<ul>
+<li>如果省略 <code>pattern</code>，<code>action</code> 将应用于所有行。</li>
+<li>如果省略 <code>action</code>，默认动作为 <code>print $0</code> (打印整行)。</li>
+</ul>
+<p><strong>关键概念与内置变量</strong>:</p>
+<ul>
+<li><strong>记录与字段</strong>: <code>awk</code> 逐条记录 (默认为行) 处理输入。每条记录被分割成若干字段。</li>
+<li><code>$0</code>: 当前的完整记录 (行) 。</li>
+<li><code>$1, $2, ... $N</code>: 当前记录中的各个字段 。</li>
+<li><code>NR</code> (Number of Records): 当前已处理的记录 (行) 总数 (跨所有输入文件) 。</li>
+<li><code>FNR</code> (File Number of Record): 当前文件中的记录号 。每个新文件开始时重置。</li>
+<li><code>NF</code> (Number of Fields): 当前记录中的字段数量 。<code>$NF</code> 指的是最后一个字段。</li>
+<li><code>FS</code> (Field Separator): 输入字段分隔符 (默认为空白字符)。可通过 <code>-F</code> 选项或在 <code>BEGIN</code> 块中设置 (例如，<code>FS=&quot;,&quot;</code> 用于CSV文件) 。</li>
+<li><code>OFS</code> (Output Field Separator): <code>print</code> 命令的输出字段分隔符 (默认为空格) 。</li>
+<li><code>ORS</code> (Output Record Separator): 输出记录分隔符 (默认为换行符) 。</li>
+<li><code>FILENAME</code>: 当前输入文件的名称 。</li>
+<li><code>ARGC</code>, <code>ARGV</code>: 命令行参数的数量和参数数组。</li>
+</ul>
+<p><strong>模式 (Patterns)</strong>:</p>
+<ul>
+<li><strong>正则表达式</strong>: <code>/regex/</code> 。例如: <code>awk &#39;/error/ &#123;print $0&#125;&#39; log.txt</code>。</li>
+<li><strong>关系表达式</strong>: <code>($3 &gt; 100)</code>, <code>($1 == &quot;user&quot;)</code> 。例如: <code>awk &#39;$NF &gt; 10 &#123;print $1, $NF&#125;&#39; data.txt</code>。</li>
+<li><strong>范围模式</strong>: <code>pattern1, pattern2</code> (匹配从第一个模式到第二个模式之间的所有行) 。</li>
+<li><strong><code>BEGIN</code> 和 <code>END</code> 特殊模式</strong>:<ul>
+<li><code>BEGIN &#123; actions &#125;</code>: 在读取任何输入行之前执行一次。用于初始化 (例如设置 FS, OFS, 打印表头) 。</li>
+<li><code>END &#123; actions &#125;</code>: 在处理完所有输入行之后执行一次。用于汇总、计算总和等 。</li>
+</ul>
+</li>
+</ul>
+<p><strong>动作与常用函数</strong>:</p>
+<ul>
+<li><code>print</code>: 打印字段、变量、字符串。<code>print $1, $3</code> 。</li>
+<li><code>printf</code>: 格式化打印，类似于 C 语言的 <code>printf</code> 。</li>
+<li><strong>算术运算</strong>: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>**</code> 或 <code>^</code> 。</li>
+<li><strong>字符串函数</strong>: <code>length()</code>, <code>substr()</code>, <code>index()</code>, <code>split()</code>, <code>tolower()</code>, <code>toupper()</code>, <code>gsub()</code>, <code>sub()</code>, <code>match()</code> 。</li>
+<li><strong>控制流语句</strong> :<ul>
+<li><code>if (condition) statement [else statement]</code></li>
+<li><code>while (condition) statement</code></li>
+<li><code>do statement while (condition)</code></li>
+<li><code>for (init; condition; increment) statement</code></li>
+<li><code>for (var in array) statement</code> (用于关联数组)</li>
+<li><code>break</code>, <code>continue</code>, <code>next</code>, <code>exit</code></li>
+</ul>
+</li>
+<li><strong>数组</strong>: <code>awk</code> 支持关联数组 。例如: <code>counts[$1]++</code>。</li>
+</ul>
+<p><strong>SRE 使用场景与示例</strong>:</p>
+<ul>
+<li><strong>日志分析与汇总</strong>:<ul>
+<li>提取特定字段: <code>ps aux | awk &#39;&#123;print $1, $2, $3, $4&#125;&#39;</code> 。</li>
+<li>统计 <code>access.log</code> 中的 HTTP 状态码: <code>awk &#39;&#123;print $9&#125;&#39; access.log | sort | uniq -c | sort -nr</code> 。</li>
+<li>计算平均响应时间: <code>awk &#39;/api\/call/ &#123;total += $10; count++&#125; END &#123;if (count &gt; 0) print &quot;Avg Resp Time:&quot;, total/count &quot;ms&quot;&#125;&#39; app.log</code> 。</li>
+<li>对某列求和: <code>awk &#39;BEGIN &#123;sum=0&#125; &#123;sum+=$2&#125; END &#123;print sum&#125;&#39; data.txt</code> 。</li>
+<li>查找唯一 IP 及其请求计数: <code>awk &#39;&#123;counts[$1]++&#125; END &#123;for (ip in counts) print ip, counts[ip]&#125;&#39; access.log</code> 。</li>
+</ul>
+</li>
+<li><strong>报告生成</strong>:<ul>
+<li>打印带行号的行: <code>awk &#39;&#123;print NR, $0&#125;&#39; file.txt</code> 。</li>
+<li>使用 <code>printf</code> 格式化输出: <code>df -h | awk &#39;NR&gt;1 &#123;printf &quot;Mount: %-20s Used: %s Avail: %s\n&quot;, $6, $3, $4&#125;&#39;</code>。</li>
+</ul>
+</li>
+<li><strong>数据转换</strong>:<ul>
+<li>将 CSV 文件转换为以空格分隔: <code>awk -F, &#39;&#123;print $1, $2, $3&#125;&#39; data.csv</code>。</li>
+<li>根据字段值过滤行: <code>awk &#39;$3 &gt; 1000 &#123;print &quot;High usage:&quot;, $0&#125;&#39; resource_usage.txt</code> 。</li>
+</ul>
+</li>
+<li><strong>处理 <code>ps</code> 输出</strong>: <code>ps -ef | awk &#39;$1 == &quot;nginx&quot; &#123;print $2, $8&#125;&#39;</code> (查找 nginx 进程的 PID 和 COMMAND)。</li>
+</ul>
+<p><strong>表: awk 核心内置变量</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">变量</th>
+<th align="left">描述</th>
+<th align="left">SRE 常用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>$0</code></td>
+<td align="left">当前的完整行</td>
+<td align="left">打印或匹配整行。</td>
+</tr>
+<tr>
+<td align="left"><code>$1..$N</code></td>
+<td align="left">单个字段</td>
+<td align="left">提取特定数据点 (IP、状态码、指标)。</td>
+</tr>
+<tr>
+<td align="left"><code>NR</code></td>
+<td align="left">当前记录&#x2F;行号</td>
+<td align="left">处理特定行，为输出添加行号。</td>
+</tr>
+<tr>
+<td align="left"><code>NF</code></td>
+<td align="left">当前记录中的字段数</td>
+<td align="left">访问最后一个字段 (<code>$NF</code>)，验证记录结构。</td>
+</tr>
+<tr>
+<td align="left"><code>FS</code></td>
+<td align="left">输入字段分隔符</td>
+<td align="left">定义如何分割行 (例如，用于 CSV、日志分隔符)。</td>
+</tr>
+<tr>
+<td align="left"><code>OFS</code></td>
+<td align="left">输出字段分隔符</td>
+<td align="left">格式化打印输出。</td>
+</tr>
+<tr>
+<td align="left"><code>FILENAME</code></td>
+<td align="left">当前输入文件名</td>
+<td align="left">区别处理多个文件或在报告中包含文件名。</td>
+</tr>
+<tr>
+<td align="left"><code>BEGIN</code></td>
+<td align="left">用于预处理的特殊模式</td>
+<td align="left">初始化变量，打印表头。</td>
+</tr>
+<tr>
+<td align="left"><code>END</code></td>
+<td align="left">用于后处理的特殊模式</td>
+<td align="left">计算总计，打印摘要。</td>
+</tr>
+</tbody></table>
+<p><strong><code>awk</code> 作为数据重构和计算引擎</strong><br><code>awk</code> 的强大之处在于其能够将原始文本数据转化为结构化信息。对于 SRE 工程师而言，它不仅仅是一个文本过滤器，更是一个轻量级的数据处理引擎。原始的日志数据或命令输出通常是半结构化的，不能直接用于聚合或提取特定指标。<code>awk</code> 基于字段的处理方式 (<code>$1</code>, <code>$2</code> 等) 使得访问列式数据变得简单 。其对算术运算和变量的支持使得动态计算（如求和、平均值、计数）成为可能。关联数组在分组和统计唯一项（如IP地址、错误类型）方面非常强大。<code>BEGIN</code> 和 <code>END</code> 块则分别方便了初始化设置（如打印表头）和最终结果报告（如输出总计）。因此，<code>awk</code> 在 SRE 的工具箱中扮演着将原始数据流或文件转换为有意义的指标或摘要的关键角色，通常无需借助更重量级的工具或完整的脚本语言就能完成许多常见任务。其核心在于 <code>pattern &#123; action &#125;</code> 的范式与字段操作的结合。在实际应用中，应着重展示 <code>awk</code> 如何从原始数据中提取有价值的度量或摘要，而不仅仅是打印列。同时，强调其在管道中处理其他命令输出的能力。</p>
+<h3 id="2-4-sed-Stream-Editor"><a href="#2-4-sed-Stream-Editor" class="headerlink" title="2.4. sed (Stream Editor)"></a>2.4. sed (Stream Editor)</h3><p><strong>核心功能</strong>: <code>sed</code> 主要用于对输入流 (文件或来自管道的输入) 进行基本的文本转换。它逐行读取输入，应用指定的操作，然后输出修改后的行 。</p>
+<p><strong>基本语法</strong>: <code>sed &#39;ADDRESS/COMMAND/ARGUMENTS&#39; [FILE...]</code> 或 <code>sed -f script_file [FILE...]</code></p>
+<p><strong>关键概念</strong>:</p>
+<ul>
+<li><strong>模式空间 (Pattern Space)</strong>: <code>sed</code> 用于存放当前正在处理的行的缓冲区。</li>
+<li><strong>保持空间 (Hold Space)</strong>: <code>sed</code> 可用于临时存储数据的辅助缓冲区。</li>
+</ul>
+<p><strong>常用命令与用法</strong>:</p>
+<ul>
+<li><strong><code>s</code> (substitute)</strong>: <code>s/regex/replacement/flags</code> 。<ul>
+<li><code>regex</code>: 要搜索的模式。</li>
+<li><code>replacement</code>: 用于替换匹配模式的字符串。<code>&amp;</code> 在替换部分代表匹配到的模式。<code>\1</code>, <code>\2</code> 用于后向引用（与 <code>\(...\)</code> 配合使用）。</li>
+<li><code>flags</code>:<ul>
+<li><code>g</code> (global): 替换模式空间中所有匹配项 。</li>
+<li><code>N</code> (数字): 只替换第 N 个匹配项。</li>
+<li><code>p</code> (print): 如果发生替换，则打印模式空间 (常与 <code>-n</code> 选项合用) 。</li>
+<li><code>w file</code>: 如果发生替换，则将模式空间写入文件 <code>file</code> 。</li>
+<li><code>I</code> 或 <code>i</code> (ignore case): 不区分大小写匹配 。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong><code>d</code> (delete)</strong>: 删除模式空间 (当前行) 。</li>
+<li><strong><code>p</code> (print)</strong>: 打印当前模式空间 。通常与 <code>-n</code> 合用以控制输出。</li>
+<li><strong><code>i\</code> (insert)</strong>: <code>address i\text_to_insert</code> - 在寻址到的行之前插入文本 。</li>
+<li><strong><code>a\</code> (append)</strong>: <code>address a\text_to_append</code> - 在寻址到的行之后追加文本 。</li>
+<li><strong><code>c\</code> (change)</strong>: <code>address c\new_text</code> - 用新文本替换寻址到的行。</li>
+<li><strong><code>y/string1/string2/</code> (transform)</strong>: 将 <code>string1</code> 中的字符音译为 <code>string2</code> 中对应的字符。</li>
+<li><code>-n, --quiet, --silent</code>: 禁止自动打印模式空间 。</li>
+<li><code>-e script</code>: 添加脚本 (命令) 到待执行的命令中 。允许多个命令。</li>
+<li><code>-f script-file</code>: 从脚本文件中读取命令并添加到待执行的命令中 。</li>
+<li><code>-i, --in-place</code>: 直接修改文件。如果提供了 SUFFIX，则创建原始文件的备份 。谨慎使用。</li>
+<li><code>-r</code> 或 <code>-E</code> (extended regex): 使用扩展正则表达式 。</li>
+</ul>
+<p><strong>地址定界 (将命令应用于特定行)</strong>: </p>
+<ul>
+<li><strong>行号</strong>: <code>sed &#39;3d&#39; file</code> (删除第3行)。</li>
+<li><strong>行范围</strong>: <code>sed &#39;2,5s/old/new/&#39; file</code> (在第2到第5行进行替换)。</li>
+<li><strong><code>$</code></strong>: 最后一行。<code>sed &#39;$d&#39; file</code> (删除最后一行)。</li>
+<li><strong>正则表达式</strong>: <code>sed &#39;/pattern/d&#39; file</code> (删除匹配 <code>pattern</code> 的行)。</li>
+<li><strong>组合</strong>: <code>sed &#39;/start_pattern/,/end_pattern/s/foo/bar/&#39; file</code> (在起始模式和结束模式之间的行进行替换)。</li>
+</ul>
+<p><strong>正则表达式应用</strong>: <code>sed</code> 默认使用基本正则表达式 (BRE)。<code>-E</code> 或 <code>-r</code> 启用扩展正则表达式 (ERE) 。</p>
+<ul>
+<li><strong>后向引用</strong>: BRE 中用 <code>\(pattern\)</code> 分组，ERE 中用 <code>(pattern)</code> 分组，替换时用 <code>\1</code>, <code>\2</code>。例如: <code>sed &#39;s/\([0-9]\+\)-\([a-z]\+\)/\2-\1/&#39;</code> (将 “数字-单词” 替换为 “单词-数字”)。</li>
+</ul>
+<p><strong>SRE 使用场景与示例</strong>:</p>
+<ul>
+<li><strong>原地修改配置文件</strong>:<ul>
+<li>注释掉某行: <code>sudo sed -i.bak &#39;/^some_config_param/s/^/#/&#39; /etc/app.conf</code> 。</li>
+<li>修改配置值: <code>sudo sed -i &#39;s/DEBUG=true/DEBUG=false/&#39; /etc/app/settings.conf</code>。</li>
+</ul>
+</li>
+<li><strong>日志文件处理&#x2F;过滤</strong>:<ul>
+<li>删除空行: <code>sed &#39;/^$/d&#39; logfile.log</code> 。</li>
+<li>提取日志特定部分: <code>sed -n &#39;/BEGIN_SECTION/,/END_SECTION/p&#39; large_log.txt</code>。</li>
+<li>替换敏感信息 (简单脱敏): <code>sed &#39;s/CreditCardNo=[0-9]*/CreditCardNo=REDACTED/g&#39; transaction.log</code>。</li>
+</ul>
+</li>
+<li><strong>格式化命令输出</strong>:<ul>
+<li><code>df -h | sed &#39;s/ Mounted on/MountPoint/&#39;</code> (重命名表头)。</li>
+</ul>
+</li>
+<li><strong>自动化脚本修改</strong>: 在 Shell 脚本中用于跨多个文件或输出自动执行文本修改。</li>
+</ul>
+<p><strong>表: sed 替换标志</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">标志</th>
+<th align="left">描述</th>
+<th align="left">SRE 示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>g</code></td>
+<td align="left">全局：替换行中所有匹配项。</td>
+<td align="left"><code>sed &#39;s/old_IP/new_IP/g&#39; config.file</code></td>
+</tr>
+<tr>
+<td align="left"><code>N</code> (数字)</td>
+<td align="left">第N次出现：仅替换第N次匹配。</td>
+<td align="left"><code>sed &#39;s/ERROR/Error/2&#39; log.txt</code> (修正第二个拼写错误)</td>
+</tr>
+<tr>
+<td align="left"><code>p</code></td>
+<td align="left">打印：如果发生替换则打印该行 (与-n合用)。</td>
+<td align="left"><code>sed -n &#39;s/DEBUG/INFO/p&#39; app.log</code> (仅显示被更改的行)</td>
+</tr>
+<tr>
+<td align="left"><code>w file</code></td>
+<td align="left">写入：如果发生替换则将行写入file。</td>
+<td align="left"><code>sed &#39;s/CRITICAL/ALERT/w critical_alerts.txt&#39; system.log</code></td>
+</tr>
+<tr>
+<td align="left"><code>i</code> 或 <code>I</code></td>
+<td align="left">忽略大小写：不区分大小写匹配。</td>
+<td align="left"><code>sed &#39;s/username/USER/ig&#39; user_list.txt</code></td>
+</tr>
+</tbody></table>
+<p><strong><code>sed</code> 作为管道中的精确文本操纵器</strong><br><code>sed</code> 通常用于进行有针对性的修改，例如替换文本、删除特定行，而不是像 <code>awk</code> 那样进行大规模的数据重构 。<code>sed</code> 逐行操作，并且擅长基于模式的查找和替换。其寻址能力（行号、正则表达式）允许精确地定位操作目标。虽然它可以通过保持空间实现更复杂的功能，但在 SRE 的日常使用中，它主要用于相对直接的转换。在管道中，<code>sed</code> 经常在 <code>grep</code> 之后使用（修改已过滤的行）或在 <code>awk</code> 之前使用（在字段处理前清理数据）。因此，<code>sed</code> 是 SRE 用来进行精确、通常是小范围文本流或文件更改的工具。它的强项不在于复杂的逻辑处理（那是 <code>awk</code> 的领域），而在于高效和准确的文本替换与删除。<code>-i</code> 选项用于原地编辑，功能强大但有风险，这强调了 SRE 小心谨慎和先测试的原则。在报告中，应突出 <code>sed</code> 在清理、规范化或轻微更改数据方面的作用，作为更大数据处理管道的一部分，并警示原地编辑的风险。</p>
+<h3 id="2-5-ps-Process-Status"><a href="#2-5-ps-Process-Status" class="headerlink" title="2.5. ps (Process Status)"></a>2.5. ps (Process Status)</h3><p><strong>核心功能</strong>: 显示当前运行进程的信息 。它提供系统进程的一个快照。</p>
+<p><strong>语法风格</strong>:</p>
+<ul>
+<li><strong>BSD 风格</strong>: <code>ps aux</code> (选项前无连字符) 。</li>
+<li><strong>System V&#x2F;POSIX 风格</strong>: <code>ps -ef</code> (选项前有连字符) 。</li>
+</ul>
+<p><strong>常用选项与输出解释</strong>:</p>
+<ul>
+<li><strong><code>ps aux</code> (BSD 风格)</strong>: <ul>
+<li><code>USER</code>: 拥有进程的用户。</li>
+<li><code>PID</code>: 进程 ID。</li>
+<li><code>%CPU</code>: CPU 利用率。</li>
+<li><code>%MEM</code>: 内存利用率 (驻留集大小 &#x2F; 总物理内存)。</li>
+<li><code>VSZ</code>: 虚拟内存大小 (KiB)。</li>
+<li><code>RSS</code>: 驻留集大小 (使用的物理内存, KiB)。</li>
+<li><code>TTY</code>: 控制终端 (<code>?</code> 表示无)。</li>
+<li><code>STAT</code>: 进程状态 (例如, <code>R</code> 运行, <code>S</code> 休眠, <code>Z</code> 僵尸, <code>D</code> 不可中断休眠, <code>I</code> 空闲, <code>T</code> 停止)。还可能包含修饰符，如 <code>s</code> (会话领导者), <code>&lt;</code> (高优先级), <code>N</code> (低优先级), <code>L</code> (页面锁定在内存中), <code>+</code> (前台进程组) 。</li>
+<li><code>START</code>: 进程启动时间。</li>
+<li><code>TIME</code>: 累积使用的 CPU 时间。</li>
+<li><code>COMMAND</code>: 命令及其参数。</li>
+</ul>
+</li>
+<li><strong><code>ps -ef</code> (System V&#x2F;POSIX 风格)</strong>: <ul>
+<li><code>UID</code>: 用户 ID。</li>
+<li><code>PID</code>: 进程 ID。</li>
+<li><code>PPID</code>: 父进程 ID。</li>
+<li><code>C</code> (或某些系统上的 <code>%CPU</code>): CPU 利用率。</li>
+<li><code>STIME</code>: 启动时间。</li>
+<li><code>TTY</code>: 控制终端。</li>
+<li><code>TIME</code>: 累积使用的 CPU 时间。</li>
+<li><code>CMD</code> (或 <code>COMMAND</code>): 命令及其参数。</li>
+</ul>
+</li>
+<li><strong><code>ps -l</code> (长格式)</strong>: 提供更详细信息，包括 <code>F</code> (标志), <code>S</code> (状态), <code>PRI</code> (优先级), <code>NI</code> (nice 值), <code>ADDR</code> (内存地址), <code>SZ</code> (可分页映像的大小，单位为块) 。</li>
+<li><strong><code>axo &lt;format_specifiers&gt;</code> 或 <code>-o &lt;format_specifiers&gt;</code> (自定义输出)</strong>: 允许用户精确指定要显示的列及其表头 。<br>示例: <code>ps axo pid,ppid,user,%cpu,%mem,stat,etime,args --sort=-%cpu</code><ul>
+<li><code>pid</code>: 进程 ID</li>
+<li><code>ppid</code>: 父进程 ID</li>
+<li><code>user</code>: 用户名</li>
+<li><code>%cpu</code> 或 <code>pcpu</code>: CPU 使用率</li>
+<li><code>%mem</code> 或 <code>pmem</code>: 内存使用率</li>
+<li><code>stat</code> 或 <code>state</code>: 进程状态</li>
+<li><code>etime</code>: 进程启动后经过的时间 (<code>[[dd-]hh:]mm:ss</code>)</li>
+<li><code>args</code> 或 <code>command</code>: 完整命令及参数</li>
+<li><code>comm</code>: 仅命令名</li>
+<li><code>vsz</code>: 虚拟大小</li>
+<li><code>rss</code>: 驻留集大小</li>
+<li><code>psr</code>: 当前分配给进程的处理器</li>
+<li><code>ni</code>: Nice 值</li>
+</ul>
+</li>
+<li><strong>排序</strong>: <code>ps aux --sort=-%cpu</code> (按 CPU 使用率降序排序), <code>ps aux --sort=%mem</code> (按内存使用率升序排序) 。</li>
+</ul>
+<p><strong>SRE 使用场景与示例</strong>:</p>
+<ul>
+<li><strong>识别资源消耗大户</strong>:<ul>
+<li><code>ps aux --sort=-%cpu | head -n 10</code> (CPU 消耗最高的进程) 。</li>
+<li><code>ps aux --sort=-%mem | head -n 10</code> (内存消耗最高的进程)。</li>
+</ul>
+</li>
+<li><strong>检查特定进程是否运行</strong>: <code>ps aux | grep &#39;[s]shd&#39;</code> 。<code>[]</code> 技巧避免 <code>grep</code> 显示自身。</li>
+<li><strong>查找父&#x2F;子进程关系</strong>: <code>ps -ef --forest</code> 或 <code>pstree</code> 。</li>
+<li><strong>获取特定信息用于脚本</strong>: <code>ps -p &lt;PID&gt; -o pid,ppid,%cpu,cmd</code>。</li>
+<li><strong>监控线程数</strong>: <code>ps -p &lt;PID&gt; -L -o pid,lwp,nlwp,pri,cmd</code> (<code>lwp</code> 是线程 ID, <code>nlwp</code> 是线程数) 。</li>
+<li><strong>按用户查看进程</strong>: <code>ps -u username</code> 或 <code>ps aux | grep &#39;^username&#39;</code> 。</li>
+</ul>
+<p><strong>表: ps 输出列 (来自 <code>aux</code> 和 <code>-ef</code> 的常见列)</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">列</th>
+<th align="left">描述</th>
+<th align="left"><code>aux</code> 表头</th>
+<th align="left"><code>-ef</code> 表头</th>
+<th align="left">描述及 SRE 相关性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">进程 ID</td>
+<td align="left">PID</td>
+<td align="left"><code>PID</code></td>
+<td align="left"><code>PID</code></td>
+<td align="left">唯一 ID，用于定位进程 (例如，与 <code>kill</code> 命令配合使用)。</td>
+</tr>
+<tr>
+<td align="left">用户</td>
+<td align="left">USER</td>
+<td align="left"><code>USER</code></td>
+<td align="left"><code>UID</code></td>
+<td align="left">进程所有者，用于安全和资源归属。</td>
+</tr>
+<tr>
+<td align="left">CPU 使用率</td>
+<td align="left">%CPU</td>
+<td align="left"><code>%CPU</code></td>
+<td align="left"><code>C</code> 或 <code>%CPU</code></td>
+<td align="left">当前 CPU 份额，性能瓶颈的关键指标。</td>
+</tr>
+<tr>
+<td align="left">内存使用率</td>
+<td align="left">%MEM</td>
+<td align="left"><code>%MEM</code></td>
+<td align="left">(通常不在 -ef 中直接显示, <code>RSS</code> 更好)</td>
+<td align="left">当前物理内存份额，内存压力的关键指标。</td>
+</tr>
+<tr>
+<td align="left">虚拟大小</td>
+<td align="left">VSZ</td>
+<td align="left"><code>VSZ</code></td>
+<td align="left"><code>SZ</code> (不固定)</td>
+<td align="left">总虚拟内存。高 <code>VSZ</code> 不一定坏，但值得注意。</td>
+</tr>
+<tr>
+<td align="left">驻留大小</td>
+<td align="left">RSS</td>
+<td align="left"><code>RSS</code></td>
+<td align="left">(通常不在 -ef 中直接显示)</td>
+<td align="left">实际使用的物理内存。高 <code>RSS</code> 表明内存压力。</td>
+</tr>
+<tr>
+<td align="left">控制 TTY</td>
+<td align="left">TTY</td>
+<td align="left"><code>TTY</code></td>
+<td align="left"><code>TT</code> 或 <code>TTY</code></td>
+<td align="left">终端关联。<code>?</code> 表示无终端 (守护进程)。</td>
+</tr>
+<tr>
+<td align="left">进程状态</td>
+<td align="left">STAT</td>
+<td align="left"><code>STAT</code></td>
+<td align="left"><code>S</code> 或 <code>STAT</code></td>
+<td align="left">理解进程活动的关键 (<code>R</code>, <code>S</code>, <code>D</code>, <code>Z</code>, <code>T</code>, <code>I</code>)。</td>
+</tr>
+<tr>
+<td align="left">启动时间</td>
+<td align="left">START</td>
+<td align="left"><code>START</code></td>
+<td align="left"><code>STIME</code></td>
+<td align="left">进程开始的时间。</td>
+</tr>
+<tr>
+<td align="left">CPU 时间</td>
+<td align="left">TIME</td>
+<td align="left"><code>TIME</code></td>
+<td align="left"><code>TIME</code></td>
+<td align="left">累积 CPU 使用时间，有助于识别长期繁忙的进程。</td>
+</tr>
+<tr>
+<td align="left">命令</td>
+<td align="left">COMMAND</td>
+<td align="left"><code>COMMAND</code></td>
+<td align="left"><code>CMD</code> 或 <code>COMMAND</code></td>
+<td align="left">正在运行的程序。</td>
+</tr>
+<tr>
+<td align="left">父进程 ID</td>
+<td align="left">(不在 <code>aux</code> 默认输出中)</td>
+<td align="left"></td>
+<td align="left"><code>PPID</code></td>
+<td align="left">父进程，用于追踪进程谱系。</td>
+</tr>
+</tbody></table>
+<p><strong><code>ps</code> 用于快照分析 vs. <code>top</code> 用于实时监控</strong><br><code>ps</code> 和 <code>top</code> 都是SRE常用的进程监控工具，但它们的应用场景有所不同。<code>ps</code> 执行后收集当前进程信息，打印输出然后退出，提供的是某个特定时间点的“快照” 。相比之下，<code>top</code> 是一个持续运行的程序，它会周期性地刷新并显示进程信息，提供动态的实时视图。</p>
+<p>对于需要编写脚本、记录日志或捕获特定状态以供后续分析的场景，<code>ps</code> 是理想的选择，因为它的输出是固定的，易于通过管道传递给其他命令或重定向到文件。例如，SRE 可能会定期执行 <code>ps aux --sort=-%cpu | head</code> 并将结果记录下来，以追踪一段时间内CPU使用率最高的进程。</p>
+<p>而对于交互式的实时故障排除和观察波动的资源使用情况，<code>top</code> 则更为合适。SRE 可以通过 <code>top</code> 的交互式命令（如按 <code>P</code> 排序CPU，按 <code>M</code> 排序内存）来动态分析系统负载。<code>ps aux</code> 和 <code>ps -ef</code> 是获取全面进程列表的常用命令组合，其输出经常被传递给 <code>grep</code> 进行筛选或 <code>awk</code> 进行特定字段的提取和格式化。理解这两者的区别，有助于SRE根据具体任务选择最合适的工具。</p>
+<h3 id="2-6-netstat-Network-Statistics-与-ss-Socket-Statistics"><a href="#2-6-netstat-Network-Statistics-与-ss-Socket-Statistics" class="headerlink" title="2.6. netstat (Network Statistics) 与 ss (Socket Statistics)"></a>2.6. netstat (Network Statistics) 与 ss (Socket Statistics)</h3><p><strong><code>netstat</code> 核心功能</strong>: 显示网络连接 (包括入站和出站)、路由表、接口统计信息、伪装连接和多播成员关系 。</p>
+<p><strong>关于 <code>ss</code> 的说明</strong>: <code>netstat</code> 在很大程度上被认为是已弃用的。<code>ss</code> 命令是现代的替代品，通常速度更快并提供更多信息 。本报告将按要求涵盖 <code>netstat</code>，但强烈建议并详细介绍 <code>ss</code>。</p>
+<p><strong>常用 <code>netstat</code> 选项与用法</strong>:</p>
+<ul>
+<li><code>-a, --all</code>: 显示所有套接字 (监听和非监听) 。</li>
+<li><code>-t, --tcp</code>: 显示 TCP 连接 。</li>
+<li><code>-u, --udp</code>: 显示 UDP 连接 。</li>
+<li><code>-n, --numeric</code>: 以数字形式显示地址和端口号 (不解析名称) 。速度更快。</li>
+<li><code>-p, --program</code>: 显示每个套接字所属进程的 PID 和名称 (需要 <code>root</code>&#x2F;<code>sudo</code> 权限) 。</li>
+<li><code>-l, --listening</code>: 只显示监听套接字 。</li>
+<li><code>-r, --route</code>: 显示内核路由表 。</li>
+<li><code>-i, --interfaces</code>: 显示网络接口表 。<code>-ie</code> 用于显示扩展信息。</li>
+<li><code>-s, --statistics</code>: 显示每个协议的摘要统计信息 。</li>
+<li><code>-c, --continuous</code>: 连续列出 。</li>
+<li><code>-e, --extend</code>: 显示扩展信息 。</li>
+</ul>
+<p><strong>输出解读</strong>:</p>
+<ul>
+<li><code>Proto</code>: 协议 (<code>tcp</code>, <code>udp</code>, <code>tcp6</code>, <code>udp6</code>)。</li>
+<li><code>Recv-Q</code>, <code>Send-Q</code>: 接收和发送队列 (字节)。</li>
+<li><code>Local Address</code>, <code>Foreign Address</code>: IP 地址和端口号。<code>0.0.0.0:*</code> 或 <code>[::]:*</code> 表示在该端口上监听所有接口 。</li>
+<li><code>State</code>: 连接状态 (例如, <code>LISTEN</code>, <code>ESTABLISHED</code>, <code>TIME_WAIT</code>, <code>CLOSE_WAIT</code>, <code>SYN_SENT</code>, <code>SYN_RECV</code>) 。</li>
+<li><code>PID/Program name</code>: (使用 <code>-p</code> 选项时) 拥有套接字的进程 ID 和名称。</li>
+</ul>
+<p><strong><code>ss</code> 命令 (现代替代品)</strong>: </p>
+<ul>
+<li><strong>优势</strong>: 更快，信息更多，过滤功能更好。使用 Netlink 从内核获取信息。</li>
+<li><strong>常用 <code>ss</code> 选项</strong> (通常与 <code>netstat</code> 类似，但有时字母不同):<ul>
+<li><code>ss -a</code> (所有), <code>ss -l</code> (监听), <code>ss -t</code> (TCP), <code>ss -u</code> (UDP), <code>ss -n</code> (数字), <code>ss -p</code> (进程), <code>ss -r</code> (解析主机名), <code>ss -e</code> (扩展信息), <code>ss -o</code> (定时器信息), <code>ss -s</code> (摘要)。</li>
+</ul>
+</li>
+<li><strong>按状态过滤</strong>: <code>ss -t state established</code>, <code>ss -t state listening</code>。</li>
+<li><strong>按地址&#x2F;端口过滤</strong>: <code>ss -t &#39;( dport = :ssh or sport = :ssh )&#39;</code>, <code>ss dst :80</code>。</li>
+</ul>
+<p><strong>SRE 使用场景与示例 (同时显示 <code>netstat</code> 和 <code>ss</code> 等效命令)</strong>:</p>
+<ul>
+<li><strong>查看监听端口</strong>:<ul>
+<li><code>netstat -tulnp</code> </li>
+<li><code>ss -tulnp</code></li>
+</ul>
+</li>
+<li><strong>查看已建立的连接</strong>:<ul>
+<li><code>netstat -antp | grep ESTABLISHED</code></li>
+<li><code>ss -tpn state established</code></li>
+</ul>
+</li>
+<li><strong>关联进程与端口</strong>:<ul>
+<li><code>netstat -tulnp | grep &#39;:80&#39;</code> </li>
+<li><code>ss -tulnp | grep &#39;:80&#39;</code></li>
+<li><code>sudo lsof -i :80</code>  - 通常更推荐此方法。</li>
+</ul>
+</li>
+<li><strong>网络故障排除</strong>:<ul>
+<li>检查服务 (例如，Web 服务器在 80 端口) 是否正在监听: <code>netstat -tulnp | grep &#39;:80&#39;</code> 或 <code>ss -tlpn | grep &#39;:80&#39;</code>。</li>
+<li>识别大量处于 <code>TIME_WAIT</code> 状态的连接: <code>netstat -ant | awk &#39;&#123;print $6&#125;&#39; | sort | uniq -c | sort -nr</code> 或 <code>ss -ant | awk &#39;&#123;print $2&#125;&#39; | sort | uniq -c | sort -nr</code>。</li>
+</ul>
+</li>
+<li><strong>查看路由表</strong>: <code>netstat -r</code> 或 <code>ip route show</code> 。</li>
+<li><strong>查看接口统计信息</strong>: <code>netstat -i</code> 或 <code>ip -s link</code> 。</li>
+</ul>
+<p><strong>表: <code>netstat</code> vs. <code>ss</code> 用于常见 SRE 任务</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">任务</th>
+<th align="left"><code>netstat</code> 示例</th>
+<th align="left"><code>ss</code> 示例</th>
+<th align="left">SRE 相关性</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">列出所有带 PID 的 TCP 监听端口</td>
+<td align="left"><code>sudo netstat -tlpn</code></td>
+<td align="left"><code>sudo ss -tlpn</code></td>
+<td align="left">验证服务是否已启动并正在监听。</td>
+</tr>
+<tr>
+<td align="left">列出所有带 PID 的 UDP 监听端口</td>
+<td align="left"><code>sudo netstat -ulpn</code></td>
+<td align="left"><code>sudo ss -ulpn</code></td>
+<td align="left">检查 DNS、NTP 或其他 UDP 服务。</td>
+</tr>
+<tr>
+<td align="left">列出已建立的 TCP 连接 (数字格式)</td>
+<td align="left"><code>netstat -tpn | grep ESTABLISHED</code></td>
+<td align="left"><code>ss -tpn state established</code></td>
+<td align="left">监控活动连接，排查连接问题。</td>
+</tr>
+<tr>
+<td align="left">显示路由表</td>
+<td align="left"><code>netstat -r</code></td>
+<td align="left"><code>ip route</code> 或 <code>ss -r</code></td>
+<td align="left">诊断连接问题。</td>
+</tr>
+<tr>
+<td align="left">显示接口统计信息</td>
+<td align="left"><code>netstat -i</code></td>
+<td align="left"><code>ip -s link</code> 或 <code>ss -ien</code></td>
+<td align="left">检查接口上的网络错误或高流量。</td>
+</tr>
+<tr>
+<td align="left">显示摘要统计信息</td>
+<td align="left"><code>netstat -s</code></td>
+<td align="left"><code>ss -s</code></td>
+<td align="left">获取网络协议性能概览。</td>
+</tr>
+</tbody></table>
+<p><strong>从 <code>netstat</code> 到 <code>ss</code> 的必然转变</strong><br>多个信息来源明确指出 <code>netstat</code> 已被弃用或过时，而 <code>ss</code> 是首选的替代工具 。这主要是因为 <code>netstat</code> 依赖于读取 <code>/proc</code> 文件系统中的文件，这在存在大量连接的系统上可能效率低下。相比之下，<code>ss</code> 使用 Netlink 套接字接口直接与内核通信，这种方式更高效，并且能够访问更详细的套接字信息。此外，<code>ss</code> 通常提供更强大和灵活的过滤功能。<code>iproute2</code> 软件包（包含 <code>ss</code> 和 <code>ip</code> 命令）是现代 Linux 网络管理的标准套件，取代了包含 <code>netstat</code>、<code>ifconfig</code>、<code>route</code> 等命令的旧版 <code>net-tools</code> 软件包。</p>
+<p>因此，SRE 工程师，特别是那些在现代 Linux 发行版上工作的工程师，必须熟练掌握 <code>ss</code>。虽然在旧系统或遗留脚本中可能仍会遇到 <code>netstat</code>，但 <code>ss</code> 是当前和未来网络诊断的主力工具。理解 <code>ss</code> 不仅仅是学习一个新命令，更是拥抱现代 Linux 网络工具集。报告中虽然会按要求介绍 <code>netstat</code>，但会投入大量篇幅介绍 <code>ss</code>，突出其优势，并提供并行示例以帮助用户过渡。这使得报告更具前瞻性和实用价值。</p>
+<h3 id="2-7-top"><a href="#2-7-top" class="headerlink" title="2.7. top"></a>2.7. top</h3><p><strong>核心功能</strong>: <code>top</code> 命令提供对 Linux 系统中正在运行的进程的动态实时视图 。它允许 SRE 监控系统性能，识别资源密集型进程。</p>
+<p><strong>启动 <code>top</code></strong>: 在终端输入 <code>top</code> 并按 Enter。</p>
+<p><strong>输出解释</strong> :</p>
+<ul>
+<li><strong>概要区域 (Dashboard)</strong>:<ul>
+<li><strong>第一行</strong>: 当前时间、系统运行时间 (<code>up</code>)、登录用户数 (<code>users</code>)、过去1、5、15分钟的系统平均负载 (<code>load average</code>)。负载平均值表示处于可运行或不可中断睡眠状态的平均进程数。</li>
+<li><strong>第二行 (Tasks)</strong>: 进程总数 (<code>total</code>)、正在运行 (<code>running</code>)、休眠 (<code>sleeping</code>)、停止 (<code>stopped</code>)、僵尸 (<code>zombie</code>) 进程的数量。</li>
+<li><strong>第三行 (%Cpu(s))</strong>: CPU 时间在不同状态下的百分比：<ul>
+<li><code>us</code>: 用户空间 (user space)。</li>
+<li><code>sy</code>: 系统空间&#x2F;内核空间 (system space)。</li>
+<li><code>ni</code>: Nice 值调整过的用户进程 (nice)。</li>
+<li><code>id</code>: 空闲 (idle)。</li>
+<li><code>wa</code>: 等待 I&#x2F;O (I&#x2F;O wait)。</li>
+<li><code>hi</code>: 处理硬件中断 (hardware interrupts)。</li>
+<li><code>si</code>: 处理软件中断 (software interrupts)。</li>
+<li><code>st</code>: 被虚拟化环境偷走的时间 (steal time)。</li>
+</ul>
+</li>
+<li><strong>第四行 (Mem)</strong>: 物理内存使用情况 (单位通常是 KiB)：<code>total</code>, <code>free</code>, <code>used</code>, <code>buff/cache</code>。<code>buff/cache</code> 是被内核用于缓冲区和页面缓存的内存，可在需要时被应用程序回收。</li>
+<li><strong>第五行 (Swap)</strong>: 交换空间使用情况：<code>total</code>, <code>free</code>, <code>used</code>。<code>avail Mem</code> 是可用于启动新应用程序的预计可用内存量（无需交换）。</li>
+</ul>
+</li>
+<li><strong>任务区域 (进程列表)</strong>:<ul>
+<li><code>PID</code>: 进程 ID。</li>
+<li><code>USER</code>: 进程所有者的用户名。</li>
+<li><code>PR</code>: 进程优先级。</li>
+<li><code>NI</code>: Nice 值。负值表示高优先级，正值表示低优先级。</li>
+<li><code>VIRT</code>: 进程使用的虚拟内存总量。</li>
+<li><code>RES</code>: 进程使用的物理内存量 (驻留内存)。</li>
+<li><code>SHR</code>: 进程使用的共享内存量。</li>
+<li><code>S</code>: 进程状态 (<code>D</code>&#x3D;不可中断睡眠, <code>R</code>&#x3D;运行, <code>S</code>&#x3D;休眠, <code>T</code>&#x3D;跟踪&#x2F;停止, <code>Z</code>&#x3D;僵尸)。</li>
+<li><code>%CPU</code>: 自上次更新以来进程使用的 CPU 时间百分比。在多核系统上，如果进程是多线程的，此值可能超过100%。</li>
+<li><code>%MEM</code>: 进程使用的物理内存百分比。</li>
+<li><code>TIME+</code>: 进程自启动以来累计使用的 CPU 时间 (通常精确到百分之一秒)。</li>
+<li><code>COMMAND</code>: 命令名或完整的命令行。</li>
+</ul>
+</li>
+</ul>
+<p><strong>交互式命令</strong> :</p>
+<ul>
+<li><code>P</code>: 按 CPU 使用率排序 (降序)。</li>
+<li><code>M</code>: 按内存使用率排序 (降序)。</li>
+<li><code>T</code>: 按累计 CPU 时间排序 (降序)。</li>
+<li><code>k</code>: 杀掉一个进程 (会提示输入 PID 和信号，默认为 15&#x2F;SIGTERM)。</li>
+<li><code>r</code>: 重新设置进程的 Nice 值 (会提示输入 PID 和新的 Nice 值)。</li>
+<li><code>f</code>: 进入字段管理界面，自定义显示的列。</li>
+<li><code>1</code>: 切换显示单个 CPU 核心与所有 CPU 核心的平均统计信息。</li>
+<li><code>z</code>: 切换彩色&#x2F;单色显示。</li>
+<li><code>c</code>: 切换 <code>COMMAND</code> 列显示命令名还是完整命令行。</li>
+<li><code>u</code>: 按用户过滤进程 (会提示输入用户名或 UID)。</li>
+<li><code>h</code> 或 <code>?</code>: 显示帮助。</li>
+<li><code>q</code>: 退出 <code>top</code>。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li>实时监控系统负载和资源使用情况。</li>
+<li>快速识别消耗 CPU 或内存过多的进程。</li>
+<li>查看哪些进程处于 I&#x2F;O 等待状态 (<code>wa</code>)，可能指示磁盘瓶颈。</li>
+<li>终止失控或无响应的进程。</li>
+<li>调整进程优先级以优化关键应用性能。</li>
+</ul>
+<h3 id="2-8-vmstat-Virtual-Memory-Statistics"><a href="#2-8-vmstat-Virtual-Memory-Statistics" class="headerlink" title="2.8. vmstat (Virtual Memory Statistics)"></a>2.8. vmstat (Virtual Memory Statistics)</h3><p><strong>核心功能</strong>: <code>vmstat</code> 报告关于虚拟内存、进程、陷阱、磁盘活动和 CPU 活动的统计信息 。它提供系统性能的快照，可以按指定的时间间隔连续更新。</p>
+<p><strong>基本语法</strong>: <code>vmstat [options] [delay [count]]</code></p>
+<ul>
+<li><code>delay</code>: 两次更新之间的延迟时间 (秒)。</li>
+<li><code>count</code>: 更新次数。如果省略 <code>count</code> 但指定了 <code>delay</code>，则无限次更新。</li>
+</ul>
+<p><strong>输出字段解释</strong> :</p>
+<ul>
+<li><strong><code>procs</code></strong>:<ul>
+<li><code>r</code>: 等待运行的进程数 (运行队列长度)。如果该值持续大于 CPU 核心数，可能表示 CPU 瓶颈。</li>
+<li><code>b</code>: 处于不可中断睡眠状态的进程数 (通常在等待 I&#x2F;O)。</li>
+</ul>
+</li>
+<li><strong><code>memory</code></strong>:<ul>
+<li><code>swpd</code>: 使用的虚拟内存量 (KiB)。如果该值很大且非零，表示系统正在使用交换空间。</li>
+<li><code>free</code>: 空闲物理内存量 (KiB)。</li>
+<li><code>buff</code>: 用作缓冲区的内存量 (KiB)。</li>
+<li><code>cache</code>: 用作页面缓存的内存量 (KiB)。</li>
+</ul>
+</li>
+<li><strong><code>swap</code></strong>:<ul>
+<li><code>si</code>: 每秒从磁盘换入的内存量 (KiB&#x2F;s)。如果持续非零，表明内存不足。</li>
+<li><code>so</code>: 每秒换出到磁盘的内存量 (KiB&#x2F;s)。如果持续非零，表明内存不足。</li>
+</ul>
+</li>
+<li><strong><code>io</code></strong>:<ul>
+<li><code>bi</code>: 每秒从块设备读入的块数 (通常是 KiB&#x2F;s)。</li>
+<li><code>bo</code>: 每秒写入块设备的块数 (通常是 KiB&#x2F;s)。</li>
+</ul>
+</li>
+<li><strong><code>system</code></strong>:<ul>
+<li><code>in</code>: 每秒中断次数，包括时钟中断。</li>
+<li><code>cs</code>: 每秒上下文切换次数。高 <code>cs</code> 值可能表明系统过于繁忙，或者有大量小任务在竞争 CPU。</li>
+</ul>
+</li>
+<li><strong><code>cpu</code></strong>: CPU 时间百分比<ul>
+<li><code>us</code>: 用户态 CPU 时间百分比。</li>
+<li><code>sy</code>: 系统态 (内核态) CPU 时间百分比。</li>
+<li><code>id</code>: CPU 空闲时间百分比。</li>
+<li><code>wa</code>: 等待 I&#x2F;O 的 CPU 时间百分比。高 <code>wa</code> 值通常意味着磁盘瓶颈。</li>
+<li><code>st</code>: 从虚拟机窃取的时间百分比 (适用于虚拟化环境)。</li>
+</ul>
+</li>
+</ul>
+<p><strong>常用选项</strong>:</p>
+<ul>
+<li><code>-a, --active</code>: 显示活动和非活动内存 。</li>
+<li><code>-f, --forks</code>: 显示自系统启动以来的 fork 次数。</li>
+<li><code>-m, --slabs</code>: 显示 slabinfo。</li>
+<li><code>-s, --stats</code>: 显示各种事件计数器和内存统计信息的表格 。</li>
+<li><code>-d, --disk</code>: 显示磁盘统计信息 (需要较新内核)。</li>
+<li><code>-p &lt;partition&gt;</code>: 显示指定分区的详细统计信息。</li>
+<li><code>-S &lt;unit&gt;</code>: 指定输出单位 (<code>k</code>, <code>K</code>, <code>m</code>, <code>M</code>)。默认为 <code>K</code> (1024 bytes)。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>监控内存使用</strong>: 检查 <code>free</code>, <code>swpd</code>, <code>si</code>, <code>so</code> 来判断系统是否存在内存压力。</li>
+<li><strong>CPU 瓶颈分析</strong>: 观察 <code>r</code>, <code>us</code>, <code>sy</code>, <code>id</code>, <code>wa</code>。高 <code>r</code> 值和低 <code>id</code> 值可能表示 CPU 不足。高 <code>wa</code> 表示 I&#x2F;O 瓶颈。</li>
+<li><strong>I&#x2F;O 性能评估</strong>: <code>bi</code> 和 <code>bo</code> 显示磁盘活动量。</li>
+<li><strong>上下文切换监控</strong>: 高 <code>cs</code> 值可能需要调查。</li>
+<li><strong>示例</strong>: <code>vmstat 2 5</code> (每2秒显示一次，共显示5次)。</li>
+</ul>
+<h3 id="2-9-iostat-Input-Output-Statistics"><a href="#2-9-iostat-Input-Output-Statistics" class="headerlink" title="2.9. iostat (Input&#x2F;Output Statistics)"></a>2.9. iostat (Input&#x2F;Output Statistics)</h3><p><strong>核心功能</strong>: <code>iostat</code> 用于监控系统输入&#x2F;输出设备和 CPU 的使用情况 。它对于识别磁盘 I&#x2F;O 瓶颈特别有用。</p>
+<p><strong>基本语法</strong>: <code>iostat [options] [interval [count]]</code></p>
+<ul>
+<li><code>interval</code>: 报告之间的秒数。</li>
+<li><code>count</code>: 报告的总数。</li>
+</ul>
+<p><strong>输出字段解释</strong> :</p>
+<ul>
+<li><strong>CPU 利用率报告 (<code>avg-cpu</code>)</strong>:<ul>
+<li><code>%user</code>: 用户级别执行所占 CPU 百分比。</li>
+<li><code>%nice</code>: nice 优先级用户级别执行所占 CPU 百分比。</li>
+<li><code>%system</code>: 系统级别 (内核) 执行所占 CPU 百分比。</li>
+<li><code>%iowait</code>: CPU 等待 I&#x2F;O 操作完成的时间百分比。高 <code>iowait</code> 表示磁盘可能是瓶颈。</li>
+<li><code>%steal</code>: 虚拟机管理程序为另一个虚拟处理器提供服务时，虚拟 CPU 非自愿等待所花费的时间百分比。</li>
+<li><code>%idle</code>: CPU 空闲时间百分比。</li>
+</ul>
+</li>
+<li><strong>设备利用率报告 (<code>Device:</code>)</strong>:<ul>
+<li><code>Device</code>: 设备或分区名称。</li>
+<li><code>tps</code>: 每秒传输次数 (I&#x2F;O 请求数)。一个传输是一个到设备的 I&#x2F;O 请求。多个逻辑请求可以合并为一个 I&#x2F;O 请求到设备。<code>tps</code> 越高，处理器越繁忙 。</li>
+<li><code>Blk_read/s</code> 或 <code>kB_read/s</code> (取决于选项): 每秒从设备读取的块数 (或千字节数)。</li>
+<li><code>Blk_wrtn/s</code> 或 <code>kB_wrtn/s</code> (取决于选项): 每秒写入设备的块数 (或千字节数)。</li>
+<li><code>Blk_read</code> 或 <code>kB_read</code>: 读取的总块数 (或千字节数)。</li>
+<li><code>Blk_wrtn</code> 或 <code>kB_wrtn</code>: 写入的总块数 (或千字节数)。</li>
+<li><code>r/s</code>: 每秒合并的读请求数。</li>
+<li><code>w/s</code>: 每秒合并的写请求数。</li>
+<li><code>await</code>: 每个 I&#x2F;O 请求的平均等待时间 (毫秒)，包括在队列中等待的时间和实际服务时间。</li>
+<li><code>svctm</code>: (已弃用，可能不准确) 每个 I&#x2F;O 请求的平均服务时间 (毫秒)。</li>
+<li><code>%util</code>: 设备繁忙时间的百分比。接近 100% 表示设备饱和。</li>
+</ul>
+</li>
+</ul>
+<p><strong>常用选项</strong>:</p>
+<ul>
+<li><code>-c</code>: 只显示 CPU 利用率报告 。</li>
+<li><code>-d</code>: 只显示设备利用率报告 。</li>
+<li><code>-k</code>: 以千字节为单位显示统计信息 (默认是块) 。</li>
+<li><code>-m</code>: 以兆字节为单位显示统计信息 。</li>
+<li><code>-x</code>: 显示扩展统计信息，更详细。</li>
+<li><code>-p [device | ALL]</code>: 报告指定设备或所有设备的统计信息 。</li>
+<li><code>-N</code>: 显示注册的设备映射名称 (LVM)。</li>
+<li><code>-t</code>: 在每条报告前打印时间戳。</li>
+<li><code>-z</code>: 在采样周期内，如果设备没有任何活动，则省略该设备的输出。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>识别磁盘 I&#x2F;O 瓶颈</strong>: 观察 <code>%iowait</code>, <code>%util</code>, <code>await</code>, <code>tps</code>。高 <code>%util</code> 和长 <code>await</code> 时间表明磁盘性能问题。</li>
+<li><strong>监控特定设备的性能</strong>: <code>iostat -p sda 2 5</code> (监控 <code>/dev/sda</code>，每2秒一次，共5次)。</li>
+<li><strong>评估读写负载</strong>: 比较 <code>kB_read/s</code> 和 <code>kB_wrtn/s</code> 来了解应用的 I&#x2F;O 模式。</li>
+<li><strong>示例</strong>: <code>iostat -xk 2 5</code> (每2秒显示一次扩展统计信息，以KB为单位，共5次)。</li>
+</ul>
+<h3 id="2-10-lsof-List-Open-Files"><a href="#2-10-lsof-List-Open-Files" class="headerlink" title="2.10. lsof (List Open Files)"></a>2.10. lsof (List Open Files)</h3><p><strong>核心功能</strong>: <code>lsof</code> 用于列出系统中所有打开的文件以及打开这些文件的进程 。在 Linux&#x2F;Unix 系统中，”一切皆文件”，包括普通文件、目录、网络套接字、管道、设备等。</p>
+<p><strong>基本语法</strong>: <code>lsof [options]</code></p>
+<p><strong>输出字段解释</strong> :</p>
+<ul>
+<li><code>COMMAND</code>: 打开文件的进程关联的命令名称。</li>
+<li><code>PID</code>: 打开文件的进程的进程ID。</li>
+<li><code>TID</code>: 任务 (线程) ID。如果为空，则表示是进程而非线程。</li>
+<li><code>USER</code>: 进程所属用户的用户ID或名称。</li>
+<li><code>FD</code> (File Descriptor): 文件描述符。<ul>
+<li><code>cwd</code>: 当前工作目录。</li>
+<li><code>rtd</code>: 根目录。</li>
+<li><code>txt</code>: 程序文本 (代码和数据)。</li>
+<li><code>mem</code>: 内存映射文件。</li>
+<li>数字后跟 <code>r</code> (读权限), <code>w</code> (写权限), <code>u</code> (读写权限)。</li>
+</ul>
+</li>
+<li><code>TYPE</code>: 与文件关联的节点类型。<ul>
+<li><code>REG</code>: 普通文件。</li>
+<li><code>DIR</code>: 目录。</li>
+<li><code>CHR</code>: 字符特殊文件。</li>
+<li><code>BLK</code>: 块特殊文件。</li>
+<li><code>FIFO</code>:命名管道。</li>
+<li><code>unix</code>: UNIX 域套接字。</li>
+<li><code>IPv4/IPv6</code>: IP 套接字。</li>
+</ul>
+</li>
+<li><code>DEVICE</code>: 设备的设备号。</li>
+<li><code>SIZE/OFF</code>: 文件的大小 (字节) 或文件偏移量。</li>
+<li><code>NODE</code>: 文件的节点号 (inode number)。</li>
+<li><code>NAME</code>: 文件的名称或套接字信息 (如 <code>*:http (LISTEN)</code> 或 <code>host:port-&gt;remote_host:port (ESTABLISHED)</code>)。</li>
+</ul>
+<p><strong>常用选项</strong>:</p>
+<ul>
+<li><code>-i [protocol][@hostname|hostaddr][:service|port]</code>: 列出与指定网络连接相关的文件。功能强大，可以指定协议 (<code>tcp</code>, <code>udp</code>)、主机名&#x2F;IP、服务名&#x2F;端口号 。<ul>
+<li><code>lsof -i :80</code> (列出使用80端口的进程)。</li>
+<li><code>lsof -i TCP:22</code> (列出使用TCP协议22端口的进程)。</li>
+<li><code>lsof -i @192.168.1.100</code> (列出与IP 192.168.1.100 相关的所有连接)。</li>
+</ul>
+</li>
+<li><code>-u &lt;username&gt;</code>: 列出指定用户打开的文件 。可使用 <code>^username</code> 排除用户。</li>
+<li><code>-p &lt;PID&gt;</code>: 列出指定 PID 的进程打开的文件 。可使用逗号分隔多个 PID，或使用 <code>^PID</code> 排除。</li>
+<li><code>+D /path/to/directory</code>: 递归列出指定目录下所有打开的文件 。</li>
+<li><code>-c &lt;command_string&gt;</code>: 列出其名称包含指定字符串的命令所打开的文件 。</li>
+<li><code>-d &lt;FD_list&gt;</code>: 列出文件描述符在指定列表中的文件。例如 <code>-d 0,1,2</code>。</li>
+<li><code>-t</code>: 只输出进程ID (PID)，用于脚本。例如 <code>kill $(lsof -t -i:8080)</code>。</li>
+<li><code>-n</code>: 不解析主机名 (加快速度)。</li>
+<li><code>-P</code>: 不解析端口号为服务名 (加快速度)。</li>
+<li><code>-r [seconds]</code>: 重复执行，直到被中断。可选参数为刷新间隔。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>查找哪个进程占用了特定端口</strong>: <code>sudo lsof -i :443</code> 。</li>
+<li><strong>查看某个用户打开了哪些文件</strong>: <code>sudo lsof -u nginx</code>。</li>
+<li><strong>查看某个进程打开了哪些文件和网络连接</strong>: <code>sudo lsof -p 1234</code>。</li>
+<li><strong>排查 “Too many open files” 错误</strong>: 分析哪些进程打开了大量文件描述符。</li>
+<li><strong>安全审计</strong>: 检查是否有未授权的进程监听网络端口或访问敏感文件。</li>
+<li><strong>查找被删除但仍被进程占用的文件</strong>: 这些文件仍占用磁盘空间。<code>sudo lsof | grep &#39;(deleted)&#39;</code>。</li>
+<li><strong>示例</strong>: <code>sudo lsof -i TCP -sTCP:LISTEN -n -P</code> (列出所有正在监听的TCP端口，不解析名称)。</li>
+</ul>
+<h3 id="2-11-curl-Client-URL"><a href="#2-11-curl-Client-URL" class="headerlink" title="2.11. curl (Client URL)"></a>2.11. curl (Client URL)</h3><p><strong>核心功能</strong>: <code>curl</code> 是一个用于在终端与服务器之间传输数据的命令行工具，支持多种协议，最常用的是 HTTP 和 HTTPS 。SRE 常用其进行 HTTP 测试、API 交互和健康检查。</p>
+<p><strong>基本语法</strong>: <code>curl [options] &lt;url&gt;</code></p>
+<p><strong>常用选项 (SRE 任务相关)</strong> :</p>
+<ul>
+<li><code>-I, --head</code>: 只获取 HTTP 头部信息 (发送 HEAD 请求)。</li>
+<li><code>-L, --location</code>: 跟随重定向 (HTTP 3xx 响应)。</li>
+<li><code>-X, --request &lt;COMMAND&gt;</code>: 指定 HTTP 请求方法 (如 <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE</code>, <code>HEAD</code>)。</li>
+<li><code>-H, --header &lt;header_line&gt;</code>: 自定义 HTTP 请求头。例如 <code>-H &quot;Content-Type: application/json&quot;</code>。</li>
+<li><code>-d, --data &lt;data&gt;</code>: 发送 HTTP POST 请求的数据。例如 <code>-d &quot;param1=value1&amp;param2=value2&quot;</code>。</li>
+<li><code>--data-raw &lt;data&gt;</code>: 与 <code>-d</code> 类似，但内容按字面发送，不特殊处理 <code>@</code>。</li>
+<li><code>--data-urlencode &lt;data&gt;</code>: URL 编码后发送数据。</li>
+<li><code>-o, --output &lt;file&gt;</code>: 将输出写入文件而不是标准输出。</li>
+<li><code>-O, --remote-name</code>: 将输出写入与远程文件同名的本地文件。</li>
+<li><code>-s, --silent</code>: 静默模式，不显示进度条或错误信息。</li>
+<li><code>-S, --show-error</code>: 静默模式下，如果发生错误，仍然显示错误信息。</li>
+<li><code>-v, --verbose</code>: 显示详细的通信过程，包括请求和响应头以及其他调试信息。</li>
+<li><code>-k, --insecure</code>: 允许连接到没有有效 SSL&#x2F;TLS 证书的 HTTPS 站点 (不进行证书校验，生产环境慎用)。</li>
+<li><code>--connect-timeout &lt;seconds&gt;</code>: 设置最大连接超时时间。</li>
+<li><code>-w, --write-out &lt;format&gt;</code>: 定义在传输完成后输出的额外信息。例如 <code>curl -s -o /dev/null -w &quot;%&#123;http_code&#125; %&#123;time_total&#125;\n&quot; URL</code> 可以获取 HTTP 状态码和总时间。</li>
+<li><code>-u, --user &lt;user:password&gt;</code>: 指定服务器认证的用户名和密码。</li>
+<li><code>--cacert &lt;file&gt;</code>: 指定 CA 证书文件以验证对等方。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>HTTP 服务健康检查</strong>:<ul>
+<li><code>curl -s -o /dev/null -w &quot;%&#123;http_code&#125;&quot; http://localhost/health</code> (检查健康检查端点的状态码，期望 200) 。</li>
+<li><code>curl -I http://example.com</code> (快速检查服务是否响应并查看头部信息) 。</li>
+</ul>
+</li>
+<li><strong>API 测试与交互</strong>:<ul>
+<li>发送 GET 请求: <code>curl -H &quot;Authorization: Bearer &lt;token&gt;&quot; https://api.example.com/v1/users</code>。</li>
+<li>发送 POST 请求 (JSON): <code>curl -X POST -H &quot;Content-Type: application/json&quot; -d &#39;&#123;&quot;name&quot;:&quot;test&quot;, &quot;value&quot;:123&#125;&#39; https://api.example.com/v1/items</code> 。</li>
+</ul>
+</li>
+<li><strong>下载文件</strong>: <code>curl -O https://example.com/archive.tar.gz</code>。</li>
+<li><strong>测试网络连接和 DNS 解析</strong>: <code>curl -v https://internal.service.local</code> (查看详细连接过程，包括 IP 解析) 。</li>
+<li><strong>获取 HTTP 响应头</strong>: <code>curl -s -D - http://example.com -o /dev/null</code> (将响应头打印到 stdout)。</li>
+<li><strong>测量响应时间</strong>: <code>curl -s -o /dev/null -w &quot;Connect: %&#123;time_connect&#125;s | TTFB: %&#123;time_starttransfer&#125;s | Total: %&#123;time_total&#125;s\n&quot; http://example.com</code> 。</li>
+<li><strong>示例</strong>: 测试对 <code>example.com</code> 的 HEAD 请求，并跟随重定向：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">curl -I -L [http://example.com](http://example.com)<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="2-12-find"><a href="#2-12-find" class="headerlink" title="2.12. find"></a>2.12. find</h3><p><strong>核心功能</strong>: <code>find</code> 命令用于在目录层次结构中搜索文件和目录，并可以对找到的文件执行操作 。</p>
+<p><strong>基本语法</strong>: <code>find [path...] [expression]</code></p>
+<ul>
+<li><code>path...</code>: 开始搜索的目录路径。默认为当前目录。</li>
+<li><code>expression</code>: 由选项、测试条件和动作组成。</li>
+</ul>
+<p><strong>常用测试条件 (Options&#x2F;Expressions)</strong> :</p>
+<ul>
+<li><code>-name &lt;pattern&gt;</code>: 按文件名匹配 (区分大小写，支持通配符，需转义或加引号)。</li>
+<li><code>-iname &lt;pattern&gt;</code>: 按文件名匹配 (不区分大小写)。</li>
+<li><code>-type &lt;type_char&gt;</code>: 按文件类型匹配。<ul>
+<li><code>f</code>: 普通文件。</li>
+<li><code>d</code>: 目录。</li>
+<li><code>l</code>: 符号链接。</li>
+</ul>
+</li>
+<li><code>-user &lt;username&gt;</code>: 按文件属主匹配。</li>
+<li><code>-group &lt;groupname&gt;</code>: 按文件所属组匹配。</li>
+<li><code>-perm &lt;mode&gt;</code>: 按权限匹配。<ul>
+<li><code>644</code>: 精确匹配权限。</li>
+<li><code>-644</code>: 匹配至少拥有这些权限的文件 (例如，<code>755</code> 会匹配 <code>-644</code>)。</li>
+<li><code>/644</code> 或 <code>+644</code> (GNU find): 匹配任何用户&#x2F;组&#x2F;其他位设置了对应权限的文件。</li>
+</ul>
+</li>
+<li><code>-size &lt;n&gt;[cwbkMG]</code>: 按文件大小匹配。<ul>
+<li><code>c</code>: 字节, <code>k</code>: KiB, <code>M</code>: MiB, <code>G</code>: GiB。</li>
+<li><code>+n</code>: 大于 n, <code>-n</code>: 小于 n, <code>n</code>: 等于 n。</li>
+<li>例如: <code>find . -size +100M</code> (查找大于 100MB 的文件)。</li>
+</ul>
+</li>
+<li><code>-mtime &lt;n&gt;</code>: 按修改时间匹配 (天)。<code>+n</code> (n天前), <code>-n</code> (n天内), <code>n</code> (恰好n天前)。</li>
+<li><code>-atime &lt;n&gt;</code>: 按访问时间匹配 (天)。</li>
+<li><code>-ctime &lt;n&gt;</code>: 按状态改变时间匹配 (天)。</li>
+<li><code>-mmin &lt;n&gt;</code>, <code>-amin &lt;n&gt;</code>, <code>-cmin &lt;n&gt;</code>: 按分钟匹配。</li>
+<li><code>-empty</code>: 查找空文件或空目录。</li>
+<li><code>-maxdepth &lt;levels&gt;</code>: 限制搜索的最大深度。</li>
+<li><code>-mindepth &lt;levels&gt;</code>: 从指定深度开始搜索。</li>
+<li><code>-nouser</code>: 查找没有属主的文件 (属主 UID 不在 <code>/etc/passwd</code> 中)。</li>
+<li><code>-nogroup</code>: 查找没有所属组的文件。</li>
+</ul>
+<p><strong>常用动作 (Actions)</strong> :</p>
+<ul>
+<li><code>-print</code>: (默认动作，如果未指定其他动作) 打印找到的文件路径。</li>
+<li><code>-ls</code>: 对找到的文件执行 <code>ls -dils</code>。</li>
+<li><code>-delete</code>: 删除找到的文件 (谨慎使用)。</li>
+<li><code>-exec &lt;command&gt; &#123;&#125; \;</code>: 对每个找到的文件执行指定的命令。<code>&#123;&#125;</code> 被替换为文件名，<code>\;</code> 标记命令结束。<br>例如: <code>find . -type f -name &quot;*.tmp&quot; -exec rm -f &#123;&#125; \;</code> (删除所有<code>.tmp</code> 文件)。</li>
+<li><code>-exec &lt;command&gt; &#123;&#125; +</code>: 与 <code>\;</code> 类似，但会将多个文件名作为参数传递给一次命令调用，更高效。</li>
+<li><code>-ok &lt;command&gt; &#123;&#125; \;</code>: 与 <code>-exec</code> 类似，但在执行前会提示用户确认。</li>
+</ul>
+<p><strong>逻辑操作符</strong>:</p>
+<ul>
+<li><code>-and</code> (或 <code>-a</code>, 默认): 与操作。</li>
+<li><code>-or</code> (或 <code>-o</code>): 或操作。</li>
+<li><code>-not</code> (或 <code>!</code>): 非操作。</li>
+<li><code>()</code>: 分组条件 (需要转义: <code>\( ... \)</code> )。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>查找大型日志文件</strong>: <code>sudo find /var/log -type f -size +500M -print0 | xargs -0 du -h</code>。</li>
+<li><strong>查找最近修改的配置文件</strong>: <code>sudo find /etc -type f -mmin -60</code> (查找过去60分钟内修改过的配置文件)。</li>
+<li><strong>清理临时文件</strong>: <code>find /tmp -type f -mtime +7 -delete</code> (删除 <code>/tmp</code> 下超过7天未修改的临时文件)。</li>
+<li><strong>查找并修改文件权限</strong>: <code>find /var/www/html -type f -not -perm 644 -exec chmod 644 &#123;&#125; \;</code>。</li>
+<li><strong>查找属于特定用户的文件</strong>: <code>find /home -user suspicious_user -ls</code>。</li>
+<li><strong>查找 SUID&#x2F;SGID 文件</strong>: <code>find / -type f \( -perm -4000 -o -perm -2000 \) -ls</code> (潜在的安全风险)。</li>
+<li><strong>示例</strong>: 查找 <code>/opt/app/logs</code> 目录下所有大于 10MB 且在过去3天内修改过的 <code>.log</code> 文件，并列出详细信息：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">find /opt/app/logs -<span class="hljs-built_in">type</span> f -name <span class="hljs-string">&quot;*.log&quot;</span> -size +10M -mtime -3 -<span class="hljs-built_in">ls</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="2-13-df-Disk-Free"><a href="#2-13-df-Disk-Free" class="headerlink" title="2.13. df (Disk Free)"></a>2.13. df (Disk Free)</h3><p><strong>核心功能</strong>: <code>df</code> 命令用于报告文件系统的磁盘空间使用情况 。</p>
+<p><strong>基本语法</strong>: <code>df [options] [file_or_filesystem...]</code></p>
+<p><strong>常用选项</strong> :</p>
+<ul>
+<li><code>-h, --human-readable</code>: 以易读的格式显示大小 (例如 <code>1K</code>, <code>234M</code>, <code>2G</code>)。</li>
+<li><code>-H, --si</code>: 以 1000 为基数显示大小 (而不是 1024)。</li>
+<li><code>-k, --kilobytes</code>: 以 KB 为单位显示大小 (默认)。</li>
+<li><code>-m, --megabytes</code>: 以 MB 为单位显示大小。</li>
+<li><code>-T, --print-type</code>: 显示文件系统类型。</li>
+<li><code>-i, --inodes</code>: 显示 inode 信息而不是块使用情况。</li>
+<li><code>--total</code>: 显示所有列出的文件系统的总计。</li>
+<li><code>--output[=FIELD_LIST]</code>: 使用自定义输出格式。<code>FIELD_LIST</code> 是逗号分隔的列名列表 (如 <code>source,size,used,avail,pcent,target</code>)。</li>
+<li><code>-t, --type=&lt;type&gt;</code>: 只显示指定类型的文件系统。</li>
+<li><code>-x, --exclude-type=&lt;type&gt;</code>: 排除指定类型的文件系统 (例如 <code>squashfs</code>, <code>tmpfs</code>)。</li>
+</ul>
+<p><strong>输出字段解释</strong> :</p>
+<ul>
+<li><code>Filesystem</code>: 文件系统的设备名或挂载源。</li>
+<li><code>Size</code>: 文件系统总大小。</li>
+<li><code>Used</code>: 已用空间。</li>
+<li><code>Avail</code>: 可用空间。</li>
+<li><code>Use%</code>: 已用空间百分比。</li>
+<li><code>Mounted on</code>: 文件系统的挂载点。</li>
+<li><code>Type</code> (使用 <code>-T</code>): 文件系统类型 (如 <code>ext4</code>, <code>xfs</code>, <code>nfs</code>)。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>监控磁盘空间</strong>: <code>df -h</code> 是快速检查所有挂载点磁盘使用情况的首选命令。</li>
+<li><strong>自动化告警</strong>: 脚本中解析 <code>df</code> 输出，当 <code>Use%</code> 超过阈值时发送告警。</li>
+<li><strong>检查特定分区</strong>: <code>df -h /var</code> (检查 <code>/var</code> 所在分区的空间)。</li>
+<li><strong>排除临时文件系统</strong>: <code>df -h -x tmpfs -x devtmpfs</code> (查看持久存储)。</li>
+<li><strong>示例</strong>: 以人类可读格式显示 <code>/</code> 和 <code>/opt</code> 分区的磁盘使用情况，并显示文件系统类型：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">df</span> -hT / /opt<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="2-14-du-Disk-Usage"><a href="#2-14-du-Disk-Usage" class="headerlink" title="2.14. du (Disk Usage)"></a>2.14. du (Disk Usage)</h3><p><strong>核心功能</strong>: <code>du</code> 命令用于估算和显示文件和目录所占用的磁盘空间 。</p>
+<p><strong>基本语法</strong>: <code>du [options] [file_or_directory...]</code></p>
+<ul>
+<li>如果未指定路径，则默认为当前目录。</li>
+</ul>
+<p><strong>常用选项</strong> :</p>
+<ul>
+<li><code>-h, --human-readable</code>: 以易读的格式显示大小。</li>
+<li><code>-s, --summarize</code>: 只显示指定参数的总计大小，不显示子目录。</li>
+<li><code>-a, --all</code>: 显示所有文件和目录的大小 (默认只显示目录)。</li>
+<li><code>-c, --total</code>: 在最后显示总计。</li>
+<li><code>-k, --kilobytes</code>: 以 KB 为单位显示 (通常是默认)。</li>
+<li><code>-m, --megabytes</code>: 以 MB 为单位显示。</li>
+<li><code>--max-depth=N</code>: 显示目录总计，仅当其层级小于等于 N 时。<code>du -h --max-depth=1</code> 常用于查看当前目录下各子目录的大小。</li>
+<li><code>-B, --block-size=SIZE</code>: 指定块大小。</li>
+<li><code>--apparent-size</code>: 显示表观大小，而不是磁盘使用量。对于稀疏文件等，这可能与实际磁盘占用不同。</li>
+<li><code>--time</code>: 显示上次修改时间。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>查找占用空间最大的目录</strong>: <code>du -sh /*</code> (查找根目录下哪个目录占用最多，可能需要 <code>sudo</code> 权限)，或者更常用 <code>du -sh ./*</code> 查看当前目录下。</li>
+<li><strong>按大小排序查找大文件&#x2F;目录</strong>: <code>du -ah /var/log | sort -rh | head -n 10</code> (查找 <code>/var/log</code> 下最大的10个文件或目录)。</li>
+<li><strong>分析特定应用的数据目录</strong>: <code>du -sh /opt/my-app/data</code>。</li>
+<li><strong>定期检查日志目录大小</strong>: <code>du -sh /var/log</code>。</li>
+<li><strong>示例</strong>: 显示当前目录下每个子目录的总大小 (人类可读格式，深度为1)：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">du</span> -h --max-depth=1 .<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="2-15-systemctl"><a href="#2-15-systemctl" class="headerlink" title="2.15. systemctl"></a>2.15. systemctl</h3><p><strong>核心功能</strong>: <code>systemctl</code> 是 systemd 系统和服务管理器的主要控制工具 。SRE 用它来管理服务的生命周期 (启动、停止、重启、重载、查看状态) 以及控制系统状态。</p>
+<p><strong>基本语法</strong>: <code>sudo systemctl &lt;COMMAND&gt; [UNIT...]</code></p>
+<p><strong>常用命令 (服务管理)</strong> :</p>
+<ul>
+<li><code>start &lt;unit.service&gt;</code>: 启动服务。</li>
+<li><code>stop &lt;unit.service&gt;</code>: 停止服务。</li>
+<li><code>restart &lt;unit.service&gt;</code>: 重启服务。</li>
+<li><code>reload &lt;unit.service&gt;</code>: 重载服务配置 (如果服务支持)。</li>
+<li><code>status &lt;unit.service&gt;</code>: 查看服务状态，包括是否活动、PID、最近的日志等。</li>
+<li><code>enable &lt;unit.service&gt;</code>: 设置服务开机自启。</li>
+<li><code>disable &lt;unit.service&gt;</code>: 取消服务开机自启。</li>
+<li><code>is-active &lt;unit.service&gt;</code>: 检查服务是否正在运行。</li>
+<li><code>is-enabled &lt;unit.service&gt;</code>: 检查服务是否设置为开机自启。</li>
+<li><code>is-failed &lt;unit.service&gt;</code>: 检查服务是否启动失败。</li>
+<li><code>mask &lt;unit.service&gt;</code>: 完全禁用一个服务，使其无法启动 (通过链接到 <code>/dev/null</code>)。</li>
+<li><code>unmask &lt;unit.service&gt;</code>: 解除服务的 <code>mask</code> 状态。</li>
+</ul>
+<p><strong>常用命令 (单元文件和依赖)</strong> :</p>
+<ul>
+<li><code>list-units [--type=service] [--all] [--state=active|inactive|failed]</code>: 列出加载的单元。</li>
+<li><code>list-unit-files [--type=service]</code>: 列出所有已安装的单元文件及其状态。</li>
+<li><code>cat &lt;unit.service&gt;</code>: 查看单元文件的内容。</li>
+<li><code>show &lt;unit.service&gt; [-p PropertyName]</code>: 显示单元的底层属性。</li>
+<li><code>list-dependencies &lt;unit.service&gt; [--reverse] [--all]</code>: 显示单元的依赖关系。</li>
+<li><code>daemon-reload</code>: 在修改单元文件后，重新加载 systemd 管理器配置。</li>
+</ul>
+<p><strong>常用命令 (系统状态)</strong> :</p>
+<ul>
+<li><code>get-default</code>: 获取默认的启动目标 (类似运行级别)。</li>
+<li><code>set-default &lt;target.target&gt;</code>: 设置默认的启动目标。</li>
+<li><code>isolate &lt;target.target&gt;</code>: 切换到指定目标，停止不属于该目标的单元。</li>
+<li><code>reboot</code>, <code>poweroff</code>, <code>halt</code>, <code>suspend</code>, <code>hibernate</code>, <code>hybrid-sleep</code>, <code>rescue</code>, <code>emergency</code>。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>服务部署与管理</strong>: 启动、停止、重启应用服务 (如 <code>nginx</code>, <code>tomcat</code>, <code>database</code>)。</li>
+<li><strong>故障排查</strong>: 使用 <code>systemctl status myapp.service</code> 查看服务失败原因，结合 <code>journalctl -u myapp.service</code> 查看详细日志。</li>
+<li><strong>确保服务自启动</strong>: <code>sudo systemctl enable mycritical.service</code>。</li>
+<li><strong>系统维护</strong>: 切换到 <code>rescue.target</code> 或 <code>emergency.target</code> 进行维护。</li>
+<li><strong>查看单元配置</strong>: <code>systemctl cat httpd.service</code> 检查服务启动脚本和配置。</li>
+<li><strong>示例</strong>: 检查 <code>nginx</code> 服务状态，如果未运行则尝试启动，并设置为开机自启：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-keyword">if</span> ! systemctl is-active --quiet nginx; <span class="hljs-keyword">then</span><br>    <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Nginx is not running, starting...&quot;</span><br>    <span class="hljs-built_in">sudo</span> systemctl start nginx<br>    <span class="hljs-keyword">if</span> systemctl is-active --quiet nginx; <span class="hljs-keyword">then</span><br>        <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Nginx started successfully.&quot;</span><br>        <span class="hljs-keyword">if</span> ! systemctl is-enabled --quiet nginx; <span class="hljs-keyword">then</span><br>            <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Enabling Nginx to start on boot.&quot;</span><br>            <span class="hljs-built_in">sudo</span> systemctl <span class="hljs-built_in">enable</span> nginx<br>        <span class="hljs-keyword">fi</span><br>    <span class="hljs-keyword">else</span><br>        <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Failed to start Nginx. Check &#x27;systemctl status nginx&#x27; and &#x27;journalctl -u nginx&#x27;.&quot;</span><br>    <span class="hljs-keyword">fi</span><br><span class="hljs-keyword">else</span><br>    <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Nginx is already running.&quot;</span><br><span class="hljs-keyword">fi</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="2-16-journalctl"><a href="#2-16-journalctl" class="headerlink" title="2.16. journalctl"></a>2.16. journalctl</h3><p><strong>核心功能</strong>: <code>journalctl</code> 用于查询和显示由 systemd 日志服务 <code>journald</code> 收集的日志 。它提供了集中的日志管理，可以按时间、单元、优先级等多种条件过滤。</p>
+<p><strong>基本语法</strong>: <code>journalctl [options] [matches...]</code></p>
+<p><strong>常用选项与过滤</strong> :</p>
+<ul>
+<li>无选项: 显示所有日志 (从旧到新)。</li>
+<li><code>-r, --reverse</code>: 反向显示日志 (从新到旧)。</li>
+<li><code>-n &lt;number&gt;, --lines=&lt;number&gt;</code>: 显示最近的指定行数日志 (默认10行)。</li>
+<li><code>-f, --follow</code>: 实时跟踪新日志 (类似 <code>tail -f</code>)。</li>
+<li><code>-b [&lt;id&gt;|&lt;offset&gt;], --boot[=&lt;id&gt;|&lt;offset&gt;]</code>: 显示指定启动周期的日志。<code>-b</code> (当前启动), <code>-b -1</code> (上次启动)。</li>
+<li><code>--list-boots</code>: 列出可用的启动周期。</li>
+<li><code>--since &lt;datetime&gt;, --until &lt;datetime&gt;</code>: 按时间范围过滤。接受多种格式，如 <code>&quot;YYYY-MM-DD HH:MM:SS&quot;</code>, <code>&quot;yesterday&quot;</code>, <code>&quot;2 hours ago&quot;</code>。</li>
+<li><code>-u &lt;unit&gt;, --unit=&lt;unit&gt;</code>: 按 systemd 单元过滤 (例如 <code>nginx.service</code>, <code>sshd.service</code>)。</li>
+<li><code>-k, --dmesg</code>: 只显示内核消息 (同 <code>dmesg</code> 命令)。</li>
+<li><code>-p &lt;priority&gt;, --priority=&lt;priority&gt;</code>: 按消息优先级过滤。优先级从 <code>0</code> (emerg) 到 <code>7</code> (debug)。例如 <code>-p err</code> (显示 <code>err</code>, <code>crit</code>, <code>alert</code>, <code>emerg</code>)。</li>
+<li><code>_PID=&lt;PID&gt;</code>: 按进程 ID 过滤。</li>
+<li><code>_UID=&lt;UID&gt;</code>: 按用户 ID 过滤。</li>
+<li><code>_EXE=/path/to/executable</code>: 按可执行文件路径过滤。</li>
+<li><code>--grep &lt;pattern&gt;</code>: (较新版本) 在消息字段中搜索模式 (类似 <code>grep</code>)。</li>
+<li><code>-o &lt;format&gt;, --output=&lt;format&gt;</code>: 指定输出格式。<ul>
+<li><code>short</code> (默认): 经典 syslog 格式。</li>
+<li><code>short-iso</code>: 带 ISO 8601 时间戳。</li>
+<li><code>verbose</code>: 显示所有字段。</li>
+<li><code>json</code>: JSON 格式。</li>
+<li><code>json-pretty</code>: 格式化的 JSON。</li>
+<li><code>cat</code>: 只显示消息本身。</li>
+</ul>
+</li>
+<li><code>--no-pager</code>: 直接输出到 stdout，不使用分页器 (如 <code>less</code>)。</li>
+<li><code>--disk-usage</code>: 显示日志占用的磁盘空间。</li>
+<li><code>--vacuum-size=&lt;bytes&gt;</code>: 清理旧日志，使其总大小不超过指定值。</li>
+<li><code>--vacuum-time=&lt;time&gt;</code>: 清理早于指定时间的日志。</li>
+</ul>
+<p><strong>SRE 使用场景</strong>:</p>
+<ul>
+<li><strong>故障排查</strong>:<ul>
+<li>查看特定服务的日志: <code>journalctl -u myapp.service -f</code>。</li>
+<li>查看特定时间段的错误日志: <code>journalctl -p err --since &quot;1 hour ago&quot;</code>。</li>
+<li>查看内核崩溃或硬件错误: <code>journalctl -k -p crit -b -1</code> (查看上次启动的严重内核消息)。</li>
+</ul>
+</li>
+<li><strong>安全审计</strong>:<ul>
+<li>查看 SSH 登录尝试: <code>journalctl -u sshd --since yesterday | grep &#39;Failed password&#39;</code>。</li>
+<li>查看 <code>sudo</code> 使用记录: <code>journalctl _EXE=/usr/bin/sudo</code>。</li>
+</ul>
+</li>
+<li><strong>性能分析</strong>: 结合日志中的时间戳和事件，分析系统行为。</li>
+<li><strong>日志管理</strong>: 使用 <code>--disk-usage</code>, <code>--vacuum-size</code>, <code>--vacuum-time</code> 管理日志存储。</li>
+<li><strong>示例</strong>: 查看 <code>nginx</code> 服务在过去2小时内所有级别为 <code>warning</code> 或更高的日志，并以 JSON 格式美化输出：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">journalctl -u nginx.service -p warning --since <span class="hljs-string">&quot;2 hours ago&quot;</span> -o json-pretty<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="3-实战-SRE-案例分析：Web-服务器性能下降故障排除"><a href="#3-实战-SRE-案例分析：Web-服务器性能下降故障排除" class="headerlink" title="3. 实战 SRE 案例分析：Web 服务器性能下降故障排除"></a>3. 实战 SRE 案例分析：Web 服务器性能下降故障排除</h2><p>本案例将模拟一个典型的 SRE 场景：一个关键的 Web 应用程序（例如电子商务网站）托管在 Linux 服务器上，在高峰时段出现间歇性响应缓慢和 HTTP 5xx 错误率增加的情况。用户报告页面加载缓慢或超时。SRE 团队接到告警，需要介入排查。</p>
+<p><strong>初步假设</strong>: 问题可能源于应用层 bug、资源耗尽 (CPU、内存、I&#x2F;O)、网络瓶颈、数据库问题或外部依赖项缓慢。</p>
+<h3 id="步骤-1-初步分诊与系统概览-服务器是否存活？总体状态如何？"><a href="#步骤-1-初步分诊与系统概览-服务器是否存活？总体状态如何？" class="headerlink" title="步骤 1: 初步分诊与系统概览 (服务器是否存活？总体状态如何？)"></a>步骤 1: 初步分诊与系统概览 (服务器是否存活？总体状态如何？)</h3><p>这是故障排除的第一步，快速检查系统的“生命体征”，判断是否存在明显的、全局性的资源问题。</p>
+<ul>
+<li><strong>命令</strong>: <code>uptime</code> <ul>
+<li><strong>操作</strong>: 检查平均负载 (load average)。</li>
+<li><strong>解读</strong>: 平均负载（1分钟、5分钟、15分钟）是衡量系统繁忙程度的重要指标。如果负载持续高于 CPU 核心数，表明系统可能过载，有大量进程在等待 CPU 资源 。例如，一个4核系统，如果15分钟负载持续在 8.0 以上，则表明系统压力较大。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>df -h</code> <ul>
+<li><strong>操作</strong>: 检查关键分区的磁盘空间使用情况，如 <code>/</code>, <code>/var</code> (通常包含日志), <code>/tmp</code>, 以及应用数据所在的挂载点。</li>
+<li><strong>解读</strong>: 磁盘空间不足（例如，使用率超过 90-95%）会导致各种应用故障和性能问题，如无法写入日志、无法创建临时文件等。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>free -m</code> <ul>
+<li><strong>操作</strong>: 检查内存使用情况 (<code>total</code>, <code>used</code>, <code>free</code>, <code>buff/cache</code>, <code>swap</code>)。</li>
+<li><strong>解读</strong>: <code>free</code> 列显示的空闲物理内存过低，同时 <code>swap</code> 的 <code>used</code> 列值较高且持续增长，通常表示系统内存压力大，正在频繁使用交换空间，这会严重影响性能。<code>buff/cache</code> 占用的内存通常可以被内核回收，所以不能简单地认为 <code>used</code> 高就代表内存不足，需要结合 <code>available</code> (如果 <code>free</code> 命令支持) 或 <code>free</code> 和 <code>buff/cache</code> 的关系来看。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>ping &lt;gateway/external_resolver&gt;</code> <ul>
+<li><strong>操作</strong>: 进行基本的网络连通性测试，例如 ping 网关或一个可靠的外部 DNS 服务器。</li>
+<li><strong>解读</strong>: 丢包或高延迟可能指示本地网络、ISP 或更广泛的网络存在问题。</li>
+</ul>
+</li>
+</ul>
+<p>这种初步分诊如同医生检查病人的生命体征，快速、基础，但能有效地过滤掉一些常见的、根本性的问题。如果磁盘满了，或者内存完全耗尽，那么进一步深入分析应用日志可能意义不大，需要先解决这些基础资源问题。这个阶段的检查结果将指导后续的排查方向。</p>
+<h3 id="步骤-2-识别高资源消耗进程"><a href="#步骤-2-识别高资源消耗进程" class="headerlink" title="步骤 2: 识别高资源消耗进程"></a>步骤 2: 识别高资源消耗进程</h3><p>如果初步检查未发现明显的磁盘或基础网络问题，接下来需要找出哪些进程消耗了过多的 CPU、内存或导致了 I&#x2F;O 等待。</p>
+<ul>
+<li><strong>命令</strong>: <code>top</code> (或 <code>htop</code>) <ul>
+<li><strong>操作</strong>: 实时观察 CPU 和内存使用情况。在 <code>top</code> 界面中，可以按 <code>P</code> 以 CPU 使用率排序，按 <code>M</code> 以内存使用率排序。重点关注 <code>%CPU</code>, <code>%MEM</code> 列，以及 CPU 状态行中的 <code>wa</code> (I&#x2F;O 等待) 和 <code>id</code> (空闲) 百分比。</li>
+<li><strong>解读</strong>: 识别哪些进程 (例如 Web 服务器进程 <code>nginx/httpd</code>、应用服务器进程 <code>java/python/node</code>、数据库进程 <code>mysqld/postgres</code>) 持续占用高 CPU 或内存。如果 <code>wa</code> 值很高，说明 CPU 大量时间在等待 I&#x2F;O 操作完成，可能存在磁盘瓶颈。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>ps aux --sort=-%cpu,%mem | head -n 15</code> <ul>
+<li><strong>操作</strong>: 获取 CPU 和内存消耗最高的进程快照，如果 <code>top</code> 的动态显示不便记录或用于脚本。</li>
+<li><strong>解读</strong>: 与 <code>top</code> 的观察结果进行交叉验证。记录可疑进程的 PID。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>vmstat 1 5</code> (每秒输出一次，共输出5次) <ul>
+<li><strong>操作</strong>: 检查 <code>procs</code> 列的 <code>r</code> (运行队列中的进程数) 和 <code>b</code> (阻塞的进程数)，<code>swap</code> 列的 <code>si</code> (换入) 和 <code>so</code> (换出)，以及 <code>system</code> 列的 <code>cs</code> (上下文切换)。</li>
+<li><strong>解读</strong>:<ul>
+<li><code>r</code> 值持续大于 CPU 核心数，表示 CPU 瓶颈。</li>
+<li><code>b</code> 值较高，表示许多进程在等待资源，通常是 I&#x2F;O。</li>
+<li><code>si</code> 和 <code>so</code> 持续非零，确认内存压力和频繁的磁盘交换。</li>
+<li><code>cs</code> 值异常高，可能意味着系统中断过多或调度效率低下。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>iostat -xz 1 5</code> (每秒输出一次，共输出5次，显示扩展统计信息) <ul>
+<li><strong>操作</strong>: 检查磁盘 I&#x2F;O 统计信息，关注 <code>%util</code> (设备繁忙百分比), <code>r/s</code> (每秒读次数), <code>w/s</code> (每秒写次数), <code>await</code> (平均每次I&#x2F;O请求的等待时间，包括队列等待和服务时间), <code>avgqu-sz</code> (平均请求队列长度)。</li>
+<li><strong>解读</strong>: 某个磁盘的 <code>%util</code> 持续接近 100%，同时 <code>await</code> 时间很长，或者 <code>avgqu-sz</code> 很大，都表明该磁盘存在 I&#x2F;O 瓶颈。</li>
+</ul>
+</li>
+</ul>
+<h3 id="步骤-3-分析-Web-服务器和应用日志"><a href="#步骤-3-分析-Web-服务器和应用日志" class="headerlink" title="步骤 3: 分析 Web 服务器和应用日志"></a>步骤 3: 分析 Web 服务器和应用日志</h3><p>日志是排查问题的金矿。假设我们使用 Nginx 作为 Web 服务器，其日志位于 <code>/var/log/nginx/access.log</code> 和 <code>/var/log/nginx/error.log</code>。应用程序日志位于 <code>/var/log/app/application.log</code>。</p>
+<ul>
+<li><strong>命令</strong>: <code>tail -n 500 /var/log/nginx/error.log | grep -iE &#39;error|crit|alert&#39;</code> <ul>
+<li><strong>操作</strong>: 查看 Nginx 错误日志中最近的严重错误。<code>-E</code> 启用扩展正则，<code>|</code> 表示或。</li>
+<li><strong>解读</strong>: 关注 Nginx 配置错误、上游服务器连接失败 (例如连接应用服务器超时)、资源限制等。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>grep &#39;HTTP/1\..&quot; 50&#39; /var/log/nginx/access.log | awk &#39;&#123;print $9&#125;&#39; | sort | uniq -c | sort -nr | head -n 10</code><ul>
+<li><strong>操作</strong>: 从 Nginx 访问日志中统计出现频率最高的 HTTP 50x 错误状态码。<ul>
+<li><code>grep &#39;HTTP/1\..&quot; 50&#39;</code>: 筛选出包含 “HTTP&#x2F;1.” 并且状态码以 “50” 开头的行 (捕获 500, 502, 503, 504 等)。</li>
+<li><code>awk &#39;&#123;print $9&#125;&#39;</code>: 提取第9个字段 (通常是状态码)。</li>
+<li><code>sort | uniq -c</code>: 对状态码进行排序并统计唯一值的出现次数。</li>
+<li><code>sort -nr | head -n 10</code>: 按出现次数降序排序并显示前10个。</li>
+</ul>
+</li>
+<li><strong>解读</strong>: 快速了解哪种类型的服务器端错误最普遍。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>awk &#39;($9 ~ /^5/) &#123;ip_count[$1]++; path_count[$7]++; total_5xx++&#125; END &#123;print &quot;Total 5xx:&quot;, total_5xx; for(ip in ip_count) print &quot;IP:&quot;, ip, &quot;Count:&quot;, ip_count[ip]; for(path in path_count) print &quot;Path:&quot;, path, &quot;Count:&quot;, path_count[path]&#125;&#39; /var/log/nginx/access.log | sort -k3nr | head -n 20</code><ul>
+<li><strong>操作</strong>: 提取所有 5xx 错误的请求，统计来源 IP 和请求路径的分布，并按数量排序。<ul>
+<li><code>($9 ~ /^5/)</code>: <code>awk</code> 的模式，匹配第9个字段 (状态码) 以5开头的行。</li>
+<li><code>&#123;ip_count[$1]++; path_count[$7]++; total_5xx++&#125;</code>: 对匹配的行，累加总的5xx错误数，并用关联数组统计每个源IP (<code>$1</code>) 和请求路径 (<code>$7</code>) 出现的次数。</li>
+<li><code>END &#123;...&#125;</code>: 在处理完所有行后，打印总的5xx错误数，然后遍历并打印IP计数和路径计数。</li>
+<li><code>| sort -k3nr | head -n 20</code>: 对 <code>awk</code> 的输出（假设IP和路径计数格式为 “Type: Value Count: N”）按第3列（即数量N）进行数字反向排序，并显示前20条。</li>
+</ul>
+</li>
+<li><strong>解读</strong>: 确定是特定IP的恶意请求，还是特定API端点或页面普遍存在问题。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>tail -n 1000 /var/log/app/application.log | grep -C 5 -iE &#39;Exception|Error|Timeout|FATAL&#39;</code><ul>
+<li><strong>操作</strong>: 在应用日志中查找异常、错误或超时信息，并显示匹配行的上下文 (<code>-C 5</code> 显示前后各5行)。</li>
+<li><strong>解读</strong>: 寻找应用层面的具体错误堆栈，例如数据库连接失败、空指针异常、第三方服务调用超时等。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>sed -n &#39;/START_SLOW_QUERY_LOG/,/END_SLOW_QUERY_LOG/p&#39; /var/log/app/application.log | tail -n 100</code> <ul>
+<li><strong>操作</strong>: 如果应用程序有特定的日志格式来标记慢查询或耗时操作的开始和结束，可以使用 <code>sed</code> 提取这些相关的日志块。</li>
+<li><strong>解读</strong>: 帮助隔离与性能问题直接相关的事务或操作。</li>
+</ul>
+</li>
+</ul>
+<p>日志分析是一个迭代的过程。通常不是一个命令就能解决问题，而是通过一系列 <code>grep</code>, <code>awk</code>, <code>sed</code> 等命令的组合，逐步筛选、提取、聚合信息，从而形成对问题的理解。例如，先用 <code>grep</code> 找到错误，再用 <code>awk</code> 统计错误类型和来源，用 <code>sed</code> 清理或格式化时间戳以便分析。这种与日志的“对话”是SRE的核心技能。</p>
+<h3 id="步骤-4-网络连接分析"><a href="#步骤-4-网络连接分析" class="headerlink" title="步骤 4: 网络连接分析"></a>步骤 4: 网络连接分析</h3><p>网络问题也可能导致服务缓慢或不可用。</p>
+<ul>
+<li><strong>命令</strong>: <code>ss -tulnp</code> (或 <code>netstat -tulnp</code>) <ul>
+<li><strong>操作</strong>: 检查哪些端口正在被哪些进程监听。验证 Web 服务器和应用服务器是否在预期的端口和IP地址上监听。</li>
+<li><strong>解读</strong>: 确保服务正常监听。没有意外的端口被监听（可能是恶意软件）。如果服务监听在 <code>127.0.0.1</code> 而不是 <code>0.0.0.0</code> 或特定公网IP，则外部无法访问。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>ss -tpn state established &#39;( dport = :80 or dport = :443 )&#39; | wc -l</code><ul>
+<li><strong>操作</strong>: 统计到 Web 服务器端口 (80&#x2F;443) 的已建立连接数。</li>
+<li><strong>解读</strong>: 连接数异常高可能表明服务器负载过大、连接未能及时释放（连接泄漏），或者是DDoS攻击的前兆。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>ss -tpn state time-wait | wc -l</code><ul>
+<li><strong>操作</strong>: 统计处于 <code>TIME_WAIT</code> 状态的连接数。</li>
+<li><strong>解读</strong>: 大量的 <code>TIME_WAIT</code> 连接会占用客户端端口资源，可能导致无法建立新的出站连接。这可能表明短连接过多，或者需要调整内核的 <code>tcp_tw_reuse</code> 和 <code>tcp_tw_recycle</code> 参数（后者需谨慎使用，可能导致NAT环境下的问题）。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>sudo lsof -i :&lt;port_of_suspect_process_PID&gt;</code> <ul>
+<li><strong>操作</strong>: 如果在步骤2中发现某个进程可疑 (例如，PID为1234的Java应用)，使用此命令查看该进程建立了哪些网络连接。</li>
+<li><strong>解读</strong>: 确认该进程正在与哪些远程主机和端口通信，是否符合预期。例如，应用是否在尝试连接一个响应缓慢的数据库或外部API。</li>
+</ul>
+</li>
+</ul>
+<h3 id="步骤-5-防火墙检查-如果怀疑网络问题"><a href="#步骤-5-防火墙检查-如果怀疑网络问题" class="headerlink" title="步骤 5: 防火墙检查 (如果怀疑网络问题)"></a>步骤 5: 防火墙检查 (如果怀疑网络问题)</h3><p>错误的防火墙配置可能导致合法的用户请求被阻止。</p>
+<ul>
+<li><strong>命令</strong>: <code>sudo iptables -L INPUT -v -n --line-numbers</code> <ul>
+<li><strong>操作</strong>: 查看 <code>INPUT</code> 链的规则。检查数据包和字节计数器。</li>
+<li><strong>解读</strong>: 寻找可能阻止到 Web 服务器端口的合法流量的规则。针对 Web 端口的 <code>DROP</code> 或 <code>REJECT</code> 规则上如果数据包计数很高，可能表明配置错误或正在遭受攻击。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>sudo iptables -L -t nat -v -n --line-numbers</code><ul>
+<li><strong>操作</strong>: 如果涉及 NAT (例如，负载均衡器后的服务器，或 Docker 环境)，检查 <code>nat</code> 表的规则。</li>
+<li><strong>解读</strong>: 不正确的 NAT 规则 (如 <code>PREROUTING</code> 中的 <code>DNAT</code> 规则) 会破坏连接。</li>
+</ul>
+</li>
+<li><strong>命令</strong>: <code>grep &#39;IPTABLES-INPUT-DENIED&#39; /var/log/syslog</code> (或 <code>/var/log/kern.log</code>，取决于日志配置) <ul>
+<li><strong>操作</strong>: 如果在 <code>iptables</code> 规则中为被拒绝的数据包配置了 <code>LOG</code> 目标 (如步骤 2.2 的示例)，则检查这些日志。</li>
+<li><strong>解读</strong>: 查看具体哪些流量被防火墙丢弃，包括源IP、目标端口等信息。</li>
+</ul>
+</li>
+</ul>
+<h3 id="步骤-6-使用-strace-进行深度挖掘-如果特定进程行为异常"><a href="#步骤-6-使用-strace-进行深度挖掘-如果特定进程行为异常" class="headerlink" title="步骤 6: 使用 strace 进行深度挖掘 (如果特定进程行为异常)"></a>步骤 6: 使用 strace 进行深度挖掘 (如果特定进程行为异常)</h3><p>当怀疑某个特定进程（如 Web 服务器的工作进程或应用服务器实例）由于系统调用层面的问题而表现异常时，<code>strace</code> 是一个强大的工具。</p>
+<ul>
+<li><strong>命令</strong>: <code>sudo strace -p &lt;PID_of_web_server_worker_or_app_process&gt; -s 1024 -ttt -f -o /tmp/strace_output.txt</code> <ul>
+<li><strong>操作</strong>: 跟踪指定 PID 进程的系统调用。<ul>
+<li><code>-p &lt;PID&gt;</code>: 指定要跟踪的进程ID。</li>
+<li><code>-s 1024</code>: 设置每个系统调用参数字符串的最大显示长度。</li>
+<li><code>-ttt</code>: 在每行输出前打印微秒级时间戳。</li>
+<li><code>-f</code>: 跟踪由 <code>fork</code>, <code>vfork</code>, <code>clone</code> 创建的子进程。</li>
+<li><code>-o /tmp/strace_output.txt</code>: 将输出保存到文件。</li>
+</ul>
+</li>
+<li><strong>解读</strong>: 分析 <code>strace_output.txt</code> 文件。寻找：<ul>
+<li><strong>耗时过长的系统调用</strong>: 特别是文件 I&#x2F;O (<code>read</code>, <code>write</code>, <code>openat</code>) 或网络 I&#x2F;O (<code>sendto</code>, <code>recvfrom</code>, <code>connect</code>)。</li>
+<li><strong>频繁的错误返回</strong>: 例如 <code>EACCES</code> (权限不足), <code>ENOENT</code> (文件或目录不存在), <code>ECONNREFUSED</code> (连接被拒绝)。</li>
+<li><strong>进程长时间阻塞在某个系统调用上</strong>: 例如 <code>epoll_wait</code>, <code>select</code> 等待网络事件。</li>
+<li><strong>大量不必要的系统调用</strong>: 可能指示应用逻辑低效。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>命令 (分析 <code>strace</code> 输出)</strong>:<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">grep -E <span class="hljs-string">&#x27;open|read|write|connect|sendto|recvfrom|socket|bind|listen|accept|close|poll|select|epoll_wait&#x27;</span> /tmp/strace_output.txt | awk <span class="hljs-string">&#x27;&#123; if ($NF ~ /^-1/) &#123;print &quot;Failed syscall:&quot;, $0&#125; else &#123;print $1, $NF&#125; &#125;&#x27;</span> | <span class="hljs-built_in">sort</span> | <span class="hljs-built_in">uniq</span> -c | <span class="hljs-built_in">sort</span> -nr | <span class="hljs-built_in">head</span> -n 20<br></code></pre></td></tr></table></figure>
+<ul>
+<li><strong>操作</strong>:<ul>
+<li><code>grep -E &#39;...&#39;</code>: 筛选出与文件或网络操作相关的常见系统调用。</li>
+<li><code>awk &#39;&#123; if ($NF ~ /^-1/)... else... &#125;&#39;</code>: <code>awk</code> 判断系统调用是否失败 (通常返回-1，并在最后跟着错误码如 <code>ENOENT</code>)。如果失败，打印整行；否则打印时间戳和系统调用名。</li>
+<li><code>sort | uniq -c | sort -nr | head -n 20</code>: 统计各种系统调用的频率或失败情况，并显示最常见的。</li>
+</ul>
+</li>
+<li><strong>解读</strong>: 帮助快速定位最频繁或最常失败的系统调用，从而缩小问题范围。例如，如果看到大量 <code>openat</code> 调用失败并返回 <code>ENOENT</code>，可能意味着应用在尝试访问不存在的配置文件或资源。</li>
+</ul>
+</li>
+</ul>
+<p><code>strace</code> 是一个高级调试工具，其输出可能非常庞大和复杂，需要一定的经验来解读。通常在其他工具无法明确指出问题根源时使用。</p>
+<h3 id="步骤-7-综合分析与解决"><a href="#步骤-7-综合分析与解决" class="headerlink" title="步骤 7: 综合分析与解决"></a>步骤 7: 综合分析与解决</h3><p>在收集了来自多个工具的数据后，SRE 需要将这些信息综合起来，形成对问题的整体判断，并制定解决方案。</p>
+<p><strong>示例综合分析</strong>:</p>
+<ul>
+<li><code>top</code> 显示多个 <code>nginx</code> 工作进程 CPU 使用率很高。</li>
+<li><code>iostat</code> 显示 <code>/var/log</code> 所在磁盘的 <code>%iowait</code> 和 <code>%util</code> 很高。</li>
+<li><code>du -sh /var/log/nginx</code> 显示 Nginx 日志文件异常巨大。</li>
+<li>通过 <code>grep</code> 和 <code>awk</code> 分析 Nginx <code>access.log</code>，发现大量针对某个不存在的大型静态文件的请求，且源 IP 集中 (可能是配置错误的爬虫或小规模 DoS 攻击)。</li>
+<li>Nginx 正在为每个失败的请求（404 Not Found）尝试写入大量错误日志，导致磁盘 I&#x2F;O 不堪重负，进而影响了正常请求的处理，表现为 CPU 升高（忙于日志写入和处理请求队列）和响应缓慢。</li>
+</ul>
+<p><strong>基于上述示例的潜在解决方案</strong>:</p>
+<ol>
+<li>使用 <code>iptables -I INPUT -s &lt;bad_ip&gt; -j DROP</code> 阻止恶意或行为异常的 IP 地址。</li>
+<li>修改 Nginx 配置，对于静态文件的 404 错误不记录到 <code>error.log</code>，或者减少日志级别，或者对特定 User-Agent 的请求进行速率限制或直接返回 403&#x2F;444。</li>
+<li>确保 Nginx 日志已配置 <code>logrotate</code> 进行定期轮转和压缩，防止单个日志文件无限增长。</li>
+<li>清理 <code>/var/log</code> 下不必要的旧日志文件以释放磁盘空间 (如果需要，先归档)。</li>
+<li>在实施更改后，持续使用 <code>top</code>, <code>iostat</code>, <code>ss</code> 和日志分析命令监控系统状态，确认问题是否得到缓解。</li>
+</ol>
+<p>故障排除是一个系统性的过程，SRE 需要像侦探一样工作。来自一个工具的证据（例如，<code>ps</code> 显示一个繁忙的进程）提供了一条线索，然后使用其他工具（例如，对该进程使用 <code>lsof</code> 查看其打开的文件和网络连接，使用 <code>strace</code> 跟踪其系统调用，或者使用 <code>grep</code>&#x2F;<code>awk</code> 分析其相关的日志）进行深入调查。根本原因往往在多个观察结果的交汇点被发现。没有哪个单一的命令能够揭示全部真相，关键在于如何组合运用这些工具，并从它们的输出中交叉验证信息，从而构建出对问题根源的合理解释和有效的解决方案。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Linux/" class="print-no-link">#Linux</a>
+      
+        <a href="/tags/SRE/" class="print-no-link">#SRE</a>
+      
+        <a href="/tags/%E8%BF%90%E7%BB%B4/" class="print-no-link">#运维</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SRE运维</div>
+      <div>https://mfzzf.github.io/2025/05/15/SRE运维/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Mzzf</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年5月15日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/05/19/go-study/" title="go-study">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">go-study</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/04/27/kubernetes%E7%94%9F%E4%BA%A7%E5%8C%96%E8%BF%90%E7%BB%B4/" title="kubernetes生产化运维">
+                        <span class="hidden-mobile">kubernetes生产化运维</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
