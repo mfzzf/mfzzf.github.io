@@ -23,25 +23,6 @@
   
   
   <entry>
-    <title>go-study</title>
-    <link href="/2025/05/19/go-study/"/>
-    <url>/2025/05/19/go-study/</url>
-    
-    <content type="html"><![CDATA[<h2 id="Go-Mod"><a href="#Go-Mod" class="headerlink" title="Go Mod"></a>Go Mod</h2><h3 id="Go-Get"><a href="#Go-Get" class="headerlink" title="Go Get"></a>Go Get</h3><p><strong>模块名不一定是源码仓库地址。</strong></p><p> <code>go get k8s.io/kube-openapi</code> 会:</p><ol><li>先向 <code>https://k8s.io/kube-openapi?go-get=1</code> 发送一个 GET 请求，response 里有个 <code>name=&quot;go-import&quot;</code> 的 meta 标签，对应的 content 由三部分构成：模块名称、版本控制工具（<code>git/svn</code>等）和源码仓库地址。</li><li>然后通过<code> git clone</code> 去下载源码。</li></ol><p><code>go get gorm.io/gorm/logger</code> 会：</p><ol><li>先发送 GET 请求 <code>https://gorm.io/gorm/logger?go-get=1</code>，查不到源码地址</li><li>再回溯一级目录，请求 <code>https://gorm.io/gorm?go-get=1</code></li></ol><p><code>curl https://k8s.io/kube-openapi?go-get=1</code>:</p><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs html"><span class="hljs-tag">&lt;<span class="hljs-name">html</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;go-import&quot;</span></span><br><span class="hljs-tag">  <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;k8s.io/kube-openapi</span></span><br><span class="hljs-string"><span class="hljs-tag">           git https://github.com/kubernetes/kube-openapi&quot;</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;go-source&quot;</span></span><br><span class="hljs-tag">  <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;k8s.io/kube-openapi</span></span><br><span class="hljs-string"><span class="hljs-tag">           https://github.com/kubernetes/kube-openapi</span></span><br><span class="hljs-string"><span class="hljs-tag">           https://github.com/kubernetes/kube-openapi/tree/master&#123;/dir&#125;</span></span><br><span class="hljs-string"><span class="hljs-tag">           https://github.com/kubernetes/kube-openapi/blob/master&#123;/dir&#125;/&#123;file&#125;#L&#123;line&#125;&quot;</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span><br></code></pre></td></tr></table></figure><h2 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h2><h3 id="二分查找"><a href="#二分查找" class="headerlink" title="二分查找"></a>二分查找</h3><p>二分查找的前提：只能用于<strong>有序数组</strong>（不能用于链表，因为链表不支持下标随机访问，Go 语言中的切片底层实现为数组）。在本章节中，提到的“数组”通常指的是切片，与链表相区别。二分查找依赖于能够通过下标以相同的代价访问任意元素。对于 int 类型数组 arr[n]，第 n 个元素的地址为 arr[0] 的地址加上 8 * n（每个 int 占 8 字节）。</p>]]></content>
-    
-    
-    
-    <tags>
-      
-      <tag>golang</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>SRE运维</title>
     <link href="/2025/05/15/SRE%E8%BF%90%E7%BB%B4/"/>
     <url>/2025/05/15/SRE%E8%BF%90%E7%BB%B4/</url>
